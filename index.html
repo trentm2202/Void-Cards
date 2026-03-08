@@ -33,7 +33,6 @@
     @keyframes loaderDot{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
   </style>
   <script>
-    // Hide loader once React has rendered
     const _obs = new MutationObserver(() => {
       const root = document.getElementById('root');
       if (root && root.children.length > 0) {
@@ -3060,7 +3059,9 @@ function App() {
   // Daily free pack helpers
   const todayStr=()=>new Date().toISOString().slice(0,10);
   const canClaimFreePack=dailyFreePack!==todayStr();
-  const canClaimDailyGems=dailyGems!==new Date().toISOString().slice(0,10);
+  const today=new Date().toISOString().slice(0,10);
+  // Handle old boolean format (true) AND new date string format ("2026-03-08")
+  const canClaimDailyGems=dailyGems!==today && dailyGems!==true;
   const freePackCountdown=()=>{
     const now=new Date();
     const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
@@ -3077,7 +3078,6 @@ function App() {
 
   const claimDaily=()=>{
     const bonus=streak>=7?300:streak>=3?200:150;
-    const today=new Date().toISOString().slice(0,10);
     setCoins(c=>c+bonus);setDailyGems(today);S.set("dailyGems",today);
     SFX.play("daily");
     notify(`💎 Daily: +${bonus} gems! (${streak}🔥 streak)`);
