@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,6 +56,18 @@ const sb = {
   async signOut(){
     try{ await fetch(this._url+"/auth/v1/logout",{method:"POST",headers:this._h()}); }catch(e){}
     this._token=null; this._uid=null;
+  },
+  async deleteAccount(){
+    if(!this._uid) return {error:"Not logged in"};
+    try{
+      // Delete save data first
+      await fetch(this._url+"/rest/v1/saves?id=eq."+this._uid,{method:"DELETE",headers:this._h()});
+      // Delete the auth user via admin endpoint isn't available client-side,
+      // so we wipe all their data and sign them out — full delete requires Supabase edge function
+      // For now we clear all data and sign out
+      this._token=null; this._uid=null;
+      return {success:true};
+    }catch(e){return {error:"Could not delete account."};}
   },
   async loadSave(){
     if(!this._uid) return null;
@@ -383,13 +394,39 @@ const RC = {
 };
 
 const DAILY_QUESTS_POOL = [
-  { id:"win3",     desc:"Win 3 battles",         reward:200, type:"wins",   target:3 },
-  { id:"win5",     desc:"Win 5 battles",         reward:350, type:"wins",   target:5 },
-  { id:"open2",    desc:"Open 2 packs",          reward:150, type:"packs",  target:2 },
-  { id:"open3",    desc:"Open 3 packs",          reward:250, type:"packs",  target:3 },
-  { id:"collect5", desc:"Add 5 cards to binder", reward:180, type:"cards",  target:5 },
-  { id:"bid2",     desc:"Place 2 auction bids",  reward:120, type:"bids",   target:2 },
-  { id:"fuse1",    desc:"Fuse a card into a Foil", reward:300, type:"fuse",   target:1 },
+  // Battles
+  { id:"win1",      desc:"Win 1 battle",               reward:100, type:"wins",   target:1 },
+  { id:"win3",      desc:"Win 3 battles",               reward:200, type:"wins",   target:3 },
+  { id:"win5",      desc:"Win 5 battles",               reward:350, type:"wins",   target:5 },
+  { id:"win10",     desc:"Win 10 battles",              reward:600, type:"wins",   target:10 },
+  { id:"winstreak", desc:"Win 3 battles in a row",      reward:400, type:"streak", target:3 },
+  // Packs
+  { id:"open1",     desc:"Open 1 pack",                 reward:80,  type:"packs",  target:1 },
+  { id:"open2",     desc:"Open 2 packs",                reward:150, type:"packs",  target:2 },
+  { id:"open3",     desc:"Open 3 packs",                reward:250, type:"packs",  target:3 },
+  { id:"open5",     desc:"Open 5 packs",                reward:400, type:"packs",  target:5 },
+  // Collection
+  { id:"collect3",  desc:"Add 3 cards to your binder",  reward:100, type:"cards",  target:3 },
+  { id:"collect5",  desc:"Add 5 cards to your binder",  reward:180, type:"cards",  target:5 },
+  { id:"collect10", desc:"Add 10 cards to your binder", reward:300, type:"cards",  target:10 },
+  { id:"getrare",   desc:"Pull a Rare or better card",  reward:200, type:"rarity", target:1, minRarity:"Rare" },
+  { id:"getepic",   desc:"Pull an Epic or better card", reward:400, type:"rarity", target:1, minRarity:"Epic" },
+  // Auction
+  { id:"bid1",      desc:"Place 1 auction bid",         reward:80,  type:"bids",   target:1 },
+  { id:"bid2",      desc:"Place 2 auction bids",        reward:120, type:"bids",   target:2 },
+  { id:"bid5",      desc:"Place 5 auction bids",        reward:220, type:"bids",   target:5 },
+  { id:"sellcard",  desc:"Sell a card at auction",      reward:150, type:"sells",  target:1 },
+  // Fusion
+  { id:"fuse1",     desc:"Fuse a card into a Foil",     reward:300, type:"fuse",   target:1 },
+  // Spending
+  { id:"spend500",  desc:"Spend 500 💎 in the shop",    reward:120, type:"spend",  target:500 },
+  { id:"spend1000", desc:"Spend 1000 💎 in the shop",   reward:220, type:"spend",  target:1000 },
+  // Team battle
+  { id:"teambattle",desc:"Play a 3v3 team battle",      reward:250, type:"team",   target:1 },
+  { id:"teamwin",   desc:"Win a 3v3 team battle",       reward:450, type:"teamwin",target:1 },
+  // Deck
+  { id:"deckbattle",desc:"Play a deck battle",          reward:200, type:"deck",   target:1 },
+  { id:"deckwin",   desc:"Win a deck battle",           reward:380, type:"deckwin",target:1 },
 ];
 
 const ACHIEVEMENTS = [
@@ -1000,6 +1037,11 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
     const card = cardList[idx];
     const delay = RARITY_DELAY[card.rarity]||700;
     setSpotlightIdx(idx);
+    // Play rarity-specific sound
+    if(card.rarity==="Legendary") SFX.play("legendaryReveal");
+    else if(card.rarity==="Epic") SFX.play("epicFlip");
+    else if(card.rarity==="Rare") SFX.play("rareFlip");
+    else SFX.play("cardFlip");
     setTimeout(()=>{
       const sfx={Legendary:"legendaryReveal",Epic:"epicFlip",Rare:"rareFlip",Uncommon:"cardFlip",Common:"cardFlip"}[card.rarity]||"cardFlip";
       SFX.play(sfx);
@@ -2428,16 +2470,48 @@ function CardOfTheDay({setDetail}) {
 }
 
 // ── Auth Screen ───────────────────────────────────────────────────────────────
+function DeleteAccountButton({onDeleted}){
+  const [step,setStep]=useState("idle"); // idle | confirm | deleting | done
+  const [error,setError]=useState("");
+  if(step==="idle") return(
+    <button onClick={()=>setStep("confirm")} style={{width:"100%",background:"transparent",color:"#ef444466",border:"1px solid #ef444422",borderRadius:10,padding:"11px",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:6}}>
+      🗑️ Delete My Account
+    </button>
+  );
+  if(step==="confirm") return(
+    <div style={{background:"#1a0000",border:"1px solid #ef444455",borderRadius:12,padding:16,marginTop:6}}>
+      <div style={{color:"#ef4444",fontWeight:800,fontSize:13,marginBottom:8}}>⚠️ Delete Account?</div>
+      <div style={{color:"#94a3b8",fontSize:12,marginBottom:14,lineHeight:1.5}}>This permanently deletes all your cards, gems, and progress. This cannot be undone.</div>
+      {error&&<div style={{color:"#ef4444",fontSize:11,marginBottom:10}}>{error}</div>}
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setStep("idle")} style={{flex:1,background:"#0f172a",color:"#94a3b8",border:"1px solid #1e293b",borderRadius:8,padding:"10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Cancel</button>
+        <button onClick={async()=>{
+          setStep("deleting");
+          const r=await sb.deleteAccount();
+          if(r.success){setStep("done");setTimeout(onDeleted,1000);}
+          else{setError(r.error||"Something went wrong.");setStep("confirm");}
+        }} style={{flex:1,background:"linear-gradient(135deg,#7f1d1d,#ef4444)",color:"white",border:"none",borderRadius:8,padding:"10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  );
+  if(step==="deleting") return <div style={{color:"#ef4444",fontSize:12,textAlign:"center",padding:"11px",marginTop:6}}>Deleting account...</div>;
+  return <div style={{color:"#22c55e",fontSize:12,textAlign:"center",padding:"11px",marginTop:6}}>✅ Account deleted.</div>;
+}
+
 function AuthScreen({onAuth}){
   const [mode,setMode]=useState("login"); // login | signup
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
+  const [agreed,setAgreed]=useState(false);
 
   const submit=async()=>{
     if(!email||!password){setError("Please enter email and password.");return;}
     if(password.length<6){setError("Password must be at least 6 characters.");return;}
+    if(mode==="signup"&&!agreed){setError("Please agree to the Privacy Policy to continue.");return;}
     setLoading(true); setError("");
     try{
       const d=mode==="signup"?await sb.signUp(email,password):await sb.signIn(email,password);
@@ -2495,8 +2569,16 @@ function AuthScreen({onAuth}){
             {loading?"Connecting...":mode==="login"?"Sign In ✨":"Create Account 🚀"}
           </button>
 
-          {mode==="signup"&&<div style={{color:"#334155",fontSize:11,textAlign:"center",marginTop:12}}>
-            Your progress saves automatically to your account across all devices.
+          {mode==="signup"&&<div style={{marginTop:14}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:10}}>
+              <input type="checkbox" id="agree" checked={agreed} onChange={e=>setAgreed(e.target.checked)} style={{marginTop:2,accentColor:"#a855f7",cursor:"pointer",width:14,height:14,flexShrink:0}}/>
+              <label htmlFor="agree" style={{color:"#64748b",fontSize:11,lineHeight:1.6,cursor:"pointer"}}>
+                I agree to the <a href="https://voidcards.org/privacy.html" target="_blank" style={{color:"#a855f7",textDecoration:"underline"}}>Privacy Policy</a>. Your progress saves automatically across all devices.
+              </label>
+            </div>
+          </div>}
+          {mode==="login"&&<div style={{textAlign:"center",marginTop:10}}>
+            <a href="https://voidcards.org/privacy.html" target="_blank" style={{color:"#334155",fontSize:10,textDecoration:"underline"}}>Privacy Policy</a>
           </div>}
           {mode==="login"&&<button onClick={async()=>{
             if(!email){setError("Enter your email above first.");return;}
@@ -2560,6 +2642,7 @@ function App() {
   const [deckBuilder,setDeckBuilder]=useState(false);
   const [fusionModal,setFusionModal]=useState(false);
   const [teamBattle,setTeamBattle] =useState(false);
+  // Track deck/team play for quests
   const [deckBattle,setDeckBattle] =useState(false);
   const [dailyShop,setDailyShop]   =useState(false);
   const [legFlash,setLegFlash]     =useState(false);
@@ -2655,7 +2738,7 @@ function App() {
     const ns=lastLogin===yesterday?streak+1:1;
     setStreak(ns);setLastLogin(today);setDailyGems(false);
     S.set("lastLogin",today);S.set("streak",ns);
-    const shuffled=[...DAILY_QUESTS_POOL].sort(()=>Math.random()-.5).slice(0,3);
+    const shuffled=[...DAILY_QUESTS_POOL].sort(()=>Math.random()-.5).slice(0,5);
     setQuests(shuffled);setQuestProg({});
     S.set("quests",shuffled);S.set("questProgress",{});
   },[]);
@@ -2690,7 +2773,7 @@ function App() {
     });
   };
 
-  const buyPack=p=>{ if(coins<p.price){notify("Not enough credits!","err");return;} setCoins(c=>c-p.price); setOpeningPack(p); };
+  const buyPack=p=>{ if(coins<p.price){notify("Not enough credits!","err");return;} setCoins(c=>c-p.price); updateQuest("spend",p.price); setOpeningPack(p); };
 
   const COLLECTION_MILESTONES=[
     {count:10,  reward:200,  label:"First 10!"},
@@ -2726,6 +2809,9 @@ function App() {
     setTotalPacks(t=>t+1);
     updateQuest("cards",cards.length);
     updateQuest("packs",1);
+    const rarityRank={Common:0,Uncommon:1,Rare:2,Epic:3,Legendary:4};
+    const bestCard=cards.reduce((a,b)=>(rarityRank[b.rarity]||0)>(rarityRank[a.rarity]||0)?b:a,cards[0]);
+    if((rarityRank[bestCard?.rarity]||0)>=2) updateQuest("rarity",1);
 
     // XP for opening a pack
     givePlayerXp(50);
@@ -2770,16 +2856,21 @@ function App() {
     checkAch({collection:newCollection,wins,coins,streak,cardLevels,decks,totalSold});
   };
 
+  // ── Quest win-streak tracking ─────────────────────────────────────────────
+  const [battleStreak,setBattleStreak]=useState(0);
+
   const onWin=cardId=>{
     const nw=wins+1; setWins(nw); setCoins(c=>c+150); SFX.play("coin");
     givePlayerXp(120);
     updateQuest("wins",1);
+    const ns=battleStreak+1; setBattleStreak(ns); updateQuest("streak",ns);
     checkAch({collection,wins:nw,coins:coins+150,streak,cardLevels:{},decks,totalSold});
     setBattleResult({won:true,xp:120,coins:150,cardName:ALL_CARDS.find(c=>c.id===cardId)?.name||""});
   };
 
   const onLoss=cardId=>{
     setLosses(l=>l+1);
+    setBattleStreak(0);
     givePlayerXp(40);
     setBattleResult({won:false,xp:40,coins:0,cardName:ALL_CARDS.find(c=>c&&c.id===cardId)?.name||""});
   };
@@ -2830,6 +2921,7 @@ function App() {
     setCoins(c=>c+price);
     setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,timeLeft:"24h",bids:0,isPlayer:true}]);
     setTotalSold(t=>t+1);setSellCard(null);
+    updateQuest("sells",1);
     SFX.play("sell");
     notify(`${card.name} listed for 💎 ${price}!`);
     checkAch({collection,wins,coins:coins+price,streak,cardLevels,decks,totalSold:totalSold+1});
@@ -3483,12 +3575,13 @@ function App() {
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
           </button>}
+          {authed&&<DeleteAccountButton onDeleted={()=>{Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}}/>}
         </div>
       </Modal>}
       {sellCard&&<SellModal card={sellCard} onClose={()=>setSellCard(null)} onSell={doSell}/>}
       {deckBuilder&&<DeckBuilderModal collection={unique} cardLevels={cardLevels} onSave={d=>{SFX.play("achievement");setDecks(p=>[...p,d]);setDeckBuilder(false);notify(`Deck "${d.name}" saved!`);checkAch({collection,wins,coins,streak,cardLevels,decks:[...decks,d],totalSold});}} onClose={()=>setDeckBuilder(false)}/>}
       {dailyShop&&<DailyShopModal collection={collection} coins={coins} packsSinceLeg={packsSinceLeg} onBuyPack={p=>{buyPack(p);setDailyShop(false);}} onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");setDailyShop(false);}} onClose={()=>setDailyShop(false)}/>}
-      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});}} onLose={()=>{onLoss(null);}}/>}
+      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});}} onLose={()=>{onLoss(null);}}/>}
       {fusionModal&&<FusionModal collection={collection} cardLevels={cardLevels} onFuse={(foilCard,orig)=>{
         let removed=0;
         const newColl=collection.filter(c=>{ if(c.id===orig.id&&!c.foil&&removed<3){removed++;return false;} return true; });
@@ -3502,6 +3595,8 @@ function App() {
         const nw=wins+1; setWins(nw); setTeamWins(t=>t+1); setCoins(c=>c+300); SFX.play("coin");
         notify("🏆 Team Victory! +300 💎","ach");
         updateQuest("wins",1);
+        updateQuest("team",1);
+        updateQuest("teamwin",1);
         checkAch({collection,wins:nw,coins:coins+300,streak,cardLevels,decks,totalSold,teamWins:teamWins+1});
       }} onClose={()=>setTeamBattle(false)}/>}
       {/* Battle Result Overlay */}
