@@ -8,7 +8,6 @@
   <meta name="apple-mobile-web-app-title" content="Void Cards"/>
   <meta name="description" content="Void Cards is a free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards, battle enemies, fuse cards, and compete in the auction house."/>
   <title>Void Cards — Galactic Card Battle Game</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9841213051292188" crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,6 +17,34 @@
 </head>
 <body>
   <div id="root"></div>
+
+  <div id="loader" style="position:fixed;inset:0;background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',system-ui,sans-serif">
+    <div style="font-size:64px;margin-bottom:16px;animation:loaderFloat 2s ease-in-out infinite">🌌</div>
+    <div style="color:#a855f7;font-size:9px;letter-spacing:6px;font-weight:800;margin-bottom:6px">GALACTIC</div>
+    <div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#e2e8f0,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:24px">VOID CARDS</div>
+    <div style="display:flex;gap:6px">
+      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0s"></div>
+      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.2s"></div>
+      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.4s"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes loaderFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes loaderDot{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+  </style>
+  <script>
+    // Hide loader once React has rendered
+    const _obs = new MutationObserver(() => {
+      const root = document.getElementById('root');
+      if (root && root.children.length > 0) {
+        const loader = document.getElementById('loader');
+        if (loader) { loader.style.opacity='0'; loader.style.transition='opacity .4s'; setTimeout(()=>loader.remove(), 400); }
+        _obs.disconnect();
+      }
+    });
+    _obs.observe(document.getElementById('root'), {childList:true});
+  </script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -2581,25 +2608,24 @@ function ResetPasswordScreen({token, refreshToken, onDone}){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [success,setSuccess]=useState(false);
-  const [sessionToken,setSessionToken]=useState(token);
-
-  // On mount, exchange refresh token for a fresh session token
-  useEffect(()=>{
-    if(!refreshToken) return;
-    fetch(sb._url+"/auth/v1/token?grant_type=refresh_token",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","apikey":sb._key},
-      body:JSON.stringify({refresh_token:refreshToken})
-    }).then(r=>r.json()).then(d=>{
-      if(d.access_token) setSessionToken(d.access_token);
-    }).catch(()=>{});
-  },[]);
 
   const submit=async()=>{
+    // Validate first — before touching any tokens
     if(password.length<6){setError("Password must be at least 6 characters.");return;}
     if(password!==confirm){setError("Passwords don't match.");return;}
     setLoading(true);setError("");
     try{
+      // Exchange refresh token for fresh session right before updating password
+      let sessionToken=token;
+      if(refreshToken){
+        const tr=await fetch(sb._url+"/auth/v1/token?grant_type=refresh_token",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":sb._key},
+          body:JSON.stringify({refresh_token:refreshToken})
+        });
+        const td=await tr.json();
+        if(td.access_token) sessionToken=td.access_token;
+      }
       const r=await fetch(sb._url+"/auth/v1/user",{
         method:"PUT",
         headers:{"Content-Type":"application/json","apikey":sb._key,"Authorization":"Bearer "+sessionToken},
@@ -2777,7 +2803,7 @@ function App() {
   const [newCardIds,setNewCardIds] = useState(()=>new Set(S.get("newCardIds",[])));
   const [streak,setStreak]         = useState(()=>S.get("streak",0));
   const [lastLogin,setLastLogin]   = useState(()=>S.get("lastLogin",""));
-  const [dailyGems,setDailyGems]   = useState(()=>S.get("dailyGems",false));
+  const [dailyGems,setDailyGems]   = useState(()=>S.get("dailyGems",""));  // stores date string, not boolean
   const [decks,setDecks]           = useState(()=>S.get("decks",[]));
   const [quests,setQuests]         = useState(()=>S.get("quests",null));
   const [questProg,setQuestProg]   = useState(()=>S.get("questProgress",{}));
@@ -2892,9 +2918,11 @@ function App() {
     const ns=lastLogin===yesterday?streak+1:1;
     setStreak(ns);setLastLogin(today);setDailyGems(false);
     S.set("lastLogin",today);S.set("streak",ns);
-    const shuffled=[...DAILY_QUESTS_POOL].sort(()=>Math.random()-.5).slice(0,5);
-    setQuests(shuffled);setQuestProg({});
-    S.set("quests",shuffled);S.set("questProgress",{});
+    // Seed shuffle by date so same day always gives same 5 quests
+    const dateNum=parseInt(new Date().toISOString().slice(0,10).replace(/-/g,""));
+    const seeded=[...DAILY_QUESTS_POOL].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
+    setQuests(seeded);setQuestProg({});
+    S.set("quests",seeded);S.set("questProgress",{});
   },[]);
 
   const checkAch=useCallback((state)=>{
@@ -3032,6 +3060,7 @@ function App() {
   // Daily free pack helpers
   const todayStr=()=>new Date().toISOString().slice(0,10);
   const canClaimFreePack=dailyFreePack!==todayStr();
+  const canClaimDailyGems=dailyGems!==new Date().toISOString().slice(0,10);
   const freePackCountdown=()=>{
     const now=new Date();
     const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
@@ -3048,7 +3077,8 @@ function App() {
 
   const claimDaily=()=>{
     const bonus=streak>=7?300:streak>=3?200:150;
-    setCoins(c=>c+bonus);setDailyGems(true);S.set("dailyGems",true);
+    const today=new Date().toISOString().slice(0,10);
+    setCoins(c=>c+bonus);setDailyGems(today);S.set("dailyGems",today);
     SFX.play("daily");
     notify(`💎 Daily: +${bonus} gems! (${streak}🔥 streak)`);
     checkAch({collection,wins,coins:coins+bonus,streak,cardLevels,decks,totalSold});
@@ -3148,6 +3178,8 @@ function App() {
       apply("claimedMilestones",setClaimedMilestones,save.claimedMilestones);
       apply("dailyFreePack",setDailyFreePack,save.dailyFreePack);
       apply("newPlayer",setNewPlayer,save.newPlayer);
+      apply("lastLogin",setLastLogin,save.lastLogin);
+      apply("dailyGems",setDailyGems,save.dailyGems);
     } else {
       // Brand new account — reset all state to defaults
       setCoins(500); setCollection([]); setPlayerXp(0); setPlayerLevel(1);
@@ -3228,7 +3260,7 @@ function App() {
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>{muted?"🔇":"🔊"}</button>
           <button onClick={()=>setShowSettings(true)} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>⚙️</button>
-          {!dailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:800,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #f59e0b44"}}>🎁 Daily</button>}
+          {canClaimDailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:800,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #f59e0b44"}}>🎁 Daily</button>}
           <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop</button>
           <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid #7c3aed55",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 0 16px #7c3aed22"}}>
             <span style={{fontSize:14}}>💎</span>
@@ -3332,7 +3364,7 @@ function App() {
           </div>
 
           {/* Daily claim if available */}
-          {!dailyGems&&<button onClick={claimDaily} style={{width:"100%",background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:12,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer",marginBottom:14,boxShadow:"0 0 20px #f59e0b33",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {canClaimDailyGems&&<button onClick={claimDaily} style={{width:"100%",background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:12,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer",marginBottom:14,boxShadow:"0 0 20px #f59e0b33",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             🎁 Claim Daily Gems — {streak>=7?300:streak>=3?200:150} 💎
           </button>}
 
@@ -3469,8 +3501,8 @@ function App() {
         {tab==="quests"&&<div>
           <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>Daily Quests</div>
           <div style={{color:"#64748b",fontSize:13,marginBottom:10}}>🔥 Streak: <span style={{color:"#f59e0b",fontWeight:700}}>{streak} day{streak!==1?"s":""}</span></div>
-          {!dailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:10,padding:"12px",width:"100%",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14}}>🎁 Daily Gems ({streak>=7?300:streak>=3?200:150} 💎)</button>}
-          {dailyGems&&<div style={{background:"#052e16",border:"1px solid #14532d",borderRadius:10,padding:12,marginBottom:14,textAlign:"center",color:"#22c55e",fontWeight:600}}>✅ Daily claimed! Come back tomorrow.</div>}
+          {canClaimDailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:10,padding:"12px",width:"100%",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14}}>🎁 Daily Gems ({streak>=7?300:streak>=3?200:150} 💎)</button>}
+          {!canClaimDailyGems&&<div style={{background:"#052e16",border:"1px solid #14532d",borderRadius:10,padding:12,marginBottom:14,textAlign:"center",color:"#22c55e",fontWeight:600}}>✅ Daily claimed! Come back tomorrow.</div>}
           <div style={{marginBottom:20}}>
             {(quests||[]).map(q=>{
               const prog=questProg[q.id]||0, done=prog>=q.target, pct=Math.min(100,prog/q.target*100);
