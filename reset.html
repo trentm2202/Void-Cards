@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reset Password — Void Cards</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(180deg, #020617, #0f0a1e);
+      color: white;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 340px;
+      background: linear-gradient(135deg, #0f0a1e, #1e0a3c);
+      border: 1px solid #4c1d9555;
+      border-radius: 16px;
+      padding: 32px 24px;
+    }
+    .header { text-align: center; margin-bottom: 28px; }
+    .logo { font-size: 48px; margin-bottom: 10px; }
+    .brand-sub { color: #a855f7; font-size: 9px; letter-spacing: 5px; font-weight: 800; margin-bottom: 4px; }
+    .brand { font-size: 24px; font-weight: 900; background: linear-gradient(135deg, #e2e8f0, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+    .subtitle { color: #475569; font-size: 13px; }
+    label { display: block; color: #64748b; font-size: 11px; font-weight: 600; margin-bottom: 5px; }
+    input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: white;
+      font-size: 13px;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus { border-color: #7c3aed; }
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 0 20px #a855f744;
+    }
+    .btn:disabled { background: #1e293b; box-shadow: none; cursor: not-allowed; }
+    .error { background: #1a0000; border: 1px solid #ef444455; border-radius: 8px; padding: 10px 12px; color: #ef4444; font-size: 12px; margin-bottom: 14px; }
+    .success { background: #052e16; border: 1px solid #22c55e55; border-radius: 8px; padding: 10px 12px; color: #22c55e; font-size: 12px; margin-bottom: 14px; }
+    .back { display: block; text-align: center; color: #475569; font-size: 12px; margin-top: 16px; text-decoration: none; }
+    .back:hover { color: #a855f7; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="logo">🌌</div>
+      <div class="brand-sub">GALACTIC</div>
+      <div class="brand">VOID CARDS</div>
+      <div class="subtitle">Set a new password</div>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="form">
+      <label>NEW PASSWORD</label>
+      <input type="password" id="password" placeholder="Min 6 characters"/>
+      <label>CONFIRM PASSWORD</label>
+      <input type="password" id="confirm" placeholder="Repeat your password"/>
+      <button class="btn" id="btn" onclick="resetPassword()">Update Password 🚀</button>
+    </div>
+
+    <a href="/" class="back">← Back to Void Cards</a>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ibnhebsiullstslowbhc.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_zX69scQZ1mYXAmlDAyr9LA_Edq1Yasj";
+
+    // Get access token from URL hash
+    function getTokenFromHash() {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      return {
+        access_token: params.get("access_token"),
+        type: params.get("type")
+      };
+    }
+
+    const { access_token, type } = getTokenFromHash();
+
+    // If no token in URL show error
+    if (!access_token || type !== "recovery") {
+      document.getElementById("message").innerHTML = '<div class="error">❌ Invalid or expired reset link. Please request a new one from the game.</div>';
+      document.getElementById("form").style.display = "none";
+    }
+
+    async function resetPassword() {
+      const password = document.getElementById("password").value;
+      const confirm = document.getElementById("confirm").value;
+      const btn = document.getElementById("btn");
+      const msg = document.getElementById("message");
+
+      msg.innerHTML = "";
+
+      if (!password || password.length < 6) {
+        msg.innerHTML = '<div class="error">Password must be at least 6 characters.</div>';
+        return;
+      }
+      if (password !== confirm) {
+        msg.innerHTML = '<div class="error">Passwords don\'t match.</div>';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+
+      try {
+        const r = await fetch(SUPABASE_URL + "/auth/v1/user", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + access_token
+          },
+          body: JSON.stringify({ password })
+        });
+        const d = await r.json();
+        if (d.id) {
+          msg.innerHTML = '<div class="success">✅ Password updated! Redirecting to game...</div>';
+          document.getElementById("form").style.display = "none";
+          setTimeout(() => { window.location.href = "/"; }, 2000);
+        } else {
+          msg.innerHTML = '<div class="error">' + (d.message || "Something went wrong. Try requesting a new reset link.") + '</div>';
+          btn.disabled = false;
+          btn.textContent = "Update Password 🚀";
+        }
+      } catch(e) {
+        msg.innerHTML = '<div class="error">Connection error. Check your internet.</div>';
+        btn.disabled = false;
+        btn.textContent = "Update Password 🚀";
+      }
+    }
+  </script>
+</body>
+</html>
