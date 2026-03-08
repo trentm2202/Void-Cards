@@ -2500,12 +2500,25 @@ function DeleteAccountButton({onDeleted}){
   return <div style={{color:"#22c55e",fontSize:12,textAlign:"center",padding:"11px",marginTop:6}}>✅ Account deleted.</div>;
 }
 
-function ResetPasswordScreen({token, onDone}){
+function ResetPasswordScreen({token, refreshToken, onDone}){
   const [password,setPassword]=useState("");
   const [confirm,setConfirm]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [success,setSuccess]=useState(false);
+  const [sessionToken,setSessionToken]=useState(token);
+
+  // On mount, exchange refresh token for a fresh session token
+  useEffect(()=>{
+    if(!refreshToken) return;
+    fetch(sb._url+"/auth/v1/token?grant_type=refresh_token",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":sb._key},
+      body:JSON.stringify({refresh_token:refreshToken})
+    }).then(r=>r.json()).then(d=>{
+      if(d.access_token) setSessionToken(d.access_token);
+    }).catch(()=>{});
+  },[]);
 
   const submit=async()=>{
     if(password.length<6){setError("Password must be at least 6 characters.");return;}
@@ -2514,12 +2527,12 @@ function ResetPasswordScreen({token, onDone}){
     try{
       const r=await fetch(sb._url+"/auth/v1/user",{
         method:"PUT",
-        headers:{"Content-Type":"application/json","apikey":sb._key,"Authorization":"Bearer "+token},
+        headers:{"Content-Type":"application/json","apikey":sb._key,"Authorization":"Bearer "+sessionToken},
         body:JSON.stringify({password})
       });
       const d=await r.json();
-      if(d.id){setSuccess(true);setTimeout(onDone,2000);}
-      else{setError(d.message||"Something went wrong. Please request a new reset link.");}
+      if(d.id||d.email){setSuccess(true);setTimeout(onDone,2000);}
+      else{setError(d.message||d.error_description||"Something went wrong. Please request a new reset link.");}
     }catch(e){setError("Connection error.");}
     setLoading(false);
   };
@@ -3072,15 +3085,16 @@ function App() {
   };
 
   // Check if this is a password reset link
-  const resetToken=(()=>{
+  const resetData=(()=>{
     const hash=new URLSearchParams(window.location.hash.substring(1));
     const query=new URLSearchParams(window.location.search);
     const token=hash.get("access_token")||query.get("access_token");
+    const refresh=hash.get("refresh_token")||query.get("refresh_token");
     const type=hash.get("type")||query.get("type");
-    return (type==="recovery"&&token)?token:null;
+    return (type==="recovery"&&token)?{token,refresh}:null;
   })();
 
-  if(resetToken) return <ResetPasswordScreen token={resetToken} onDone={()=>{window.location.hash="";window.location.reload();}}/>;
+  if(resetData) return <ResetPasswordScreen token={resetData.token} refreshToken={resetData.refresh} onDone={()=>{window.location.hash="";window.location.reload();}}/>;
   if(!authed) return <AuthScreen onAuth={onAuth}/>;
   if(newPlayer||collection.length===0) return <WelcomeScreen onClaim={cards=>{setCollection(cards);setNewPlayer(false);S.set("newPlayer",false);notify("Welcome! Progress auto-saves. 🚀");}}/>;
 
