@@ -980,8 +980,8 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level }
           <span style={{color:"#334155",fontSize:mini?6:7,letterSpacing:.5}}>{card.type}</span>
         </div>
         {/* Art */}
-        <div style={{borderRadius:7,overflow:"hidden",marginBottom:mini?3:4,flexShrink:0,position:"relative",zIndex:3,width:"100%"}}>
-          <CardIllustration card={card} w={imgW} h={imgH} style={{display:"block",width:"100%",height:"auto"}}/>
+        <div style={{borderRadius:7,overflow:"hidden",marginBottom:mini?3:4,flexShrink:0,position:"relative",zIndex:3,width:imgW,height:imgH,alignSelf:"center"}}>
+          <CardIllustration card={card} w={imgW} h={imgH}/>
           <div style={{position:"absolute",top:0,left:0,right:0,height:"35%",background:"linear-gradient(180deg,rgba(255,255,255,.05),transparent)",pointerEvents:"none"}}/>
         </div>
         {/* Name */}
