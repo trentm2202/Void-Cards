@@ -88,20 +88,25 @@
     const SUPABASE_URL = "https://ibnhebsiullstslowbhc.supabase.co";
     const SUPABASE_KEY = "sb_publishable_zX69scQZ1mYXAmlDAyr9LA_Edq1Yasj";
 
-    // Get access token from URL hash
-    function getTokenFromHash() {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+    // Get token from URL — handles both hash (#) and query string (?) formats
+    function getToken() {
+      // Try hash first: reset.html#access_token=xxx&type=recovery
+      const hash = new URLSearchParams(window.location.hash.substring(1));
+      // Try query string: reset.html?access_token=xxx&type=recovery
+      const query = new URLSearchParams(window.location.search);
       return {
-        access_token: params.get("access_token"),
-        type: params.get("type")
+        access_token: hash.get("access_token") || query.get("access_token"),
+        type: hash.get("type") || query.get("type"),
+        token: hash.get("token") || query.get("token")
       };
     }
 
-    const { access_token, type } = getTokenFromHash();
+    const tokenData = getToken();
+    const access_token = tokenData.access_token;
+    const type = tokenData.type;
 
     // If no token in URL show error
-    if (!access_token || type !== "recovery") {
+    if (!access_token) {
       document.getElementById("message").innerHTML = '<div class="error">❌ Invalid or expired reset link. Please request a new one from the game.</div>';
       document.getElementById("form").style.display = "none";
     }
