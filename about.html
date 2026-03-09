@@ -6,72 +6,24 @@
   <title>About — Void Cards</title>
   <meta name="description" content="Learn about Void Cards, a free browser-based sci-fi card collecting and battle game with 100+ unique cards, cloud saves, and cross-device play."/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9841213051292188" crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: linear-gradient(180deg, #020617, #0a0520);
-      color: #94a3b8;
-      font-family: 'Exo 2', sans-serif;
-      min-height: 100vh;
-      padding: 0 0 60px;
-    }
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 40px;
-      border-bottom: 1px solid #ffffff08;
-      background: #02061788;
-      backdrop-filter: blur(12px);
-    }
-    .nav-brand {
-      font-family: 'Orbitron', monospace;
-      font-weight: 900;
-      font-size: 16px;
-      background: linear-gradient(135deg, #e2e8f0, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-decoration: none;
-    }
+    body { background: linear-gradient(180deg, #020617, #0a0520); color: #94a3b8; font-family: 'Exo 2', sans-serif; min-height: 100vh; padding: 0 0 60px; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid #ffffff08; background: #02061788; backdrop-filter: blur(12px); }
+    .nav-brand { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 16px; background: linear-gradient(135deg, #e2e8f0, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
     .nav-links { display: flex; gap: 20px; align-items: center; }
     .nav-links a { color: #475569; text-decoration: none; font-size: 13px; font-weight: 600; transition: color .2s; }
     .nav-links a:hover { color: #a855f7; }
     .nav-play { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white !important; padding: 8px 18px; border-radius: 8px; }
-
     .container { max-width: 760px; margin: 0 auto; padding: 60px 20px; }
-
     .page-header { text-align: center; margin-bottom: 60px; }
     .logo { font-size: 52px; margin-bottom: 12px; }
     .eyebrow { font-family: 'Orbitron', monospace; color: #a855f7; font-size: 9px; letter-spacing: 5px; font-weight: 700; margin-bottom: 10px; }
-    .page-title {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(28px, 6vw, 48px);
-      font-weight: 900;
-      background: linear-gradient(135deg, #e2e8f0, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 12px;
-    }
+    .page-title { font-family: 'Orbitron', monospace; font-size: clamp(28px, 6vw, 48px); font-weight: 900; background: linear-gradient(135deg, #e2e8f0, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
     .page-sub { color: #475569; font-size: 14px; }
-
-    .card {
-      background: linear-gradient(135deg, #0f0a1e, #1e0a3c);
-      border: 1px solid #4c1d9533;
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 20px;
-    }
-    h2 {
-      font-family: 'Orbitron', monospace;
-      color: #a855f7;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .card { background: linear-gradient(135deg, #0f0a1e, #1e0a3c); border: 1px solid #4c1d9533; border-radius: 16px; padding: 32px; margin-bottom: 20px; }
+    h2 { font-family: 'Orbitron', monospace; color: #a855f7; font-size: 13px; font-weight: 700; letter-spacing: 2px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
     p { font-size: 14px; line-height: 1.9; color: #94a3b8; margin-bottom: 12px; }
     p:last-child { margin-bottom: 0; }
     ul { padding-left: 20px; }
@@ -79,54 +31,28 @@
     a { color: #a855f7; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .highlight { color: #e2e8f0; font-weight: 600; }
-
-    .play-btn {
-      display: block;
-      text-align: center;
-      background: linear-gradient(135deg, #7c3aed, #a855f7);
-      color: white;
-      text-decoration: none;
-      border-radius: 12px;
-      padding: 16px;
-      font-family: 'Orbitron', monospace;
-      font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 1px;
-      box-shadow: 0 0 30px #a855f744;
-      margin-top: 32px;
-      transition: all .2s;
-    }
+    .play-btn { display: block; text-align: center; background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; text-decoration: none; border-radius: 12px; padding: 16px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 14px; letter-spacing: 1px; box-shadow: 0 0 30px #a855f744; margin-top: 32px; transition: all .2s; }
     .play-btn:hover { transform: translateY(-2px); text-decoration: none; }
-
-    footer {
-      border-top: 1px solid #ffffff08;
-      padding: 24px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 40px;
-    }
+    footer { border-top: 1px solid #ffffff08; padding: 24px 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 40px; }
     .footer-copy { color: #1e293b; font-size: 11px; }
     .footer-links { display: flex; gap: 20px; }
     .footer-links a { color: #334155; text-decoration: none; font-size: 12px; }
     .footer-links a:hover { color: #a855f7; }
+    @media(max-width: 600px) { nav { padding: 14px 16px; } .nav-links .hide { display: none; } }
   </style>
 </head>
 <body>
-
   <nav>
     <a href="/" class="nav-brand">⚡ VOID CARDS</a>
     <div class="nav-links">
-      <a href="/privacy.html">Privacy</a>
-      <a href="mailto:resinfolk@gmail.com">Contact</a>
+      <a href="/guide.html" class="hide">Guide</a>
+      <a href="/cards.html" class="hide">All Cards</a>
+      <a href="/privacy.html" class="hide">Privacy</a>
       <a href="/" class="nav-play">Play Free →</a>
     </div>
   </nav>
 
   <div class="container">
-
     <div class="page-header">
       <div class="logo">🌌</div>
       <div class="eyebrow">GALACTIC CARD GAME</div>
@@ -152,6 +78,13 @@
         <li>Buy and sell cards in the Auction House</li>
         <li>Build custom decks for team and deck battles</li>
       </ul>
+      <p style="margin-top:14px"><a href="/guide.html">Read the full How to Play guide →</a></p>
+    </div>
+
+    <div class="card">
+      <h2>🃏 The Cards</h2>
+      <p>Series 1 features <span class="highlight">100 unique cards</span> across 6 types: Alien, Robot, Knight, Mage, Dragon, and Beast. Every card has its own name, stats, special ability, and a lore description written in the game's dry sci-fi humour style.</p>
+      <p><a href="/cards.html">Browse all 100 cards →</a></p>
     </div>
 
     <div class="card">
@@ -179,17 +112,16 @@
     </div>
 
     <a href="/" class="play-btn">🚀 Play Void Cards Free</a>
-
   </div>
 
   <footer>
     <div class="footer-copy">Void Cards · © 2026</div>
     <div class="footer-links">
       <a href="/">Home</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="mailto:resinfolk@gmail.com">Contact</a>
+      <a href="/guide.html">Guide</a>
+      <a href="/cards.html">All Cards</a>
+      <a href="/privacy.html">Privacy</a>
     </div>
   </footer>
-
 </body>
 </html>
