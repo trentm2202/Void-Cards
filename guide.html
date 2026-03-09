@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>How to Play — Void Cards Guide</title>
+  <meta name="description" content="Learn how to play Void Cards. Understand card rarities, battle mechanics, energy system, fusion, pack types, quests, and how to build the best deck."/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9841213051292188" crossorigin="anonymous"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#020617;color:#94a3b8;font-family:'Exo 2',system-ui,sans-serif;min-height:100vh;line-height:1.7;}
+    nav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid #ffffff08;background:#02061788;backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;}
+    .nav-brand{font-family:'Orbitron',monospace;font-weight:900;font-size:16px;background:linear-gradient(135deg,#e2e8f0,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;}
+    .nav-links{display:flex;gap:16px;align-items:center;}
+    .nav-links a{color:#475569;text-decoration:none;font-size:12px;font-weight:600;transition:color .2s;}
+    .nav-links a:hover{color:#a855f7;}
+    .nav-play{background:linear-gradient(135deg,#7c3aed,#a855f7);color:white!important;padding:8px 16px;border-radius:8px;}
+    .container{max-width:860px;margin:0 auto;padding:40px 20px 80px;}
+    .page-header{text-align:center;margin-bottom:48px;}
+    .eyebrow{font-family:'Orbitron',monospace;color:#a855f7;font-size:9px;letter-spacing:5px;font-weight:700;margin-bottom:10px;}
+    .page-title{font-family:'Orbitron',monospace;font-size:clamp(24px,5vw,40px);font-weight:900;background:linear-gradient(135deg,#e2e8f0,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+    .page-sub{color:#475569;font-size:15px;}
+    .toc{background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:20px 24px;margin-bottom:40px;}
+    .toc-title{color:#a855f7;font-weight:700;font-size:12px;letter-spacing:2px;margin-bottom:12px;}
+    .toc a{display:block;color:#475569;text-decoration:none;font-size:13px;padding:4px 0;border-bottom:1px solid #0f172a;transition:color .2s;}
+    .toc a:hover{color:#a855f7;}
+    .section{margin-bottom:48px;}
+    .section-title{font-family:'Orbitron',monospace;color:white;font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+    .section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#1e293b,transparent);}
+    p{color:#94a3b8;font-size:14px;margin-bottom:14px;}
+    .card-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:16px 0;}
+    .rarity-card{border-radius:10px;padding:14px;border:1px solid;text-align:center;}
+    .rarity-name{font-weight:800;font-size:14px;margin-bottom:4px;}
+    .rarity-stars{font-size:13px;margin-bottom:6px;}
+    .rarity-desc{font-size:11px;color:#64748b;line-height:1.5;}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:16px 0;}
+    .stat-box{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;}
+    .stat-label{font-size:11px;color:#475569;letter-spacing:1px;margin-bottom:4px;}
+    .stat-name{color:white;font-weight:700;font-size:14px;margin-bottom:4px;}
+    .stat-desc{font-size:12px;color:#64748b;}
+    .pack-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0;}
+    .pack-box{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;}
+    .pack-icon{font-size:32px;margin-bottom:8px;}
+    .pack-name{color:white;font-weight:800;font-size:14px;margin-bottom:2px;}
+    .pack-price{color:#a855f7;font-weight:700;font-size:13px;margin-bottom:6px;}
+    .pack-contents{font-size:11px;color:#64748b;}
+    .tip-box{background:linear-gradient(135deg,#0f0a1e,#1e0a3c);border:1px solid #4c1d9533;border-radius:12px;padding:16px 20px;margin:16px 0;}
+    .tip-box .tip-label{color:#a855f7;font-size:10px;font-weight:800;letter-spacing:2px;margin-bottom:6px;}
+    .tip-box p{margin:0;font-size:13px;}
+    .battle-flow{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:20px;margin:16px 0;}
+    .flow-step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start;}
+    .flow-num{width:28px;height:28px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:white;flex-shrink:0;margin-top:1px;}
+    .flow-text{font-size:13px;color:#94a3b8;}
+    .flow-text strong{color:white;}
+    .energy-bar{display:flex;gap:6px;margin:12px 0;}
+    .energy-pip{width:28px;height:28px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+    .action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0;}
+    .action-box{border-radius:10px;padding:12px;text-align:center;}
+    .action-icon{font-size:22px;margin-bottom:4px;}
+    .action-name{font-weight:700;font-size:12px;margin-bottom:2px;}
+    .action-cost{font-size:10px;opacity:.7;}
+    footer{border-top:1px solid #ffffff08;padding:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:40px;}
+    .footer-links a{color:#1e293b;text-decoration:none;font-size:12px;margin-left:20px;}
+    .footer-links a:hover{color:#a855f7;}
+    @media(max-width:600px){.action-grid{grid-template-columns:1fr 1fr;} nav{padding:12px 16px;} .nav-links .hide{display:none;}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-brand">⚡ VOID CARDS</a>
+  <div class="nav-links">
+    <a href="/cards.html" class="hide">All Cards</a>
+    <a href="/about.html" class="hide">About</a>
+    <a href="/" class="nav-play">Play Free →</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <div class="eyebrow">COMMANDER HANDBOOK</div>
+    <div class="page-title">HOW TO PLAY</div>
+    <div class="page-sub">Everything you need to become a Void Cards champion</div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">📖 CONTENTS</div>
+    <a href="#basics">🌌 The Basics</a>
+    <a href="#rarities">⭐ Card Rarities</a>
+    <a href="#stats">📊 Card Stats Explained</a>
+    <a href="#battle">⚔️ Battle System</a>
+    <a href="#packs">📦 Pack Types</a>
+    <a href="#fusion">✨ Card Fusion</a>
+    <a href="#modes">🎮 Game Modes</a>
+    <a href="#quests">🎯 Quests & Rewards</a>
+    <a href="#tips">💡 Tips for New Players</a>
+  </div>
+
+  <div class="section" id="basics">
+    <div class="section-title">🌌 The Basics</div>
+    <p>Void Cards is a free-to-play browser card collecting and battle game set in a sci-fi universe. You collect cards featuring Aliens, Robots, Knights, Mages, Dragons, and Beasts — each with unique stats, abilities, and lore.</p>
+    <p>Your goal is to build a powerful collection, battle enemies to earn gems, complete daily quests, and climb the ranks as a Commander. There are 100 unique cards in Series 1, spanning five rarity tiers from Common to Legendary.</p>
+    <p>All progress is saved automatically to the cloud when you create an account — so you can continue your collection from any device.</p>
+  </div>
+
+  <div class="section" id="rarities">
+    <div class="section-title">⭐ Card Rarities</div>
+    <p>Every card has a rarity that determines its overall power level, stat ceiling, and pull rate from packs. Higher rarity cards have stronger base stats and more dramatic special abilities.</p>
+    <div class="card-row">
+      <div class="rarity-card" style="background:linear-gradient(135deg,#1c1008,#2d1a00);border-color:#f59e0b55">
+        <div class="rarity-name" style="color:#f59e0b">Legendary</div>
+        <div class="rarity-stars" style="color:#f59e0b">★★★★★</div>
+        <div class="rarity-desc">The rarest and most powerful cards. Only 6 exist in Series 1. Devastating stats and universe-ending abilities. Guaranteed every 20 packs.</div>
+      </div>
+      <div class="rarity-card" style="background:linear-gradient(135deg,#2e1065,#1a0a3c);border-color:#a855f755">
+        <div class="rarity-name" style="color:#a855f7">Epic</div>
+        <div class="rarity-stars" style="color:#a855f7">★★★★☆</div>
+        <div class="rarity-desc">Powerful cards with high multipliers and impactful specials. Strong enough to carry a team. 15 Epic cards in Series 1.</div>
+      </div>
+      <div class="rarity-card" style="background:linear-gradient(135deg,#172554,#0f2040);border-color:#3b82f655">
+        <div class="rarity-name" style="color:#3b82f6">Rare</div>
+        <div class="rarity-stars" style="color:#3b82f6">★★★☆☆</div>
+        <div class="rarity-desc">Well-rounded cards with solid stats across the board. The backbone of most decks. 19 Rare cards in Series 1.</div>
+      </div>
+      <div class="rarity-card" style="background:linear-gradient(135deg,#052e16,#0a1a0a);border-color:#22c55e55">
+        <div class="rarity-name" style="color:#22c55e">Uncommon</div>
+        <div class="rarity-stars" style="color:#22c55e">★★☆☆☆</div>
+        <div class="rarity-desc">Better than average with clear strengths. Good for early battles and team building. 20 Uncommon cards in Series 1.</div>
+      </div>
+      <div class="rarity-card" style="background:linear-gradient(135deg,#0f172a,#1e293b);border-color:#94a3b855">
+        <div class="rarity-name" style="color:#94a3b8">Common</div>
+        <div class="rarity-stars" style="color:#94a3b8">★☆☆☆☆</div>
+        <div class="rarity-desc">The foundation of any collection. Each Common has its own personality, lore, and niche use. 40 Common cards in Series 1.</div>
+      </div>
+    </div>
+    <div class="tip-box">
+      <div class="tip-label">💡 FOIL CARDS</div>
+      <p>Fuse three copies of the same card to forge a Foil version. Foil cards have +20% to all stats and a golden shimmer effect. They are more powerful than any pulled card of the same type.</p>
+    </div>
+  </div>
+
+  <div class="section" id="stats">
+    <div class="section-title">📊 Card Stats Explained</div>
+    <p>Every card has four core stats that determine its performance in battle.</p>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label" style="color:#f97316">⚔️ POWER</div>
+        <div class="stat-name">Attack Damage</div>
+        <div class="stat-desc">Determines how much damage your attacks deal. Higher Power = harder hits on both normal and special attacks.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" style="color:#22c55e">❤️ HP</div>
+        <div class="stat-name">Hit Points</div>
+        <div class="stat-desc">How much damage your card can take before being knocked out. When HP hits zero, the card is defeated.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" style="color:#3b82f6">🛡️ DEFENSE</div>
+        <div class="stat-name">Damage Reduction</div>
+        <div class="stat-desc">Reduces incoming damage. Especially powerful when you choose the Defend action — your full Defense stat blocks the next hit.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label" style="color:#a855f7">✨ SPECIAL</div>
+        <div class="stat-name">Special Multiplier</div>
+        <div class="stat-desc">Each card has a unique special ability with its own damage multiplier. Higher multiplier = stronger specials.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="battle">
+    <div class="section-title">⚔️ Battle System</div>
+    <p>Void Cards uses a turn-based battle system with an Energy mechanic that adds strategic depth. You can't just spam your strongest move — you have to manage energy carefully.</p>
+
+    <p><strong style="color:white">Energy System</strong><br/>
+    You start each battle with 1 energy and gain +1 energy at the start of each of your turns, up to a maximum of 5. Different actions cost different amounts:</p>
+
+    <div class="action-grid">
+      <div class="action-box" style="background:#1a0a00;border:1px solid #f9731633">
+        <div class="action-icon">⚔️</div>
+        <div class="action-name" style="color:#f97316">Attack</div>
+        <div class="action-cost" style="color:#64748b">Costs 1 ⚡ Energy</div>
+      </div>
+      <div class="action-box" style="background:#1a0a2e;border:1px solid #a855f733">
+        <div class="action-icon">✨</div>
+        <div class="action-name" style="color:#a855f7">Special</div>
+        <div class="action-cost" style="color:#64748b">Costs 3 ⚡ Energy</div>
+      </div>
+      <div class="action-box" style="background:#0a1428;border:1px solid #3b82f633">
+        <div class="action-icon">🛡️</div>
+        <div class="action-name" style="color:#3b82f6">Defend</div>
+        <div class="action-cost" style="color:#22c55e">Free + gains 1 ⚡</div>
+      </div>
+    </div>
+
+    <div class="battle-flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text"><strong>Choose your action</strong> — Attack for quick damage, Special for big damage when you have 3+ energy, or Defend to block the next hit and gain energy.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text"><strong>Enemy responds</strong> — The enemy card automatically attacks after your turn. It has a 25% chance to use its special ability.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text"><strong>Energy regenerates</strong> — You gain +1 energy at the start of each of your turns. Plan ahead — save up for a big Special to turn a fight.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text"><strong>Reduce enemy HP to zero</strong> — Winning earns you +150 💎 gems and +120 XP. Losing still earns +40 XP. You always grow stronger.</div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-label">💡 PRO TIP</div>
+      <p>If you're low on HP and facing a strong enemy, use Defend to block an incoming hit and buy time to build energy for a Special. Defend is free and gives you +1 energy — it's never wasted.</p>
+    </div>
+  </div>
+
+  <div class="section" id="packs">
+    <div class="section-title">📦 Pack Types</div>
+    <p>Open packs to add cards to your collection. Different packs contain different rarity guarantees. A free Starter Pack is available every 24 hours.</p>
+    <div class="pack-row">
+      <div class="pack-box">
+        <div class="pack-icon">🌌</div>
+        <div class="pack-name">Starter Pack</div>
+        <div class="pack-price">100 💎 (or Free daily)</div>
+        <div class="pack-contents">3 cards · Guaranteed 1 Uncommon or better</div>
+      </div>
+      <div class="pack-box" style="border-color:#3b82f633">
+        <div class="pack-icon">🪐</div>
+        <div class="pack-name" style="color:#3b82f6">Nebula Pack</div>
+        <div class="pack-price" style="color:#3b82f6">250 💎</div>
+        <div class="pack-contents">5 cards · Guaranteed 1 Rare or better</div>
+      </div>
+      <div class="pack-box" style="border-color:#a855f733">
+        <div class="pack-icon">⚡</div>
+        <div class="pack-name" style="color:#a855f7">Void Pack</div>
+        <div class="pack-price" style="color:#a855f7">600 💎</div>
+        <div class="pack-contents">5 cards · Guaranteed 1 Epic or better</div>
+      </div>
+      <div class="pack-box" style="border-color:#f59e0b33">
+        <div class="pack-icon">🌟</div>
+        <div class="pack-name" style="color:#f59e0b">Legendary Pack</div>
+        <div class="pack-price" style="color:#f59e0b">1500 💎</div>
+        <div class="pack-contents">5 cards · Guaranteed 1 Legendary</div>
+      </div>
+    </div>
+    <div class="tip-box">
+      <div class="tip-label">🌟 PITY TIMER</div>
+      <p>If you open 20 packs without pulling a Legendary, the game guarantees a free Legendary card on your next pack — no matter which pack type you open. The counter resets after every Legendary pull.</p>
+    </div>
+  </div>
+
+  <div class="section" id="fusion">
+    <div class="section-title">✨ Card Fusion</div>
+    <p>Card Fusion lets you combine three identical copies of a card to forge a single Foil version. Foil cards have all the same stats as the original but with a 20% boost across Power, Defense, and HP.</p>
+    <p>Foil cards also have a distinctive golden shimmer animation and a special rainbow sweep effect that makes them stand out in your collection. They are the strongest cards you can hold.</p>
+    <p>To fuse, go to the <strong style="color:white">Fusion</strong> option in the menu, select a card you own three copies of, and confirm. The three copies are consumed and the Foil card is added to your binder.</p>
+    <div class="tip-box">
+      <div class="tip-label">💡 STRATEGY</div>
+      <p>Don't sell every duplicate you get. If you're pulling a lot of one card, hold onto them — three copies becomes a Foil which is often worth more than selling all three separately.</p>
+    </div>
+  </div>
+
+  <div class="section" id="modes">
+    <div class="section-title">🎮 Game Modes</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">⚔️</div>
+        <div class="stat-name">1v1 Battle</div>
+        <div class="stat-desc">Pick one card and fight a randomly selected enemy. Fast, good for farming wins and completing quests. Earn 150 💎 per win.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">👥</div>
+        <div class="stat-name">3v3 Team Battle</div>
+        <div class="stat-desc">Select 3 cards for your team. Sub them in and out mid-battle while they still have HP. Win 300 💎. Use a saved deck for quick setup.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">🃏</div>
+        <div class="stat-name">Deck Battle</div>
+        <div class="stat-desc">Build a full deck and fight through a gauntlet of enemy cards. Cards have passive abilities that activate in battle. Win 500 💎.</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">🏛️</div>
+        <div class="stat-name">Auction House</div>
+        <div class="stat-desc">Bid on cards listed by other commanders. Watch out for rival bidders. Win auctions to add cards to your collection without opening packs.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="quests">
+    <div class="section-title">🎯 Quests & Rewards</div>
+    <p>Each day you get 5 randomly assigned quests drawn from a pool of 25. Complete them to earn bonus gems. The quest pool resets every midnight and the same 5 quests are active for the whole day.</p>
+    <p>Quest types include: winning battles, opening packs, collecting cards, pulling rare cards, placing auction bids, selling cards, fusing cards, spending gems, and winning team and deck battles.</p>
+    <p>In addition to quests, you can claim a <strong style="color:white">Daily Gems</strong> bonus each day. The amount scales with your login streak — 150 💎 normally, 200 💎 after 3 consecutive days, and 300 💎 after a full week.</p>
+    <div class="tip-box">
+      <div class="tip-label">💡 DAILY ROUTINE</div>
+      <p>Log in every day, claim your daily gems, open your free Starter Pack, then check your quests and knock out whichever ones align with what you planned to do anyway. Takes about 5 minutes and keeps your streak alive.</p>
+    </div>
+  </div>
+
+  <div class="section" id="tips">
+    <div class="section-title">💡 Tips for New Players</div>
+    <p><strong style="color:white">1. Claim your free daily pack every day.</strong> It costs nothing, gives you 3 cards, and guarantees at least one Uncommon. Over a week that's 21 free cards.</p>
+    <p><strong style="color:white">2. Don't sell everything.</strong> Hold duplicate cards until you have three — then fuse them into a stronger Foil version instead of selling for a few gems.</p>
+    <p><strong style="color:white">3. Use Defend wisely.</strong> The Defend action is free, blocks the next hit with your full Defense stat, AND gives you +1 energy. When in doubt, Defend.</p>
+    <p><strong style="color:white">4. Save gems for Void Packs.</strong> The Starter Pack is decent but the Void Pack (600 💎) guarantees an Epic or better every time. Saving up is almost always better than spending early.</p>
+    <p><strong style="color:white">5. Check the Auction House.</strong> Sometimes you can win cards at auction for less than the equivalent pack cost. It's worth bidding on high-rarity cards you're targeting.</p>
+    <p><strong style="color:white">6. Do the Card of the Day battle.</strong> Each day a featured card is highlighted — fight with it for bonus XP toward leveling your Commander rank.</p>
+    <p><strong style="color:white">7. Build a deck for the big rewards.</strong> Deck Battle pays 500 💎 per win — more than any other mode. Building a solid deck and learning the enemy patterns is worth the investment.</p>
+  </div>
+</div>
+
+<footer>
+  <div style="color:#1e293b;font-size:11px">Void Cards · Series 1 · © 2026</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/cards.html">All Cards</a>
+    <a href="/about.html">About</a>
+    <a href="/privacy.html">Privacy</a>
+  </div>
+</footer>
+</body>
+</html>
