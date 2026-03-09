@@ -8,6 +8,14 @@
   <meta name="apple-mobile-web-app-title" content="Void Cards"/>
   <meta name="description" content="Void Cards is a free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards, battle enemies, fuse cards, and compete in the auction house."/>
   <title>Void Cards — Galactic Card Battle Game</title>
+  <link rel="canonical" href="https://voidcards.org/"/>
+  <meta property="og:title" content="Void Cards — Galactic Card Battle Game"/>
+  <meta property="og:description" content="Free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards, battle enemies, fuse cards, and dominate the auction house. No download required."/>
+  <meta property="og:url" content="https://voidcards.org/"/>
+  <meta property="og:type" content="website"/>
+  <meta name="keywords" content="card game, browser game, free card game, sci-fi card game, card collecting, battle game, void cards"/>
+  <meta name="robots" content="index, follow"/>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Void Cards","url":"https://voidcards.org","description":"Free browser-based sci-fi card collecting and battle game with 100+ unique cards.","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9841213051292188" crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,6 +25,21 @@
 </head>
 <body>
   <div id="root"></div>
+  <noscript>
+    <div style="background:#020617;color:white;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;">
+      <div style="font-size:64px;margin-bottom:16px;">🌌</div>
+      <h1 style="font-size:32px;font-weight:900;margin-bottom:8px;">Void Cards</h1>
+      <p style="color:#a855f7;letter-spacing:4px;font-size:11px;margin-bottom:16px;">GALACTIC CARD BATTLE GAME</p>
+      <p style="color:#94a3b8;max-width:480px;line-height:1.8;margin-bottom:24px;">Void Cards is a free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards across 6 types — Alien, Robot, Knight, Mage, Dragon, and Beast. Battle enemies, fuse cards into powerful Foils, and compete in the Auction House. No download required.</p>
+      <p style="color:#475569;font-size:13px;">JavaScript is required to play. Please enable JavaScript in your browser.</p>
+      <div style="margin-top:32px;color:#334155;font-size:12px;">
+        <a href="/about.html" style="color:#a855f7;margin:0 12px;">About</a>
+        <a href="/guide.html" style="color:#a855f7;margin:0 12px;">How to Play</a>
+        <a href="/cards.html" style="color:#a855f7;margin:0 12px;">All Cards</a>
+        <a href="/privacy.html" style="color:#a855f7;margin:0 12px;">Privacy</a>
+      </div>
+    </div>
+  </noscript>
 
   <div id="loader" style="position:fixed;inset:0;background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',system-ui,sans-serif">
     <div style="font-size:64px;margin-bottom:16px;animation:loaderFloat 2s ease-in-out infinite">🌌</div>
@@ -980,7 +1003,7 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level }
           <span style={{color:"#334155",fontSize:mini?6:7,letterSpacing:.5}}>{card.type}</span>
         </div>
         {/* Art */}
-        <div style={{borderRadius:7,overflow:"hidden",marginBottom:mini?3:4,flexShrink:0,position:"relative",zIndex:3,width:imgW,lineHeight:0,alignSelf:"center"}}>
+        <div style={{borderRadius:7,overflow:"hidden",marginBottom:mini?3:4,flexShrink:0,position:"relative",zIndex:3,width:imgW,height:imgH,lineHeight:0,alignSelf:"center"}}>
           <CardIllustration card={card} w={imgW} h={imgH}/>
           <div style={{position:"absolute",top:0,left:0,right:0,height:"35%",background:"linear-gradient(180deg,rgba(255,255,255,.05),transparent)",pointerEvents:"none"}}/>
         </div>
@@ -1339,11 +1362,11 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
               {type:"defend", icon:"🛡", label:"Defend",            cost:0, sub:"block "+effD+" dmg +1⚡",                            color:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
             ].map(b=>{
               const canAfford=energy>=b.cost;
-              return <button key={b.type} onClick={()=>action(b.type)} disabled={animating} style={{background:canAfford?b.color:"#1e293b",color:canAfford?"white":"#475569",border:`1px solid ${canAfford?"transparent":"#334155"}`,borderRadius:10,padding:"10px 4px",fontWeight:700,fontSize:11,cursor:animating||!canAfford?"not-allowed":"pointer",opacity:animating?.6:1,transition:"all .15s",position:"relative"}}>
-                <div style={{fontSize:17,marginBottom:1}}>{b.icon}</div>
-                <div style={{fontSize:10,lineHeight:1.2,marginBottom:2}}>{b.label}</div>
+              return <button key={b.type} onClick={()=>action(b.type)} disabled={animating} style={{background:canAfford?b.color:"#1e293b",color:canAfford?"white":"#475569",border:`1px solid ${canAfford?"transparent":"#334155"}`,borderRadius:12,padding:"14px 6px",fontWeight:700,fontSize:12,cursor:animating||!canAfford?"not-allowed":"pointer",opacity:animating?.6:1,transition:"all .15s",position:"relative",minHeight:76}}>
+                <div style={{fontSize:20,marginBottom:3}}>{b.icon}</div>
+                <div style={{fontSize:11,lineHeight:1.2,marginBottom:3}}>{b.label}</div>
                 <div style={{color:canAfford?"rgba(255,255,255,.55)":"#334155",fontSize:9}}>{b.sub}</div>
-                <div style={{position:"absolute",top:4,right:5,background:canAfford?"#ffffff22":"#334155",borderRadius:4,padding:"1px 4px",fontSize:8,fontWeight:800,color:canAfford?"#fff":"#475569"}}>{b.cost===0?"free":`${b.cost}⚡`}</div>
+                <div style={{position:"absolute",top:5,right:6,background:canAfford?"#ffffff22":"#334155",borderRadius:4,padding:"2px 5px",fontSize:9,fontWeight:800,color:canAfford?"#fff":"#475569"}}>{b.cost===0?"free":`${b.cost}⚡`}</div>
               </button>;
             })}
           </div>
@@ -1358,7 +1381,10 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
         {phase==="lost"&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:18}}>
           <div style={{fontSize:44,marginBottom:6}}>💀</div>
           <div style={{color:"#ef4444",fontWeight:800,fontSize:18,marginBottom:14}}>Defeated!</div>
-          <button onClick={onClose} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px 28px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={onClose} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
+            <button onClick={()=>{setPhase("pick");setTeam([]);setActiveIdx(0);setEnemyIdx(0);setHps({});setEnemyHps({});setEnergy(1);setLog([{text:"⚔️ 3v3 Team Battle — pick your team!",type:"system"}]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
+          </div>
         </div>}
       </div>
     </Modal>
@@ -1555,6 +1581,8 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,savedDecks=[]}
         const next=team.findIndex((c,i)=>i!==curA&&(newHps[hpKey(c)]??0)>0);
         if(next===-1){addLog("💀 Team defeated.","system");SFX.play("lose");setPhase("lost");}
         else{setActiveIdx(next);addLog(`🔄 ${team[next].name} steps in!`,"defend");}
+      } else {
+        setEnergy(e=>Math.min(MAX_ENERGY,e+1));
       }
       setAnimating(false);
     },900);
@@ -1583,7 +1611,6 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,savedDecks=[]}
         if(nextE>=3){SFX.play("teamWin");addLog("🏆 Enemy team wiped! Victory!","system");setPhase("won");setAnimating(false);}
         else{setEnemyIdx(nextE);addLog(`⚠️ ${enemyTeam[nextE].name} enters!`,"system");setAnimating(false);}
       }else{
-        setEnergy(e=>Math.min(MAX_ENERGY,e+1));
         setAnimating(false);
         enemyTurn(hps,activeIdx);
       }
@@ -1720,7 +1747,10 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,savedDecks=[]}
           <div style={{fontSize:44,marginBottom:6}}>🏆</div>
           <div style={{color:"#22c55e",fontWeight:800,fontSize:18,marginBottom:3}}>Team Victory!</div>
           <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>+300 💎 team battle bonus!</div>
-          <button onClick={()=>{onTeamWin?.();onClose();}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:10,padding:"12px 28px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Claim Reward 🏆</button>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={()=>{onTeamWin?.();onClose();}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Claim Reward 🏆</button>
+            <button onClick={()=>{setPhase("pick");setTeam([]);setActiveIdx(0);setEnemyIdx(0);setHps({});setEnemyHps({});setEnergy(1);setLog([{text:"⚔️ 3v3 Team Battle — pick your team!",type:"system"}]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,fontSize:14,cursor:"pointer"}}>⚔️ Again</button>
+          </div>
         </div>}
         {phase==="lost"&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:18}}>
           <div style={{fontSize:44,marginBottom:6}}>💀</div>
@@ -2016,7 +2046,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
 }
 
 // ── 5v5 Deck Battle ───────────────────────────────────────────────────────────
-function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}) {
+function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose, savedDecks=[]}) {
   const [phase,setPhase]=useState("pick"); // pick|battle|won|lost
   const [deck,setDeck]=useState([]);
   const [enemyDeck]=useState(()=>{
@@ -2110,7 +2140,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
     return -1;
   };
 
-  const enemyTurn=(curHps,curPIdx,d)=>{
+  const enemyTurn=(curHps,curEHps,curPIdx,d)=>{
     setAnimating(true);
     setTimeout(()=>{
       const ec=enemyDeck[eIdx],pc=d[curPIdx];
@@ -2135,7 +2165,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
       setHps(newHps);showDmg("player",dmg,false);
       addLog(`⚔️ ${ec.name} hits ${pc.name}: ${dmg} dmg`,"attack");SFX.play("hit");
       // Apply DoT
-      const {newHps:h2,newEHps:e2}=applyDoT(newHps,eHps,statusEffects,curPIdx,eIdx,d);
+      const {newHps:h2,newEHps:e2}=applyDoT(newHps,curEHps,statusEffects,curPIdx,eIdx,d);
       setHps(h2);setEHps(e2);
       setTimeout(()=>{
         if(newH<=0){
@@ -2183,7 +2213,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
     addLog(`${logType==="special"?"✨":"⚔️"} ${pc.name}${type==="special"?` — ${pc.special}`:""}: ${dmg} dmg`,logType);
     // DoT
     const {newHps:h2,newEHps:e2}=applyDoT(hps,{...eHps,[eIdx]:newEH},statusEffects,pIdx,eIdx,deck);
-    setHps(h2);setEHps({...e2,[eIdx]:newEH});
+    setHps(h2);setEHps(e2);
     setTimeout(()=>{
       if(newEH<=0){
         addLog(`✅ ${ec.name} defeated!`,"system");SFX.play("coin");
@@ -2198,7 +2228,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
           }
           setAnimating(false);
         }
-      }else{enemyTurn(h2,pIdx,deck);}
+      }else{enemyTurn(h2,e2,pIdx,deck);}
     },500);
   };
 
@@ -2215,6 +2245,21 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
             Build a deck of <span style={{color:"white",fontWeight:700}}>5 cards</span>. Cards fight in order — when one falls, the next steps in. Defeat all 5 enemy cards to win. <span style={{color:"#f59e0b",fontWeight:600}}>+500 💎</span>
           </div>
         </div>
+        {savedDecks&&savedDecks.length>0&&<div style={{marginBottom:16}}>
+          <div style={{color:"#a855f7",fontWeight:700,fontSize:12,marginBottom:8}}>📋 USE SAVED DECK</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {savedDecks.filter(d=>d.cards&&d.cards.length>=5).map((d,i)=>(
+              <button key={i} onClick={()=>{
+                const deckCards=d.cards.slice(0,5).map(dc=>collection.find(c=>c.id===dc.id&&!!c.foil===!!dc.foil)||collection.find(c=>c.id===dc.id)).filter(Boolean);
+                if(deckCards.length>=5){setDeck(deckCards.slice(0,5));}
+                else{alert("Need 5 cards from this deck in your collection.");}
+              }} style={{background:"linear-gradient(135deg,#1e0a3c,#2e1065)",border:"1px solid #4c1d9555",borderRadius:10,padding:"10px 14px",color:"white",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontWeight:700,fontSize:13}}>🃏 {d.name}</span>
+                <span style={{color:"#64748b",fontSize:11}}>{d.cards.length} cards →</span>
+              </button>
+            ))}
+          </div>
+        </div>}
         <div style={{color:"white",fontWeight:700,marginBottom:10}}>Your Deck ({deck.length}/5):</div>
         {deck.length===0
           ?<div style={{color:"#475569",fontSize:12,padding:12,background:"#1e293b",borderRadius:10,marginBottom:14,textAlign:"center"}}>Tap cards below to build your deck</div>
@@ -2340,12 +2385,18 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose}
           <div style={{fontSize:40,marginBottom:4}}>🏆</div>
           <div style={{color:"#22c55e",fontWeight:800,fontSize:17,marginBottom:2}}>Deck Victory!</div>
           <div style={{color:"#64748b",fontSize:12,marginBottom:12}}>+500 💎 reward!</div>
-          <button onClick={()=>{onWin();onClose();}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:10,padding:"11px 24px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Claim 🏆</button>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={()=>{onWin();onClose();}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Claim 🏆</button>
+            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(1);setStatusEffects({});setLog([]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Again</button>
+          </div>
         </div>}
         {phase==="lost"&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:16}}>
           <div style={{fontSize:40,marginBottom:4}}>💀</div>
           <div style={{color:"#ef4444",fontWeight:800,fontSize:17,marginBottom:12}}>Deck Defeated!</div>
-          <button onClick={()=>{onLose();onClose();}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"11px 24px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button onClick={()=>{onLose();onClose();}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"11px 18px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
+            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(1);setStatusEffects({});setLog([]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
+          </div>
         </div>}
       </div>
     </Modal>
@@ -2826,7 +2877,24 @@ function App() {
   const [muted,setMuted]           = useState(false);
 
   const [tab,setTab]               = useState("home");
-  const [auctions,setAuctions]     = useState(AUCTION_INIT);
+  const [auctions,setAuctions]     = useState(()=>{
+    try{
+      const saved=S.get("auctions",null);
+      // Only restore if saved auctions have time remaining and aren't too old
+      if(saved&&Array.isArray(saved)&&saved.length>0){
+        // Restore only active or player-bid auctions; replace expired bot-only auctions with fresh ones
+        const restored=saved.map(a=>{
+          const fresh=AUCTION_INIT.find(f=>f.id===a.id);
+          // Keep if player has a bid on it, or if it still has time
+          if(a.playerBid) return a;
+          if(a.secsLeft>0) return a;
+          return fresh||a;
+        });
+        return restored;
+      }
+    }catch(e){}
+    return AUCTION_INIT;
+  });
   const [auctionLog,setAuctionLog] = useState([]);
   const [wonAuction,setWonAuction] = useState(null); // card just won
   const [toast,setToast]           = useState(null);
@@ -2890,13 +2958,13 @@ function App() {
         }
         // Auction ends
         if(newSecs<=0){
-          if(a.playerBid){
-            // Player won!
+          if(a.playerBid&&!a.settled){
+            // Player won! Gems already deducted at bid time — just give the card
             setWonAuction(a.card);
             setCollection(prev=>[...prev,a.card]);
-            setCoins(c=>c-a.price);
             notify(`🏆 Won auction: ${a.card.name}!`,"ach");
             SFX.play("achievement");
+            return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true};
           }
         }
         return {...a,secsLeft:newSecs,price:newPrice,bids:newBids};
@@ -2905,6 +2973,7 @@ function App() {
     return ()=>clearInterval(t);
   },[tab]);
   useEffect(()=>S.set("streak",streak),[streak]);
+  useEffect(()=>S.set("auctions",auctions),[auctions]);
   useEffect(()=>S.set("decks",decks),[decks]);
   useEffect(()=>S.set("quests",quests),[quests]);
   useEffect(()=>S.set("questProgress",questProg),[questProg]);
@@ -2931,11 +3000,12 @@ function App() {
     if(lastLogin===today)return;
     const yesterday=new Date(Date.now()-86400000).toDateString();
     const ns=lastLogin===yesterday?streak+1:1;
-    setStreak(ns);setLastLogin(today);setDailyGems(false);
+    setStreak(ns);setLastLogin(today);setDailyGems("");S.set("dailyGems","");
     S.set("lastLogin",today);S.set("streak",ns);
     // Seed shuffle by date so same day always gives same 5 quests
     const dateNum=parseInt(new Date().toISOString().slice(0,10).replace(/-/g,""));
-    const seeded=[...DAILY_QUESTS_POOL].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
+    const dailyPool=DAILY_QUESTS_POOL.filter(q=>q.target<=5);
+    const seeded=[...dailyPool].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
     setQuests(seeded);setQuestProg({});
     S.set("quests",seeded);S.set("questProgress",{});
   },[]);
@@ -3428,10 +3498,11 @@ function App() {
 
           {/* Guaranteed Legendary tracker + collection progress */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-            <div style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b33",borderRadius:12,padding:12,textAlign:"center"}}>
+            <div style={{background:packsSinceLeg>=15?"linear-gradient(135deg,#2d1a00,#4a2800)":"linear-gradient(135deg,#1c1008,#2d1a00)",border:packsSinceLeg>=15?"1px solid #f59e0b88":"1px solid #f59e0b33",borderRadius:12,padding:12,textAlign:"center",boxShadow:packsSinceLeg>=15?"0 0 20px #f59e0b33":"none",animation:packsSinceLeg>=18?"pulse 1.5s ease-in-out infinite":"none"}}>
               <div style={{color:"#f59e0b",fontSize:9,fontWeight:700,letterSpacing:1,marginBottom:4}}>🌟 GUARANTEED LEGENDARY</div>
-              <div style={{color:"#f59e0b",fontWeight:900,fontSize:28,lineHeight:1,marginBottom:2}}>{20-packsSinceLeg}</div>
-              <div style={{color:"#475569",fontSize:9}}>packs remaining</div>
+              <div style={{color:"#f59e0b",fontWeight:900,fontSize:packsSinceLeg>=15?34:28,lineHeight:1,marginBottom:2}}>{20-packsSinceLeg}</div>
+              <div style={{color:packsSinceLeg>=15?"#f59e0b":"#475569",fontSize:9}}>{packsSinceLeg>=15?"⚡ ALMOST THERE!":"packs remaining"}</div>
+              {packsSinceLeg>=15&&<div style={{color:"#f59e0b",fontSize:8,marginTop:3,fontWeight:700}}>Open a pack now!</div>}
             </div>
             <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #7c3aed33",borderRadius:12,padding:12,textAlign:"center"}}>
               <div style={{color:"#a855f7",fontSize:9,fontWeight:700,letterSpacing:1,marginBottom:4}}>📦 COLLECTION</div>
@@ -3482,7 +3553,7 @@ function App() {
           {unique.length>=5&&<button onClick={()=>{SFX.play("click");setDeckBattle(true);}} style={{width:"100%",background:"linear-gradient(135deg,#7f1d1d,#dc2626)",color:"white",border:"none",borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             ⚔️ 5v5 Deck Battle <span style={{background:"rgba(255,255,255,.2)",borderRadius:6,padding:"2px 8px",fontSize:11}}>+500 💎</span>
           </button>}
-          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>1v1 — Pick a card and fight! Win = +150💎 + XP</div>
+          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>1v1 — Pick a card and fight! Win = +150💎 + XP · <span style={{color:"#a855f7"}}>Save decks in the Binder tab to unlock 3v3 &amp; 5v5!</span></div>
           {!unique.length
             ?<div style={{textAlign:"center",color:"#334155",paddingTop:40}}><div style={{fontSize:48}}>⚔️</div><div style={{marginTop:12}}>Get cards from the Shop first!</div></div>
             :<div style={{display:"flex",flexWrap:"wrap",gap:12}}>
@@ -3494,7 +3565,21 @@ function App() {
               ))}
             </div>
           }
-          {decks.length>0&&<><div style={{color:"white",fontSize:14,fontWeight:700,marginTop:20,marginBottom:10}}>🃏 Saved Decks</div>{decks.map((d,i)=><div key={i} style={{background:"#1e293b",borderRadius:10,padding:12,marginBottom:10}}><div style={{color:"white",fontWeight:700,marginBottom:8}}>{d.name}</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{d.cards.map((c,j)=><Card key={j} card={c} mini level={1}/>)}</div></div>)}</>}
+          {decks.length>0&&<>
+            <div style={{color:"white",fontSize:14,fontWeight:700,marginTop:20,marginBottom:10}}>🃏 Saved Decks</div>
+            {decks.map((d,i)=>(
+              <div key={i} style={{background:"#1e293b",borderRadius:10,padding:12,marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{color:"white",fontWeight:700}}>{d.name} <span style={{color:"#475569",fontSize:11}}>({d.cards.length} cards)</span></div>
+                  <div style={{display:"flex",gap:6}}>
+                    {d.cards.length>=3&&<button onClick={()=>{SFX.play("click");setTeamBattle(true);}} style={{background:"linear-gradient(135deg,#6d28d9,#a855f7)",color:"white",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>3v3 ▶</button>}
+                    {d.cards.length>=5&&<button onClick={()=>{SFX.play("click");setDeckBattle(true);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>5v5 ▶</button>}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{d.cards.map((c,j)=><Card key={j} card={c} mini level={1}/>)}</div>
+              </div>
+            ))}
+          </>}
         </div>}
 
         {/* FUSION */}
@@ -3796,7 +3881,7 @@ function App() {
       {sellCard&&<SellModal card={sellCard} onClose={()=>setSellCard(null)} onSell={doSell}/>}
       {deckBuilder&&<DeckBuilderModal collection={unique} cardLevels={cardLevels} onSave={d=>{SFX.play("achievement");setDecks(p=>[...p,d]);setDeckBuilder(false);notify(`Deck "${d.name}" saved!`);checkAch({collection,wins,coins,streak,cardLevels,decks:[...decks,d],totalSold});}} onClose={()=>setDeckBuilder(false)}/>}
       {dailyShop&&<DailyShopModal collection={collection} coins={coins} packsSinceLeg={packsSinceLeg} onBuyPack={p=>{buyPack(p);setDailyShop(false);}} onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");setDailyShop(false);}} onClose={()=>setDailyShop(false)}/>}
-      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});}} onLose={()=>{onLoss(null);}}/>}
+      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} savedDecks={decks} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});}} onLose={()=>{onLoss(null);}}/>}
       {fusionModal&&<FusionModal collection={collection} cardLevels={cardLevels} onFuse={(foilCard,orig)=>{
         let removed=0;
         const newColl=collection.filter(c=>{ if(c.id===orig.id&&!c.foil&&removed<3){removed++;return false;} return true; });
@@ -3832,7 +3917,7 @@ function App() {
           </div>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>{setBattleResult(null);setBattleCard(null);}} style={{flex:1,background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>← Back</button>
-            <button onClick={()=>{setBattleResult(null);}} style={{flex:1,background:battleResult.won?"linear-gradient(135deg,#15803d,#22c55e)":"linear-gradient(135deg,#991b1b,#ef4444)",color:"white",border:"none",borderRadius:10,padding:"12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Again</button>
+            <button onClick={()=>{const _rc=battleResult.cardName;setBattleResult(null);const _c=ALL_CARDS.find(x=>x.name===_rc);if(_c)setBattleCard(_c);}} style={{flex:1,background:battleResult.won?"linear-gradient(135deg,#15803d,#22c55e)":"linear-gradient(135deg,#991b1b,#ef4444)",color:"white",border:"none",borderRadius:10,padding:"12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Again</button>
           </div>
         </div>
       </div>}
