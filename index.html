@@ -1382,7 +1382,7 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
           <div style={{fontSize:44,marginBottom:6}}>💀</div>
           <div style={{color:"#ef4444",fontWeight:800,fontSize:18,marginBottom:14}}>Defeated!</div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-            <button onClick={onClose} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
+            <button onClick={()=>{onLose?.();onClose();}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
             <button onClick={()=>{setPhase("pick");setTeam([]);setActiveIdx(0);setEnemyIdx(0);setHps({});setEnemyHps({});setEnergy(1);setLog([{text:"⚔️ 3v3 Team Battle — pick your team!",type:"system"}]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
           </div>
         </div>}
@@ -1523,7 +1523,7 @@ function FusionModal({collection,cardLevels,onFuse,onClose}){
 }
 
 // ── 3v3 Team Battle ───────────────────────────────────────────────────────────
-function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,savedDecks=[]}){
+function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,onLose,savedDecks=[]}){
   const [phase,setPhase]=useState("pick");
   const [team,setTeam]=useState([]);
   const [enemyTeam]=useState(()=>[...ALL_CARDS].sort(()=>Math.random()-.5).slice(0,3));
@@ -1763,7 +1763,90 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,savedDecks=[]}
 }
 
 // ── Binder Tab ────────────────────────────────────────────────────────────────
-function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set()}){
+
+// ── Dupes Manager Modal ───────────────────────────────────────────────────────
+function DupesModal({collection,onClose,onSellOne,onSellAll}){
+  const [confirm,setConfirm]=useState(false);
+  const gv={Legendary:500,Epic:150,Rare:50,Uncommon:15,Common:5};
+  const counts={};collection.forEach(c=>{counts[c.id]=(counts[c.id]||0)+1;});
+  const dupes=[];
+  Object.entries(counts).forEach(([id,cnt])=>{
+    if(cnt>1){
+      const card=collection.find(c=>c.id===parseInt(id));
+      if(card) dupes.push({card,count:cnt,extras:cnt-1,value:(cnt-1)*(gv[card.rarity]||5)});
+    }
+  });
+  dupes.sort((a,b)=>{const o={Legendary:0,Epic:1,Rare:2,Uncommon:3,Common:4};return (o[a.card.rarity]??5)-(o[b.card.rarity]??5);});
+  const totalValue=dupes.reduce((s,d)=>s+d.value,0);
+
+  return(
+    <Modal onClose={onClose} title="🎴 Duplicate Cards">
+      <div style={{maxWidth:480,margin:"0 auto"}}>
+        {dupes.length===0
+          ?<div style={{textAlign:"center",padding:40,color:"#475569"}}>
+            <div style={{fontSize:40,marginBottom:12}}>✨</div>
+            <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>No duplicates!</div>
+            <div style={{fontSize:12}}>Open more packs to build your collection.</div>
+          </div>
+          :<>
+            {/* Summary bar */}
+            <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{color:"#a855f7",fontWeight:800,fontSize:15}}>{dupes.reduce((s,d)=>s+d.extras,0)} duplicate cards</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:2}}>across {dupes.length} card types</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{color:"#f59e0b",fontWeight:800,fontSize:15}}>💎 {totalValue}</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:2}}>total value</div>
+              </div>
+            </div>
+
+            {/* Sell All button or confirm */}
+            {!confirm
+              ?<button onClick={()=>{SFX.play("click");setConfirm(true);}} style={{width:"100%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer",marginBottom:14}}>
+                ♻️ Sell All Duplicates → +💎 {totalValue}
+              </button>
+              :<div style={{background:"linear-gradient(135deg,#1a0000,#2d0a0a)",border:"1px solid #7f1d1d",borderRadius:10,padding:14,marginBottom:14}}>
+                <div style={{color:"#ef4444",fontWeight:800,fontSize:13,marginBottom:10,textAlign:"center"}}>⚠️ Sell ALL {dupes.reduce((s,d)=>s+d.extras,0)} duplicates for 💎 {totalValue}?</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setConfirm(false)} style={{flex:1,background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:8,padding:"10px",fontWeight:700,cursor:"pointer"}}>Cancel</button>
+                  <button onClick={()=>{onSellAll();onClose();}} style={{flex:1,background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:8,padding:"10px",fontWeight:800,cursor:"pointer"}}>Yes, Sell All</button>
+                </div>
+              </div>
+            }
+
+            {/* Individual dupes list */}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {dupes.map((d,i)=>{
+                const rc=RC[d.card.rarity]||{color:"#94a3b8"};
+                return(
+                  <div key={i} style={{background:"#1e293b",border:`1px solid ${rc.color}33`,borderRadius:10,padding:12,display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{flexShrink:0}}><Card card={d.card} mini level={1}/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:"white",fontWeight:700,fontSize:13,marginBottom:2}}>{d.card.name}</div>
+                      <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{d.card.rarity} · {d.card.type}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{background:"#0f172a",borderRadius:6,padding:"3px 8px",fontSize:11,color:"#94a3b8"}}>
+                          ×{d.count} owned · <span style={{color:"#ef4444"}}>×{d.extras} extra</span>
+                        </div>
+                        <div style={{color:"#f59e0b",fontSize:11,fontWeight:700}}>💎 {d.value}</div>
+                      </div>
+                    </div>
+                    <button onClick={()=>{SFX.play("coin");onSellOne(d.card);}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+                      Sell 1<br/><span style={{fontSize:10,fontWeight:600}}>+💎{gv[d.card.rarity]||5}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        }
+      </div>
+    </Modal>
+  );
+}
+
+function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),showDupesOnly=false,setShowDupesOnly,setShowDupesModal}){
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
   const [typeFilter,setTypeFilter]=useState("All");
@@ -1776,12 +1859,14 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
   const types=["All","Alien","Robot","Knight","Mage","Dragon","Beast"];
   const rarityOrder={Legendary:0,Epic:1,Rare:2,Uncommon:3,Common:4};
 
+  const dupeCount=Object.values(countById).filter(n=>n>1).length;
   const filtered=unique.filter(c=>{
     const q=search.toLowerCase();
     const matchSearch=!q||c.name.toLowerCase().includes(q)||c.type.toLowerCase().includes(q)||c.special.toLowerCase().includes(q)||c.description.toLowerCase().includes(q);
     const matchRarity=rarityFilter==="All"||(rarityFilter==="Foil"?c.foil:c.rarity===rarityFilter&&!c.foil);
     const matchType=typeFilter==="All"||c.type===typeFilter;
-    return matchSearch&&matchRarity&&matchType;
+    const matchDupes=!showDupesOnly||(countById[c.id]>1);
+    return matchSearch&&matchRarity&&matchType&&matchDupes;
   }).sort((a,b)=>{
     if(sortBy==="rarity") return (rarityOrder[a.rarity]??5)-(rarityOrder[b.rarity]??5);
     if(sortBy==="power") return b.power-a.power;
@@ -1810,9 +1895,12 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
 
       {/* Quick actions */}
       <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-        <button onClick={()=>{SFX.play("click");convertDupes();}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>♻️ Dupes→💎</button>
+        <button onClick={()=>{SFX.play("click");setShowDupesModal?.(true);}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>♻️ Manage Dupes</button>
         <button onClick={()=>{SFX.play("click");setDeckBuilder(true);}} style={{background:"linear-gradient(135deg,#6d28d9,#a855f7)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>🃏 Decks</button>
         <button onClick={()=>{SFX.play("click");setFusionModal(true);}} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flex:1}}>✨ Fuse</button>
+        <button onClick={()=>{SFX.play("click");setShowDupesOnly?.(!showDupesOnly);}} style={{background:showDupesOnly?"linear-gradient(135deg,#0e7490,#06b6d4)":"#1e293b",color:showDupesOnly?"white":"#64748b",border:`1px solid ${showDupesOnly?"#06b6d4":"#334155"}`,borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:600,cursor:"pointer",position:"relative"}}>
+          🎴 Dupes{dupeCount>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"white",fontSize:8,fontWeight:800,borderRadius:999,width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{dupeCount}</span>}
+        </button>
       </div>
 
       {/* Search */}
@@ -2593,18 +2681,15 @@ function LandingPage({onPlay}){
 
         {/* Mini card showcase */}
         <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-          {[
-            {emoji:"🌟",name:"NEBULA TITAN",rarity:"LEGENDARY",color:"#f59e0b",bg:"linear-gradient(135deg,#1c1008,#92400e)",rot:-4},
-            {emoji:"🔮",name:"VOID MAGE",rarity:"EPIC",color:"#a855f7",bg:"linear-gradient(135deg,#1e0a3c,#4c1d95)",rot:2},
-            {emoji:"🤖",name:"IRON SENTINEL",rarity:"RARE",color:"#3b82f6",bg:"linear-gradient(135deg,#172554,#1d4ed8)",rot:-2},
-            {emoji:"🐉",name:"STAR DRAGON",rarity:"UNCOMMON",color:"#22c55e",bg:"linear-gradient(135deg,#052e16,#15803d)",rot:3},
-          ].map((c,i)=>(
-            <div key={i} style={{width:90,height:126,borderRadius:10,background:c.bg,border:`1px solid ${c.color}44`,boxShadow:`0 0 20px ${c.color}22`,transform:`rotate(${c.rot}deg)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:8,animation:`float ${3.2+i*0.4}s ease-in-out infinite ${-i*0.8}s`,flexShrink:0}}>
-              <div style={{fontSize:28,marginBottom:4}}>{c.emoji}</div>
-              <div style={{fontSize:6,fontWeight:800,color:"white",textAlign:"center",fontFamily:"'Orbitron',monospace",marginBottom:3}}>{c.name}</div>
-              <div style={{fontSize:6,fontWeight:700,color:c.color,letterSpacing:1}}>{c.rarity}</div>
-            </div>
-          ))}
+          {[2,53,8,63].map((id,i)=>{
+            const card=ALL_CARDS.find(c=>c.id===id);
+            if(!card)return null;
+            return(
+              <div key={i} style={{transform:`rotate(${[-4,2,-2,3][i]}deg)`,animation:`float ${3.2+i*0.4}s ease-in-out infinite ${-i*0.8}s`,flexShrink:0}}>
+                <Card card={card} mini level={1}/>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -2916,6 +3001,8 @@ function App() {
   const [packsSinceLeg,setPacksSinceLeg]=useState(()=>S.get("packsSinceLeg",0));
   const [claimedMilestones,setClaimedMilestones]=useState(()=>S.get("claimedMilestones",[]));
   const [binderView,setBinderView] = useState("rarity");
+  const [showDupesOnly,setShowDupesOnly] = useState(false);
+  const [showDupesModal,setShowDupesModal] = useState(false);
   const [dailyFreePack,setDailyFreePack]=useState(()=>S.get("dailyFreePack",""));
   const cardLevels={}; // card leveling removed — kept as empty obj for prop compatibility
   const [onboardingStep,setOnboardingStep]=useState(()=>S.get("onboardingDone",false)?0:-1);
@@ -2942,7 +3029,7 @@ function App() {
     if(tab!=="auction")return;
     const t=setInterval(()=>{
       setAuctions(prev=>prev.map(a=>{
-        if(a.secsLeft<=0||a.seller==="You")return a;
+        if(a.secsLeft<=0)return a;
         const newSecs=a.secsLeft-1;
         // Rival auto-bid: based on rivalSpeed (lower = more aggressive)
         let newPrice=a.price, newBids=a.bids, rivalBid=null;
@@ -2959,12 +3046,19 @@ function App() {
         // Auction ends
         if(newSecs<=0){
           if(a.playerBid&&!a.settled){
-            // Player won! Gems already deducted at bid time — just give the card
+            // Player won a bid! Gems already deducted at bid time — just give the card
             setWonAuction(a.card);
             setCollection(prev=>[...prev,a.card]);
             notify(`🏆 Won auction: ${a.card.name}!`,"ach");
             SFX.play("achievement");
             return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true};
+          }
+          if(a.seller==="You"&&!a.settled){
+            // Player's own listing ended — pay them out
+            setCoins(c=>c+a.price);
+            notify(`💰 ${a.card.name} sold for 💎 ${a.price}!`,"ok");
+            SFX.play("coin");
+            return {...a,secsLeft:0,settled:true};
           }
         }
         return {...a,secsLeft:newSecs,price:newPrice,bids:newBids};
@@ -2974,6 +3068,7 @@ function App() {
   },[tab]);
   useEffect(()=>S.set("streak",streak),[streak]);
   useEffect(()=>S.set("auctions",auctions),[auctions]);
+  useEffect(()=>{if(tab!=="collection")setShowDupesOnly(false);},[tab]);
   useEffect(()=>S.set("decks",decks),[decks]);
   useEffect(()=>S.set("quests",quests),[quests]);
   useEffect(()=>S.set("questProgress",questProg),[questProg]);
@@ -3188,13 +3283,13 @@ function App() {
 
   const doSell=(card,price)=>{
     setCollection(prev=>{const idx=prev.findIndex(c=>c.id===card.id);if(idx===-1)return prev;const n=[...prev];n.splice(idx,1);return n;});
-    setCoins(c=>c+price);
-    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,timeLeft:"24h",bids:0,isPlayer:true}]);
+    // Coins paid out when auction ends, not immediately
+    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:24*60*60,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
     setTotalSold(t=>t+1);setSellCard(null);
     updateQuest("sells",1);
     SFX.play("sell");
-    notify(`${card.name} listed for 💎 ${price}!`);
-    checkAch({collection,wins,coins:coins+price,streak,cardLevels,decks,totalSold:totalSold+1});
+    notify(`${card.name} listed for 💎 ${price}! You'll earn gems when it sells.`);
+    checkAch({collection,wins,coins,streak,cardLevels,decks,totalSold:totalSold+1});
   };
 
   const convertDupes=()=>{
@@ -3532,7 +3627,7 @@ function App() {
           </div>}
         </div>}
 
-                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds}/></div>}
+                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal}/></div>}
 
         {/* SHOP */}
         {/* BATTLE */}
@@ -3821,7 +3916,7 @@ function App() {
 
       {/* Modals */}
       {detail&&<Modal onClose={()=>setDetail(null)} title={detail.name}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><Card card={detail} level={1}/></div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:260,alignItems:"flex-start"}}><Card card={detail} level={1}/></div>
         <div style={{maxWidth:320,margin:"0 auto",background:"#1e293b",borderRadius:12,padding:16}}>
           <div style={{color:"#94a3b8",fontSize:12,marginBottom:14,lineHeight:1.7,textAlign:"center",fontStyle:"italic"}}>"{detail.description}"</div>
           <div style={{display:"flex",justifyContent:"space-around",marginBottom:12}}>
@@ -3878,10 +3973,26 @@ function App() {
           {authed&&<DeleteAccountButton onDeleted={()=>{Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}}/>}
         </div>
       </Modal>}
+      {showDupesModal&&<DupesModal
+        collection={collection}
+        onClose={()=>setShowDupesModal(false)}
+        onSellOne={(card)=>{
+          // Sell exactly 1 extra copy
+          const gv={Legendary:500,Epic:150,Rare:50,Uncommon:15,Common:5};
+          const val=gv[card.rarity]||5;
+          setCollection(prev=>{const idx=prev.findIndex(c=>c.id===card.id&&!c.foil);if(idx===-1)return prev;const n=[...prev];n.splice(idx,1);return n;});
+          setCoins(c=>c+val);
+          setTotalSold(t=>t+1);
+          updateQuest("sells",1);
+          notify(`Sold 1× ${card.name} → +💎${val}`);
+          checkAch({collection,wins,coins:coins+val,streak,cardLevels,decks,totalSold:totalSold+1});
+        }}
+        onSellAll={convertDupes}
+      />}
       {sellCard&&<SellModal card={sellCard} onClose={()=>setSellCard(null)} onSell={doSell}/>}
       {deckBuilder&&<DeckBuilderModal collection={unique} cardLevels={cardLevels} onSave={d=>{SFX.play("achievement");setDecks(p=>[...p,d]);setDeckBuilder(false);notify(`Deck "${d.name}" saved!`);checkAch({collection,wins,coins,streak,cardLevels,decks:[...decks,d],totalSold});}} onClose={()=>setDeckBuilder(false)}/>}
       {dailyShop&&<DailyShopModal collection={collection} coins={coins} packsSinceLeg={packsSinceLeg} onBuyPack={p=>{buyPack(p);setDailyShop(false);}} onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");setDailyShop(false);}} onClose={()=>setDailyShop(false)}/>}
-      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} savedDecks={decks} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});}} onLose={()=>{onLoss(null);}}/>}
+      {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} savedDecks={decks} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);givePlayerXp(150);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});setDeckBattle(false);}} onLose={()=>{setLosses(l=>l+1);givePlayerXp(40);setBattleStreak(0);setDeckBattle(false);notify("💀 Deck defeated — +40 XP");SFX.play("click");}}/>}
       {fusionModal&&<FusionModal collection={collection} cardLevels={cardLevels} onFuse={(foilCard,orig)=>{
         let removed=0;
         const newColl=collection.filter(c=>{ if(c.id===orig.id&&!c.foil&&removed<3){removed++;return false;} return true; });
@@ -3893,12 +4004,13 @@ function App() {
       }} onClose={()=>setFusionModal(false)}/>}
       {teamBattle&&<TeamBattleModal collection={collection} cardLevels={cardLevels} savedDecks={decks} onTeamWin={()=>{
         const nw=wins+1; setWins(nw); setTeamWins(t=>t+1); setCoins(c=>c+300); SFX.play("coin");
+        givePlayerXp(120);
         notify("🏆 Team Victory! +300 💎","ach");
         updateQuest("wins",1);
         updateQuest("team",1);
         updateQuest("teamwin",1);
         checkAch({collection,wins:nw,coins:coins+300,streak,cardLevels,decks,totalSold,teamWins:teamWins+1});
-      }} onClose={()=>{updateQuest("team",1);setTeamBattle(false);}}/>}
+      }} onLose={()=>{givePlayerXp(40);setTeamBattle(false);}} onClose={()=>{updateQuest("team",1);setTeamBattle(false);}}/>}
       {/* Battle Result Overlay */}
       {battleResult&&<div style={{position:"fixed",inset:0,zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",background:"#000000cc",backdropFilter:"blur(8px)"}}>
         <div style={{background:battleResult.won?"linear-gradient(135deg,#052e16,#14532d)":"linear-gradient(135deg,#1a0000,#7f1d1d)",border:"2px solid "+(battleResult.won?"#22c55e":"#ef4444"),borderRadius:20,padding:32,textAlign:"center",maxWidth:300,width:"90%",boxShadow:"0 0 60px "+(battleResult.won?"#22c55e44":"#ef444444"),animation:"fadeIn .4s ease-out"}}>
