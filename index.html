@@ -450,7 +450,6 @@ const DAILY_QUESTS_POOL = [
   { id:"win1",      desc:"Win 1 battle",               reward:100, type:"wins",   target:1 },
   { id:"win3",      desc:"Win 3 battles",               reward:200, type:"wins",   target:3 },
   { id:"win5",      desc:"Win 5 battles",               reward:350, type:"wins",   target:5 },
-  { id:"win10",     desc:"Win 10 battles",              reward:600, type:"wins",   target:10 },
   { id:"winstreak", desc:"Win 3 battles in a row",      reward:400, type:"streak", target:3 },
   // Packs
   { id:"open1",     desc:"Open 1 pack",                 reward:80,  type:"packs",  target:1 },
@@ -2059,12 +2058,20 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
 
   // 5 daily cards: 1 Legendary chance (~10%), 1 Epic, 1 Rare, 2 Uncommon/Common
   const pickCard = (pool, idx) => pool[Math.floor(rr(pool.length, idx)*pool.length)];
+  const usedIds = new Set();
+  const pickUniqueCard = (pool, idx) => {
+    const available = pool.filter(c=>!usedIds.has(c.id));
+    const card = available[Math.floor(rr(available.length, idx)*available.length)];
+    if(card) usedIds.add(card.id);
+    return card;
+  };
+  const isLeg = rr(1)<0.10;
   const dailyCards = [
-    { card: pickCard(rr(1)<0.10 ? ALL_CARDS.filter(c=>c.rarity==="Legendary") : ALL_CARDS.filter(c=>c.rarity==="Epic"), 0), price: rr(1)<0.10 ? 1200 : 500 },
-    { card: pickCard(ALL_CARDS.filter(c=>c.rarity==="Epic"), 1), price: 450 },
-    { card: pickCard(ALL_CARDS.filter(c=>c.rarity==="Rare"), 2), price: 200 },
-    { card: pickCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 3), price: 80 },
-    { card: pickCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 4), price: 60 },
+    { card: pickUniqueCard(isLeg ? ALL_CARDS.filter(c=>c.rarity==="Legendary") : ALL_CARDS.filter(c=>c.rarity==="Epic"), 0), price: isLeg ? 1200 : 500 },
+    { card: pickUniqueCard(ALL_CARDS.filter(c=>c.rarity==="Epic"), 1), price: 450 },
+    { card: pickUniqueCard(ALL_CARDS.filter(c=>c.rarity==="Rare"), 2), price: 200 },
+    { card: pickUniqueCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 3), price: 80 },
+    { card: pickUniqueCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 4), price: 60 },
   ];
 
   // Countdown to midnight CST
@@ -3149,6 +3156,7 @@ function App() {
   const [showDupesModal,setShowDupesModal] = useState(false);
   const [dailyFreePack,setDailyFreePack]=useState(()=>S.get("dailyFreePack",""));
   const [lastAdWatch,setLastAdWatch]=useState(()=>S.get("lastAdWatch",null));
+  const [claimerTick,setClaimerTick]=useState(0); // force re-render after shard claim
   const cardLevels={}; // card leveling removed — kept as empty obj for prop compatibility
   const [onboardingStep,setOnboardingStep]=useState(()=>S.get("onboardingDone",false)?0:-1);
   const [battleResult,setBattleResult]=useState(null); // {won, xp, coins, cardName}
@@ -3430,7 +3438,7 @@ function App() {
   const doSell=(card,price)=>{
     setCollection(prev=>{const idx=prev.findIndex(c=>c.id===card.id);if(idx===-1)return prev;const n=[...prev];n.splice(idx,1);return n;});
     // Coins paid out when auction ends, not immediately
-    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:24*60*60,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
+    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:2*60*60,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
     setTotalSold(t=>t+1);setSellCard(null);
     updateQuest("sells",1);
     SFX.play("sell");
@@ -3878,6 +3886,10 @@ function App() {
 
         {/* AUCTION */}
         {tab==="auction"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
+          <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:12}}>🤖</span>
+            <span style={{color:"#475569",fontSize:11}}>Simulated auction — real player trading coming soon</span>
+          </div>
           {/* Won auction popup */}
           {wonAuction&&<div style={{background:"linear-gradient(135deg,#052e16,#14532d)",border:"1px solid #22c55e",borderRadius:14,padding:16,marginBottom:14,textAlign:"center",animation:"fadeIn .4s"}}>
             <div style={{fontSize:32,marginBottom:4}}>🏆</div>
@@ -3912,7 +3924,16 @@ function App() {
               const ending=item.secsLeft>0&&item.secsLeft<300;
               const isWinning=item.playerBid&&item.lastBidder==="You";
               return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`2px solid ${isWinning?"#22c55e":urgent?"#ef4444":rc.color}44`,borderRadius:14,padding:14,opacity:item.secsLeft<=0?0.5:1}}>
-                {item.seller==="You"&&<div style={{color:"#f59e0b",fontSize:10,fontWeight:700,marginBottom:6}}>📢 YOUR LISTING</div>}
+                {item.seller==="You"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{color:"#f59e0b",fontSize:10,fontWeight:700}}>📢 YOUR LISTING</div>
+                  {item.secsLeft>0&&<button onClick={()=>{
+                    SFX.play("click");
+                    // Refund the card back to collection
+                    setCollection(prev=>[...prev,item.card]);
+                    setAuctions(prev=>prev.filter(a=>a.id!==item.id));
+                    notify(`${item.card.name} listing cancelled — card returned`);
+                  }} style={{background:"#1e293b",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700,cursor:"pointer"}}>✕ Cancel</button>}
+                </div>}
                 {isWinning&&<div style={{color:"#22c55e",fontSize:10,fontWeight:700,marginBottom:6,animation:"pulse 1.5s infinite"}}>✅ YOU'RE WINNING</div>}
                 {item.secsLeft<=0&&<div style={{color:"#475569",fontSize:10,fontWeight:700,marginBottom:6}}>🔒 AUCTION ENDED</div>}
 
@@ -3953,6 +3974,8 @@ function App() {
 
         {/* PROFILE */}
         {tab==="profile"&&<div>
+          {/* Version */}
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v1.4.0</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -3996,6 +4019,7 @@ function App() {
           {/* Shard Collector Rewards */}
           {(()=>{
             try{
+              void claimerTick; // reactive dependency — triggers re-read after claim
               const r=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
               const gemBlocks=r.gemBlocks||0;
               const gemsClaimed=r.gemBlocksClaimed||0;
@@ -4060,7 +4084,7 @@ function App() {
                             lastClaimed:Date.now(),
                           };
                           localStorage.setItem('vc_shard_rewards',JSON.stringify(updated));
-                          // Force re-render by triggering a coin update
+                          setClaimerTick(t=>t+1);
                           checkAch({collection,wins,coins,streak,cardLevels,decks,totalSold});
                         }catch(e){notify("Claim failed","err");}
                       }} style={{width:"100%",background:"linear-gradient(135deg,#4c1d95,#9b30ff)",color:"white",border:"none",borderRadius:10,padding:"12px",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 0 20px #9b30ff44"}}>
@@ -4230,7 +4254,7 @@ function App() {
           updateQuest("spend",0);
         }}
         onBuyPack={p=>{buyPack(p);setDailyShop(false);}}
-        onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");updateQuest("spend",price);checkAch({collection:[...collection,card],wins,coins:coins-price,streak,cardLevels,decks,totalSold});}}
+        onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");updateQuest("spend",price);checkAch({collection:[...collection,card],wins,coins:coins-price,streak,cardLevels,decks,totalSold});setDailyShop(false);}}
         onClose={()=>setDailyShop(false)}/>}
       {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} savedDecks={decks} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);givePlayerXp(150);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});setDeckBattle(false);}} onLose={()=>{setLosses(l=>l+1);givePlayerXp(40);setBattleStreak(0);setDeckBattle(false);notify("💀 Deck defeated — +40 XP");SFX.play("click");}}/>}
       {fusionModal&&<FusionModal collection={collection} cardLevels={cardLevels} onFuse={(foilCard,orig)=>{
