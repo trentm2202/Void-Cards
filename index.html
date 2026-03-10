@@ -3993,6 +3993,89 @@ function App() {
               </div>
             ))}
           </div>
+          {/* Shard Collector Rewards */}
+          {(()=>{
+            try{
+              const r=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
+              const gemBlocks=r.gemBlocks||0;
+              const gemsClaimed=r.gemBlocksClaimed||0;
+              const cardsAvail=r.cardsAvailable||0;
+              const gemsAvail=r.gemsAvailable||0;
+              const hasRewards=gemsAvail>0||cardsAvail>0;
+              const lastUpdated=r.lastUpdated?new Date(r.lastUpdated):null;
+              const totalShards=r.totalShards||0;
+              const totalAscensions=r.totalAscensions||0;
+              return(
+                <div style={{background:"linear-gradient(135deg,#0a0a1e,#0f0a2e)",border:`1px solid ${hasRewards?"#9b30ff88":"#1e293b"}`,borderRadius:12,padding:14,marginBottom:14,position:"relative",overflow:"hidden"}}>
+                  {hasRewards&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#9b30ff,#06b6d4,#9b30ff)",animation:"goldFlare 2s linear infinite"}}/>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div>
+                      <div style={{color:"#9b30ff",fontWeight:800,fontSize:13}}>🔮 Shard Collector</div>
+                      <div style={{color:"#475569",fontSize:10,marginTop:2}}>
+                        {totalShards>0?`${totalShards.toLocaleString()} shards · ${totalAscensions} ascensions`:"Not played yet"}
+                      </div>
+                    </div>
+                    <a href="/clicker.html" style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,textDecoration:"none"}}>Play →</a>
+                  </div>
+                  {totalShards===0
+                    ?<div style={{textAlign:"center",color:"#334155",padding:"8px 0",fontSize:12}}>Play the Shard Collector to earn gems and cards!</div>
+                    :<>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                        <div style={{background:"#0f172a",borderRadius:8,padding:10,textAlign:"center"}}>
+                          <div style={{color:"#f59e0b",fontWeight:900,fontSize:18}}>{gemsAvail>0?`+💎${gemsAvail}`:"💎 0"}</div>
+                          <div style={{color:"#475569",fontSize:9,marginTop:2}}>Gems to claim</div>
+                        </div>
+                        <div style={{background:"#0f172a",borderRadius:8,padding:10,textAlign:"center"}}>
+                          <div style={{color:"#a855f7",fontWeight:900,fontSize:18}}>{cardsAvail>0?`🃏 ${cardsAvail}`:"🃏 0"}</div>
+                          <div style={{color:"#475569",fontSize:9,marginTop:2}}>Cards to claim</div>
+                        </div>
+                      </div>
+                      {hasRewards&&<button onClick={()=>{
+                        try{
+                          const r2=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
+                          const gemsNow=r2.gemsAvailable||0;
+                          const cardsNow=r2.cardsAvailable||0;
+                          if(gemsNow>0){
+                            setCoins(c=>c+gemsNow);
+                            SFX.play("coin");
+                            notify(`🔮 Claimed +💎${gemsNow} from Shard Collector!`,"ach");
+                          }
+                          if(cardsNow>0){
+                            // Give random rare+ cards
+                            const pool=ALL_CARDS.filter(c=>["Rare","Epic","Legendary"].includes(c.rarity));
+                            const rewards=[];
+                            for(let i=0;i<cardsNow;i++){
+                              rewards.push(pool[Math.floor(Math.random()*pool.length)]);
+                            }
+                            setCollection(prev=>[...prev,...rewards]);
+                            notify(`🃏 ${cardsNow} card${cardsNow>1?"s":""} unlocked from Shard Collector!`,"ach");
+                          }
+                          // Mark as claimed
+                          const updated={
+                            ...r2,
+                            gemsAvailable:0,
+                            cardsAvailable:0,
+                            gemBlocksClaimed:(r2.gemBlocksClaimed||0)+(r2.gemBlocks||0)-(r2.gemBlocksClaimed||0),
+                            cardBlocksClaimed:(r2.cardBlocksClaimed||0)+cardsNow,
+                            lastClaimed:Date.now(),
+                          };
+                          localStorage.setItem('vc_shard_rewards',JSON.stringify(updated));
+                          // Force re-render by triggering a coin update
+                          checkAch({collection,wins,coins,streak,cardLevels,decks,totalSold});
+                        }catch(e){notify("Claim failed","err");}
+                      }} style={{width:"100%",background:"linear-gradient(135deg,#4c1d95,#9b30ff)",color:"white",border:"none",borderRadius:10,padding:"12px",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 0 20px #9b30ff44"}}>
+                        ✨ Claim Rewards
+                      </button>}
+                      {!hasRewards&&<div style={{color:"#334155",fontSize:11,textAlign:"center"}}>
+                        Keep playing to earn more! Next gems at {((Math.floor((r.gemBlocks||0)+1)*100000)).toLocaleString()} shards.
+                      </div>}
+                    </>
+                  }
+                </div>
+              );
+            }catch(e){return null;}
+          })()}
+
           <div style={{background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"#ef4444",fontWeight:700,marginBottom:8}}>⚠️ Reset Game</div>
             <div style={{color:"#64748b",fontSize:12,marginBottom:10}}>Clears all progress and returns to the welcome screen. Cannot be undone.</div>
