@@ -6,141 +6,167 @@
 <title>Void Cards — Shard Collector</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --void:#03010a; --deep:#07021a; --nebula:#0d0525;
-  --gold:#f0c040; --gold2:#ffe080;
-  --cyan:#00e5ff; --purple:#9b30ff; --pink:#ff2d78;
-  --green:#39ff14; --orange:#ff8c00;
-  --text:#e8dff5; --dim:#5a4a7a; --mid:#8a7aaa;
-  --card:#ffffff08; --border:#9b30ff30;
+html,body{background:#03010a!important;background-color:#03010a!important;}
+:root{
+  --void:#03010a;--deep:#07021a;--nebula:#0d0525;
+  --gold:#f0c040;--cyan:#00e5ff;--purple:#9b30ff;--pink:#ff2d78;--green:#39ff14;
+  --text:#e8dff5;--dim:#5a4a7a;--mid:#8a7aaa;
+  --card:#ffffff08;--border:#9b30ff30;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:14px;}
 body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min-height:100vh;overflow-x:hidden;user-select:none;}
 
-/* STARS */
 #stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
 .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d) ease-in-out infinite alternate;}
 @keyframes twinkle{from{opacity:var(--mo);}to{opacity:1;}}
 
-/* LAYOUT */
-#layout{position:relative;z-index:1;display:grid;grid-template-columns:220px 1fr 240px;min-height:100vh;gap:0;}
+#layout{position:relative;z-index:1;display:grid;grid-template-columns:220px 1fr 260px;min-height:100vh;}
 
-/* LEFT PANEL */
-#left{background:linear-gradient(180deg,#06011500,#060115cc);border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;max-height:100vh;}
-.panel-title{font-family:'Cinzel Decorative',serif;font-size:.6rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+/* LEFT */
+#left{background:linear-gradient(180deg,#06011500,#060115dd);border-right:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:100vh;}
+.panel-title{font-family:'Cinzel Decorative',serif;font-size:.58rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 
 /* BUILDINGS */
 .building{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:visible;}
-.building::before{content:'';position:absolute;inset:0;border-radius:8px;background:linear-gradient(90deg,transparent,rgba(155,48,255,.07),transparent);transform:translateX(-100%);transition:transform .4s;pointer-events:none;overflow:hidden;}
+.building::before{content:'';position:absolute;inset:0;border-radius:8px;background:linear-gradient(90deg,transparent,rgba(155,48,255,.07),transparent);transform:translateX(-100%);transition:transform .4s;pointer-events:none;}
 .building:hover::before{transform:translateX(100%);}
 .building:hover:not(.locked){border-color:rgba(155,48,255,.5);background:rgba(155,48,255,.08);}
-.building.locked{opacity:.35;cursor:not-allowed;}
-.b-icon{font-size:1.4rem;flex-shrink:0;width:28px;text-align:center;}
+.building.locked{opacity:.3;cursor:not-allowed;}
+.building.can-afford{border-color:rgba(0,229,255,.3);}
+.b-icon{font-size:1.3rem;flex-shrink:0;width:26px;text-align:center;}
 .b-info{flex:1;min-width:0;}
-.b-name{font-size:.78rem;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.b-owned{font-size:.65rem;color:var(--cyan);display:block;}
-.b-cost{font-family:'Cinzel Decorative',serif;font-size:.65rem;color:var(--gold);flex-shrink:0;text-align:right;}
+.b-name{font-size:.76rem;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.b-stat{font-size:.6rem;color:var(--cyan);display:block;}
+.b-cost{font-family:'Cinzel Decorative',serif;font-size:.62rem;color:var(--gold);flex-shrink:0;text-align:right;line-height:1.3;}
 .b-cost.cant{color:var(--dim);}
+.b-owned-badge{font-size:.55rem;color:var(--mid);display:block;}
+
+/* MILESTONE PIPS */
+.b-pips{display:flex;gap:2px;margin-top:3px;}
+.pip{width:6px;height:6px;border-radius:50%;background:var(--dim);transition:background .3s;}
+.pip.lit{background:var(--gold);}
 
 /* CENTER */
-#center{display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 12px;overflow-y:auto;max-height:100vh;}
-
+#center{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 12px;overflow-y:auto;max-height:100vh;}
 .logo{text-align:center;}
-.logo h1{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,3vw,1.6rem);font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,var(--purple) 50%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;}
-.logo p{font-size:.65rem;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-top:2px;}
+.logo h1{font-family:'Cinzel Decorative',serif;font-size:clamp(.9rem,2.5vw,1.5rem);font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,var(--purple) 50%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;}
+.logo p{font-size:.6rem;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-top:2px;}
 
-/* STATS */
-.stats-row{display:flex;gap:8px;width:100%;justify-content:center;}
-.sbox{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;max-width:120px;}
-.sbox .sv{font-family:'Cinzel Decorative',serif;font-size:clamp(.8rem,2.5vw,1.1rem);color:var(--gold);display:block;line-height:1.1;}
-.sbox .sl{font-size:.58rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.stats-row{display:flex;gap:6px;width:100%;justify-content:center;}
+.sbox{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 5px;text-align:center;max-width:110px;}
+.sbox .sv{font-family:'Cinzel Decorative',serif;font-size:clamp(.75rem,2vw,1rem);color:var(--gold);display:block;line-height:1.1;}
+.sbox .sl{font-size:.55rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
 
 /* ORB */
-.orb-wrap{position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-.ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(0,229,255,.25);animation:spin 9s linear infinite;}
-.ring:nth-child(2){inset:14px;border-color:rgba(155,48,255,.35);animation:spin 6s linear infinite reverse;border-style:dashed;}
-.ring:nth-child(3){inset:28px;border-color:rgba(240,192,64,.2);animation:spin 14s linear infinite;}
+.orb-wrap{position:relative;width:170px;height:170px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(0,229,255,.2);animation:spin 9s linear infinite;}
+.ring:nth-child(2){inset:14px;border-color:rgba(155,48,255,.3);animation:spin 6s linear infinite reverse;border-style:dashed;}
+.ring:nth-child(3){inset:28px;border-color:rgba(240,192,64,.18);animation:spin 14s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.pulse-ring{position:absolute;inset:40px;border-radius:50%;border:2px solid rgba(155,48,255,.5);animation:pring 2.2s ease-out infinite;}
+.pulse-ring{position:absolute;inset:40px;border-radius:50%;border:2px solid rgba(155,48,255,.4);animation:pring 2.2s ease-out infinite;}
 @keyframes pring{0%{transform:scale(1);opacity:.7;}100%{transform:scale(2);opacity:0;}}
-.orb{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 32% 32%,#2e0a80,#04000f);border:2px solid rgba(155,48,255,.6);box-shadow:0 0 30px rgba(155,48,255,.5),0 0 70px rgba(155,48,255,.2),inset 0 0 25px rgba(0,229,255,.1);display:flex;align-items:center;justify-content:center;font-size:2.6rem;transition:transform .08s,box-shadow .08s;position:relative;z-index:2;}
-.orb-wrap:active .orb{transform:scale(.9);box-shadow:0 0 55px rgba(155,48,255,.9),0 0 110px rgba(155,48,255,.4),inset 0 0 40px rgba(0,229,255,.25);}
+.orb{width:105px;height:105px;border-radius:50%;background:radial-gradient(circle at 32% 32%,#2e0a80,#04000f);border:2px solid rgba(155,48,255,.6);box-shadow:0 0 28px rgba(155,48,255,.5),0 0 60px rgba(155,48,255,.18),inset 0 0 22px rgba(0,229,255,.1);display:flex;align-items:center;justify-content:center;font-size:2.4rem;transition:transform .08s,box-shadow .08s;position:relative;z-index:2;}
+.orb-wrap:active .orb{transform:scale(.88);box-shadow:0 0 55px rgba(155,48,255,.9),0 0 110px rgba(155,48,255,.4),inset 0 0 40px rgba(0,229,255,.25);}
 
-/* GOLDEN ORB EVENT */
-.golden-orb{position:absolute;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe080,#b07000);border:2px solid var(--gold);box-shadow:0 0 20px var(--gold),0 0 40px #ff8c0066;cursor:pointer;z-index:10;animation:goldenFloat 3s ease-in-out infinite;display:none;}
+/* FRENZY RING */
+.frenzy-ring{position:absolute;inset:-8px;border-radius:50%;border:3px solid var(--gold);opacity:0;transition:opacity .3s;animation:frenzyPulse 0.5s ease-in-out infinite alternate;}
+.frenzy-ring.active{opacity:1;}
+@keyframes frenzyPulse{from{box-shadow:0 0 10px var(--gold);}to{box-shadow:0 0 30px var(--gold),0 0 60px var(--gold);}}
+
+/* COMBO METER */
+.combo-wrap{width:170px;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.combo-bar-bg{width:100%;height:5px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;border:1px solid rgba(240,192,64,.15);}
+.combo-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));border-radius:3px;transition:width .1s;}
+.combo-label{font-size:.6rem;color:var(--gold);letter-spacing:2px;opacity:.8;min-height:14px;}
+
+/* GOLDEN ORB */
+.golden-orb{position:absolute;width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe080,#b07000);border:2px solid var(--gold);box-shadow:0 0 18px var(--gold),0 0 36px #ff8c0055;cursor:pointer;z-index:10;animation:goldenFloat 3s ease-in-out infinite;display:none;}
 @keyframes goldenFloat{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-8px) rotate(5deg);}}
-.golden-orb.show{display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.golden-orb.show{display:flex;align-items:center;justify-content:center;font-size:1rem;}
 
-.cps-label{font-size:.7rem;color:var(--cyan);letter-spacing:2px;opacity:.8;}
+.cps-label{font-size:.68rem;color:var(--cyan);letter-spacing:2px;opacity:.8;}
 
-/* MULTIPLIER BAR */
-.mult-bar-wrap{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:4px;height:6px;overflow:hidden;}
-.mult-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));border-radius:4px;transition:width .4s;}
+/* PROGRESS BAR */
+.prog-wrap{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(0,229,255,.12);border-radius:4px;height:5px;overflow:hidden;}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));border-radius:4px;transition:width .5s;}
 
 /* EVENT BANNER */
-#eventBanner{background:linear-gradient(90deg,#1a0060,#400020);border:1px solid var(--pink);border-radius:10px;padding:10px 14px;text-align:center;font-family:'Cinzel Decorative',serif;font-size:.7rem;color:var(--pink);letter-spacing:2px;display:none;width:100%;animation:glow 1.5s ease-in-out infinite alternate;}
-@keyframes glow{from{box-shadow:0 0 10px rgba(255,45,120,.3);}to{box-shadow:0 0 30px rgba(255,45,120,.7);}}
+#eventBanner{background:linear-gradient(90deg,#1a0060,#400020);border:1px solid var(--pink);border-radius:10px;padding:9px 14px;text-align:center;font-family:'Cinzel Decorative',serif;font-size:.68rem;color:var(--pink);letter-spacing:2px;display:none;width:100%;animation:glow 1.5s ease-in-out infinite alternate;}
+#eventTimer{font-size:.55rem;opacity:.7;display:block;margin-top:2px;}
+@keyframes glow{from{box-shadow:0 0 8px rgba(255,45,120,.3);}to{box-shadow:0 0 28px rgba(255,45,120,.7);}}
 #eventBanner.show{display:block;}
 
-/* UPGRADE SHOP */
-.upgrades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:5px;width:100%;}
-.upg-icon-btn{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;}
-.upg-icon-btn:hover:not(.bought):not(.locked-upg){border-color:var(--gold);background:rgba(240,192,64,.1);transform:scale(1.1);}
-.upg-icon-btn.bought{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.08);opacity:.7;}
-.upg-icon-btn.locked-upg{opacity:.2;cursor:not-allowed;}
-.upg-icon-btn{position:relative;overflow:visible!important;}
-.upg-icon-btn .upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0d0525;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:6px 10px;font-size:.65rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;min-width:140px;text-align:center;line-height:1.4;box-shadow:0 4px 20px rgba(0,0,0,.6);}
+/* UPGRADES */
+.upgrades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px;width:100%;}
+.upg-icon-btn{width:40px;height:40px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;overflow:visible!important;}
+.upg-icon-btn:hover:not(.bought):not(.locked-upg){border-color:var(--gold);background:rgba(240,192,64,.1);transform:scale(1.12);}
+.upg-icon-btn.bought{border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.07);opacity:.65;}
+.upg-icon-btn.locked-upg{opacity:.18;cursor:not-allowed;}
+.upg-icon-btn.affordable{border-color:rgba(240,192,64,.6);box-shadow:0 0 8px rgba(240,192,64,.25);}
+.upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0a0220;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:7px 10px;font-size:.63rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;min-width:150px;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.8);}
 .upg-icon-btn:hover .upg-tip{opacity:1;}
+.tip-cat{font-size:.55rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
+.tip-cat.tap{color:var(--pink);}
+.tip-cat.idle{color:var(--cyan);}
+.tip-cat.global{color:var(--purple);}
 
 /* PRESTIGE */
-.prestige-section{width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;}
-.prestige-btn{background:linear-gradient(135deg,#3a0018,#14004a);border:1px solid var(--pink);border-radius:10px;padding:10px 20px;color:var(--pink);font-family:'Cinzel Decorative',serif;font-size:.7rem;cursor:pointer;letter-spacing:2px;box-shadow:0 0 20px rgba(255,45,120,.25);transition:all .2s;display:none;width:100%;}
-.prestige-btn:hover{box-shadow:0 0 40px rgba(255,45,120,.5);transform:scale(1.02);}
+.prestige-section{width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.prestige-btn{background:linear-gradient(135deg,#3a0018,#14004a);border:1px solid var(--pink);border-radius:10px;padding:9px 18px;color:var(--pink);font-family:'Cinzel Decorative',serif;font-size:.68rem;cursor:pointer;letter-spacing:2px;box-shadow:0 0 18px rgba(255,45,120,.2);transition:all .2s;display:none;width:100%;}
+.prestige-btn:hover{box-shadow:0 0 36px rgba(255,45,120,.5);transform:scale(1.02);}
 .prestige-btn.vis{display:block;}
-.prestige-info{font-size:.65rem;color:var(--pink);opacity:.7;letter-spacing:1px;}
-.rewards-panel{width:100%;background:linear-gradient(135deg,#0a1628,#0f0a1e);border:1px solid rgba(155,48,255,.4);border-radius:12px;padding:14px;margin-top:10px;box-sizing:border-box;}
-.rewards-title{color:#9b30ff;font-family:'Cinzel Decorative',serif;font-size:.65rem;letter-spacing:2px;margin-bottom:10px;text-align:center;}
-.rewards-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.65rem;}
-.rewards-label{color:#8892a4;}
-.rewards-value{color:#f0c040;font-weight:700;}
-.rewards-note{color:#4a5568;font-size:.58rem;text-align:center;margin-top:8px;line-height:1.5;}
-.rewards-link{color:#9b30ff;text-decoration:none;font-weight:700;}
-.rewards-link:hover{color:#c084fc;}
+.prestige-info{font-size:.62rem;color:var(--pink);opacity:.7;letter-spacing:1px;}
+.prestige-prog{font-size:.58rem;color:var(--mid);margin-top:2px;}
 
-/* RIGHT PANEL */
-#right{background:linear-gradient(180deg,#06011500,#060115cc);border-left:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;max-height:100vh;}
+/* REWARDS */
+.rewards-panel{width:100%;background:linear-gradient(135deg,#0a1628,#0f0a1e);border:1px solid rgba(155,48,255,.35);border-radius:10px;padding:12px;box-sizing:border-box;}
+.rewards-title{color:var(--purple);font-family:'Cinzel Decorative',serif;font-size:.62rem;letter-spacing:2px;margin-bottom:8px;text-align:center;}
+.rewards-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:.63rem;}
+.rewards-label{color:#8892a4;}
+.rewards-value{color:var(--gold);font-weight:700;}
+.rewards-note{color:#4a5568;font-size:.57rem;text-align:center;margin-top:6px;line-height:1.5;}
+.rewards-link{color:var(--purple);text-decoration:none;font-weight:700;}
+
+/* NEWS */
+#newsTicker{width:100%;background:rgba(155,48,255,.08);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:.62rem;color:var(--mid);overflow:hidden;white-space:nowrap;}
+
+/* RIGHT */
+#right{background:linear-gradient(180deg,#06011500,#060115dd);border-left:1px solid var(--border);padding:10px 8px;display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:100vh;}
 
 /* ACHIEVEMENTS */
-.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.ach{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center;transition:all .2s;}
-.ach.unlocked{border-color:rgba(240,192,64,.5);background:rgba(240,192,64,.06);}
-.ach.locked-ach{opacity:.3;}
-.ach-icon{font-size:1.3rem;display:block;}
-.ach-name{font-size:.58rem;color:var(--mid);display:block;margin-top:2px;line-height:1.2;}
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.ach{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:6px 7px;text-align:center;transition:all .3s;position:relative;}
+.ach.unlocked{border-color:rgba(240,192,64,.45);background:rgba(240,192,64,.05);}
+.ach.unlocked.new-ach{animation:achPop .5s ease-out;}
+@keyframes achPop{0%{transform:scale(1.15);}100%{transform:scale(1);}}
+.ach.locked-ach{opacity:.28;}
+.ach-icon{font-size:1.2rem;display:block;}
+.ach-name{font-size:.55rem;color:var(--mid);display:block;margin-top:2px;line-height:1.2;}
 .ach.unlocked .ach-name{color:var(--gold);}
 
-/* NEWS TICKER */
-#newsTicker{width:100%;background:rgba(155,48,255,.1);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.65rem;color:var(--mid);overflow:hidden;white-space:nowrap;}
+/* STATS PANEL */
+.stats-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:.62rem;}
+.stats-panel .srow{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.stats-panel .srow:last-child{border-bottom:none;}
+.srow-label{color:var(--dim);}
+.srow-val{color:var(--cyan);}
 
 /* TOAST */
-#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:linear-gradient(135deg,#1a0840,#0a0520);border:1px solid var(--gold);border-radius:10px;padding:10px 18px;font-family:'Cinzel Decorative',serif;font-size:.72rem;color:var(--gold);z-index:9999;text-align:center;box-shadow:0 0 30px rgba(240,192,64,.3);transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:linear-gradient(135deg,#1a0840,#0a0520);border:1px solid var(--gold);border-radius:10px;padding:9px 18px;font-family:'Cinzel Decorative',serif;font-size:.7rem;color:var(--gold);z-index:9999;text-align:center;box-shadow:0 0 28px rgba(240,192,64,.3);transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:90vw;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 
-/* FLOAT TEXT */
-.ft{position:fixed;font-family:'Cinzel Decorative',serif;font-size:1rem;color:var(--gold);pointer-events:none;z-index:9998;animation:fup .9s ease-out forwards;text-shadow:0 0 10px var(--gold);}
-@keyframes fup{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-70px) scale(1.2);}}
-.ft.crit{color:var(--pink);font-size:1.4rem;text-shadow:0 0 20px var(--pink);}
+.ft{position:fixed;font-family:'Cinzel Decorative',serif;font-size:.95rem;color:var(--gold);pointer-events:none;z-index:9998;animation:fup .9s ease-out forwards;text-shadow:0 0 10px var(--gold);}
+@keyframes fup{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-65px) scale(1.15);}}
+.ft.crit{color:var(--pink);font-size:1.35rem;text-shadow:0 0 18px var(--pink);}
+.ft.frenzy{color:var(--gold);font-size:1.6rem;text-shadow:0 0 25px var(--gold);}
 
-/* MOBILE */
 @media(max-width:700px){
   #layout{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;}
-  #left{max-height:220px;overflow-x:auto;flex-direction:row;flex-wrap:nowrap;border-right:none;border-bottom:1px solid var(--border);}
+  #left{max-height:200px;overflow-x:auto;flex-direction:row;flex-wrap:nowrap;border-right:none;border-bottom:1px solid var(--border);}
   #right{max-height:none;border-left:none;border-top:1px solid var(--border);}
-  .building{min-width:130px;}
+  .building{min-width:140px;}
 }
-
-/* SCROLLBAR */
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
@@ -149,7 +175,6 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 <body>
 <div id="stars"></div>
 <div id="toast"></div>
-
 <div id="layout">
 
 <!-- LEFT: BUILDINGS -->
@@ -158,28 +183,34 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
   <div id="buildingList"></div>
 </div>
 
-<!-- CENTER: MAIN GAME -->
+<!-- CENTER -->
 <div id="center">
   <div class="logo"><h1>VOID CARDS</h1><p>Shard Collector · Galactic Edition</p></div>
 
   <div class="stats-row">
     <div class="sbox"><span class="sv" id="sShard">0</span><span class="sl">Shards</span></div>
     <div class="sbox"><span class="sv" id="sCps">0</span><span class="sl">Per Sec</span></div>
-    <div class="sbox"><span class="sv" id="sClick">1</span><span class="sl">Per Click</span></div>
+    <div class="sbox"><span class="sv" id="sClick">1</span><span class="sl">Per Tap</span></div>
     <div class="sbox"><span class="sv" id="sTotal">0</span><span class="sl">All Time</span></div>
   </div>
 
-  <div id="eventBanner">⚡ VOID STORM ACTIVE — 2× SHARDS!</div>
+  <div id="eventBanner"><span id="eventText">⚡ VOID STORM</span><span id="eventTimer"></span></div>
 
   <div class="orb-wrap" id="orbWrap">
     <div class="ring"></div><div class="ring"></div><div class="ring"></div>
     <div class="pulse-ring"></div>
+    <div class="frenzy-ring" id="frenzyRing"></div>
     <div class="orb" id="orb">🌌</div>
     <div class="golden-orb" id="goldenOrb">⭐</div>
   </div>
 
-  <div class="mult-bar-wrap" style="width:180px"><div class="mult-bar" id="multBar" style="width:0%"></div></div>
-  <div class="cps-label" id="cpsLabel">Click the Void Orb</div>
+  <div class="combo-wrap">
+    <div class="combo-bar-bg"><div class="combo-bar" id="comboBar" style="width:0%"></div></div>
+    <div class="combo-label" id="comboLabel"></div>
+  </div>
+
+  <div class="prog-wrap" style="width:100%"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+  <div class="cps-label" id="cpsLabel">Tap the Void Orb to begin</div>
 
   <div class="panel-title" style="width:100%">🔮 Upgrades</div>
   <div class="upgrades-grid" id="upgradeGrid"></div>
@@ -187,202 +218,239 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
   <div class="prestige-section">
     <button class="prestige-btn" id="prestigeBtn">✦ VOID ASCENSION ✦</button>
     <div class="prestige-info" id="prestigeInfo"></div>
+    <div class="prestige-prog" id="prestigeProg"></div>
   </div>
 
   <div class="rewards-panel">
     <div class="rewards-title">⚔️ VOID CARDS REWARDS</div>
-    <div class="rewards-row">
-      <span class="rewards-label">💎 Gems available</span>
-      <span class="rewards-value" id="rGems">0</span>
-    </div>
-    <div class="rewards-row">
-      <span class="rewards-label">🃏 Cards available</span>
-      <span class="rewards-value" id="rCards">0</span>
-    </div>
-    <div class="rewards-row">
-      <span class="rewards-label">Next gem reward at</span>
-      <span class="rewards-value" id="rNextGem">100,000 shards</span>
-    </div>
-    <div class="rewards-row">
-      <span class="rewards-label">Next card reward at</span>
-      <span class="rewards-value" id="rNextCard">Ascension #3</span>
-    </div>
-    <div class="rewards-note">Claim rewards in <a class="rewards-link" href="/index.html">Void Cards → Profile Tab</a></div>
+    <div class="rewards-row"><span class="rewards-label">💎 Gems available</span><span class="rewards-value" id="rGems">0</span></div>
+    <div class="rewards-row"><span class="rewards-label">🃏 Cards available</span><span class="rewards-value" id="rCards">0</span></div>
+    <div class="rewards-row"><span class="rewards-label">Next gem at</span><span class="rewards-value" id="rNextGem">—</span></div>
+    <div class="rewards-row"><span class="rewards-label">Next card at</span><span class="rewards-value" id="rNextCard">—</span></div>
+    <div class="rewards-note">Claim in <a class="rewards-link" href="/index.html">Void Cards → Profile Tab</a></div>
   </div>
 
   <div id="newsTicker">🌌 Welcome to Void Cards Shard Collector...</div>
 </div>
 
-<!-- RIGHT: ACHIEVEMENTS + LOG -->
+<!-- RIGHT: ACHIEVEMENTS + STATS + LOG -->
 <div id="right">
-  <div class="panel-title">🏆 Achievements</div>
+  <div class="panel-title">🏆 Achievements <span id="achCount" style="color:var(--gold);font-size:.7rem;"></span></div>
   <div class="ach-grid" id="achGrid"></div>
-  <div class="panel-title" style="margin-top:8px">📜 Event Log</div>
-  <div id="eventLog" style="display:flex;flex-direction:column;gap:4px;font-size:.62rem;color:var(--mid);"></div>
-</div>
 
+  <div class="panel-title" style="margin-top:6px">📊 Stats</div>
+  <div class="stats-panel" id="statsPanel"></div>
+
+  <div class="panel-title" style="margin-top:6px">📜 Event Log</div>
+  <div id="eventLog" style="display:flex;flex-direction:column;gap:3px;font-size:.6rem;color:var(--mid);"></div>
+</div>
 </div>
 
 <script>
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // STARFIELD
-// ════════════════════════════════════════════
-const sc = document.getElementById('stars');
+// ══════════════════════════════════════════════════════
+const sc=document.getElementById('stars');
 for(let i=0;i<150;i++){
   const s=document.createElement('div');s.className='star';
   const sz=Math.random()*2.5+.5;
-  s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--mo:${(Math.random()*.2+.02).toFixed(2)};animation-delay:${(Math.random()*5).toFixed(1)}s;`;
+  s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*3+1.5).toFixed(1)}s;--mo:${(Math.random()*.15+.02).toFixed(2)};animation-delay:${(Math.random()*5).toFixed(1)}s;`;
   sc.appendChild(s);
 }
 
-// ════════════════════════════════════════════
-// BUILDINGS — each has compound cost scaling
-// ════════════════════════════════════════════
-const BUILDINGS = [
-  {id:'cursor',    icon:'👆', name:'Void Cursor',      baseCps:.1,  baseClickBonus:.1, baseCost:15,    desc:'Boosts clicking AND trickles shards passively.'},
-  {id:'shrine',    icon:'🕯️', name:'Void Shrine',      baseCps:1,   baseClickBonus:0,  baseCost:100,   desc:'Ancient altar that bleeds shards passively.'},
-  {id:'nebula',    icon:'🌫️', name:'Nebula Tap',        baseCps:5,   baseClickBonus:0,  baseCost:500,   desc:'Harvests raw nebula energy.'},
-  {id:'satellite', icon:'🛸', name:'Shard Drone',       baseCps:15,  baseClickBonus:0,  baseCost:2000,  desc:'Automated collector drone.'},
-  {id:'portal',    icon:'🌀', name:'Dark Portal',       baseCps:50,  baseClickBonus:0,  baseCost:8000,  desc:'Opens rifts into shard dimensions.'},
-  {id:'pulsar',    icon:'⭐', name:'Pulsar Engine',     baseCps:150, baseClickBonus:0,  baseCost:30000, desc:'Harnesses neutron star rotation.'},
-  {id:'blackhole', icon:'🕳️', name:'Black Hole Core',   baseCps:500, baseClickBonus:0,  baseCost:100000,desc:'Compresses space-time for shards.'},
-  {id:'galaxy',    icon:'🌌', name:'Galaxy Forge',      baseCps:1500,baseClickBonus:0,  baseCost:400000,desc:'Entire galaxies bent to your will.'},
-  {id:'voidheart', icon:'💜', name:'Void Heart',        baseCps:5000,baseClickBonus:0,  baseCost:1500000,desc:'The beating heart of nothingness.'},
-  {id:'omnishard', icon:'🔮', name:'Omni Matrix',       baseCps:15000,baseClickBonus:0, baseCost:6000000,desc:'Reality itself produces shards.'},
+// ══════════════════════════════════════════════════════
+// BUILDINGS
+// ══════════════════════════════════════════════════════
+const BUILDINGS=[
+  {id:'cursor',    icon:'👆', name:'Void Cursor',    baseCps:.1,  baseCost:15,      desc:'Auto-collects shards passively.'},
+  {id:'shrine',    icon:'🕯️', name:'Void Shrine',    baseCps:1,   baseCost:100,     desc:'Ancient altar that bleeds shards.'},
+  {id:'nebula',    icon:'🌫️', name:'Nebula Tap',      baseCps:5,   baseCost:500,     desc:'Harvests raw nebula energy.'},
+  {id:'satellite', icon:'🛸', name:'Shard Drone',     baseCps:15,  baseCost:2000,    desc:'Automated collection drone.'},
+  {id:'portal',    icon:'🌀', name:'Dark Portal',     baseCps:50,  baseCost:8000,    desc:'Opens rifts into shard dimensions.'},
+  {id:'pulsar',    icon:'⭐', name:'Pulsar Engine',   baseCps:150, baseCost:30000,   desc:'Harnesses neutron star rotation.'},
+  {id:'blackhole', icon:'🕳️', name:'Black Hole Core', baseCps:500, baseCost:100000,  desc:'Compresses space-time for shards.'},
+  {id:'galaxy',    icon:'🌌', name:'Galaxy Forge',    baseCps:1500,baseCost:400000,  desc:'Entire galaxies bent to your will.'},
+  {id:'voidheart', icon:'💜', name:'Void Heart',      baseCps:5000,baseCost:1500000, desc:'The beating heart of nothingness.'},
+  {id:'omnishard', icon:'🔮', name:'Omni Matrix',     baseCps:15000,baseCost:6000000,desc:'Reality itself produces shards.'},
 ];
 
-// ════════════════════════════════════════════
-// UPGRADES — compound multipliers
-// ════════════════════════════════════════════
-const UPGRADES = [
-  // Click upgrades
-  {id:'u1',  icon:'✨', name:'Stardust Touch',      cost:50,     req:0,        desc:'Clicks produce 2× shards.',       apply:(g)=>{g.clickMult*=2;}},
-  {id:'u2',  icon:'💎', name:'Void Crystal',        cost:500,    req:0,        desc:'Clicks produce 2× shards.',       apply:(g)=>{g.clickMult*=2;}},
-  {id:'u3',  icon:'⚡', name:'Plasma Surge',        cost:5000,   req:0,        desc:'Clicks produce 3× shards.',       apply:(g)=>{g.clickMult*=3;}},
-  {id:'u4',  icon:'🌟', name:'Star Punch',          cost:50000,  req:0,        desc:'Clicks produce 5× shards.',       apply:(g)=>{g.clickMult*=5;}},
-  {id:'u5',  icon:'💥', name:'Supernova Strike',    cost:500000, req:0,        desc:'Clicks produce 10× shards.',      apply:(g)=>{g.clickMult*=10;}},
-  // Cursor upgrades — make cursors clearly useful
-  {id:'uc1', icon:'👆', name:'Nimble Fingers',      cost:100,    req:'cursor', desc:'Void Cursors give 2× click power.',apply:(g)=>{g.bMult.cursor=(g.bMult.cursor||1)*2;}},
-  {id:'uc2', icon:'🖐️', name:'Void Grasp',          cost:800,    req:'cursor', desc:'Void Cursors give 3× click power.',apply:(g)=>{g.bMult.cursor=(g.bMult.cursor||1)*3;}},
-  {id:'uc3', icon:'🤲', name:'Cosmic Reach',        cost:8000,   req:'cursor', desc:'Void Cursors give 4× click power.',apply:(g)=>{g.bMult.cursor=(g.bMult.cursor||1)*4;}},
-  // Building upgrades — compound on specific buildings
-  {id:'u6',  icon:'🕯️', name:'Sacred Flame',        cost:200,    req:'shrine', desc:'Shrines are 2× more efficient.',  apply:(g)=>{g.bMult.shrine=(g.bMult.shrine||1)*2;}},
-  {id:'u7',  icon:'🌫️', name:'Nebula Focus',        cost:1500,   req:'nebula', desc:'Nebula Taps produce 2× shards.',  apply:(g)=>{g.bMult.nebula=(g.bMult.nebula||1)*2;}},
-  {id:'u8',  icon:'🛸', name:'Drone Swarm',         cost:8000,   req:'satellite',desc:'Drones are 3× more efficient.', apply:(g)=>{g.bMult.satellite=(g.bMult.satellite||1)*3;}},
-  {id:'u9',  icon:'🌀', name:'Rift Stabilizer',     cost:40000,  req:'portal', desc:'Portals produce 2× shards.',      apply:(g)=>{g.bMult.portal=(g.bMult.portal||1)*2;}},
-  {id:'u10', icon:'⭐', name:'Pulsar Sync',         cost:150000, req:'pulsar', desc:'Pulsars produce 3× shards.',      apply:(g)=>{g.bMult.pulsar=(g.bMult.pulsar||1)*3;}},
-  // Global multipliers
-  {id:'u11', icon:'🎴', name:'Void Card Synergy',   cost:2000,   req:0,        desc:'All generators 1.5× more output.', apply:(g)=>{g.globalMult*=1.5;}},
-  {id:'u12', icon:'🌌', name:'Dark Matter Infusion',cost:20000,  req:0,        desc:'All generators 2× more output.',  apply:(g)=>{g.globalMult*=2;}},
-  {id:'u13', icon:'💫', name:'Cosmic Alignment',    cost:200000, req:0,        desc:'All generators 2× more output.',  apply:(g)=>{g.globalMult*=2;}},
-  {id:'u14', icon:'🔮', name:'Void Resonance',      cost:2000000,req:0,        desc:'All generators 3× more output.',  apply:(g)=>{g.globalMult*=3;}},
-  // CPS-to-click
-  {id:'u15', icon:'⚙️', name:'Passive Tapping',     cost:10000,  req:0,        desc:'Each CPS adds 1% to click power.', apply:(g)=>{g.cpsToClick=.01;}},
-  {id:'u16', icon:'🤖', name:'Auto-Resonance',      cost:100000, req:0,        desc:'Each CPS adds 2% to click power.', apply:(g)=>{g.cpsToClick=.02;}},
+// ══════════════════════════════════════════════════════
+// UPGRADES
+// type: 'tap' = only affects manual tapping
+//       'idle'= only affects passive/buildings
+//       'global'= affects everything
+// req: null = always visible once affordable
+//      'buildingId' = visible once you own 1
+//      {b:'buildingId', n:X} = visible once you own X of that building
+// ══════════════════════════════════════════════════════
+const UPGRADES=[
+  // ── TAP ──
+  {id:'t1', icon:'✨', name:'Stardust Touch',   cat:'tap',    cost:50,       req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
+  {id:'t2', icon:'💎', name:'Void Crystal',     cat:'tap',    cost:600,      req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
+  {id:'t3', icon:'⚡', name:'Plasma Surge',     cat:'tap',    cost:7000,     req:null,              desc:'Taps produce ×3 shards.',         apply:g=>{g.clickMult*=3;}},
+  {id:'t4', icon:'🌟', name:'Star Punch',       cat:'tap',    cost:80000,    req:null,              desc:'Taps produce ×5 shards.',         apply:g=>{g.clickMult*=5;}},
+  {id:'t5', icon:'💥', name:'Supernova Strike', cat:'tap',    cost:800000,   req:null,              desc:'Taps produce ×10 shards.',        apply:g=>{g.clickMult*=10;}},
+  {id:'t6', icon:'☄️', name:'Void Fist',        cat:'tap',    cost:8000000,  req:null,              desc:'Taps produce ×20 shards.',        apply:g=>{g.clickMult*=20;}},
+  // ── CURSOR (idle only) ──
+  {id:'c1', icon:'👆', name:'Nimble Cursors',   cat:'idle',   cost:100,      req:'cursor',          desc:'Cursors collect ×2 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*2;}},
+  {id:'c2', icon:'🖐️', name:'Void Grasp',       cat:'idle',   cost:900,      req:{b:'cursor',n:5},  desc:'Cursors collect ×3 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*3;}},
+  {id:'c3', icon:'🤲', name:'Cosmic Reach',     cat:'idle',   cost:9000,     req:{b:'cursor',n:10}, desc:'Cursors collect ×4 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*4;}},
+  {id:'c4', icon:'🌐', name:'Void Network',     cat:'idle',   cost:90000,    req:{b:'cursor',n:25}, desc:'Cursors collect ×5 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*5;}},
+  // ── BUILDING IDLE ──
+  {id:'b1', icon:'🕯️', name:'Sacred Flame',     cat:'idle',   cost:300,      req:'shrine',          desc:'Shrines ×2 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*2;}},
+  {id:'b2', icon:'🔥', name:'Eternal Pyre',     cat:'idle',   cost:3000,     req:{b:'shrine',n:10}, desc:'Shrines ×3 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*3;}},
+  {id:'b3', icon:'🌫️', name:'Nebula Focus',     cat:'idle',   cost:2000,     req:'nebula',          desc:'Nebula Taps ×2 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*2;}},
+  {id:'b4', icon:'🌪️', name:'Nebula Storm',     cat:'idle',   cost:20000,    req:{b:'nebula',n:10}, desc:'Nebula Taps ×3 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*3;}},
+  {id:'b5', icon:'🛸', name:'Drone Swarm',      cat:'idle',   cost:10000,    req:'satellite',       desc:'Drones ×3 shards/sec.',           apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*3;}},
+  {id:'b6', icon:'🤖', name:'AI Collective',    cat:'idle',   cost:100000,   req:{b:'satellite',n:10},desc:'Drones ×4 shards/sec.',         apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*4;}},
+  {id:'b7', icon:'🌀', name:'Rift Stabilizer',  cat:'idle',   cost:50000,    req:'portal',          desc:'Portals ×2 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*2;}},
+  {id:'b8', icon:'🌌', name:'Rift Cascade',     cat:'idle',   cost:500000,   req:{b:'portal',n:10}, desc:'Portals ×3 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*3;}},
+  {id:'b9', icon:'⭐', name:'Pulsar Sync',      cat:'idle',   cost:200000,   req:'pulsar',          desc:'Pulsars ×3 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*3;}},
+  {id:'b10',icon:'💫', name:'Pulsar Array',     cat:'idle',   cost:2000000,  req:{b:'pulsar',n:10}, desc:'Pulsars ×4 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*4;}},
+  {id:'b11',icon:'🕳️', name:'Singularity Core', cat:'idle',  cost:700000,   req:'blackhole',       desc:'Black Holes ×2 shards/sec.',      apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*2;}},
+  {id:'b12',icon:'♾️', name:'Event Horizon',    cat:'idle',   cost:7000000,  req:{b:'blackhole',n:10},desc:'Black Holes ×3 shards/sec.',    apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*3;}},
+  {id:'b13',icon:'🌌', name:'Galaxy Engine',    cat:'idle',   cost:3000000,  req:'galaxy',          desc:'Galaxy Forges ×2 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*2;}},
+  {id:'b14',icon:'💠', name:'Cosmic Lattice',   cat:'idle',   cost:30000000, req:{b:'galaxy',n:10}, desc:'Galaxy Forges ×3 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*3;}},
+  // ── GLOBAL ──
+  {id:'g1', icon:'🎴', name:'Void Card Synergy',cat:'global', cost:3000,     req:null,              desc:'All generators ×1.5 output.',     apply:g=>{g.globalMult*=1.5;}},
+  {id:'g2', icon:'🔯', name:'Dark Matter',       cat:'global', cost:30000,    req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
+  {id:'g3', icon:'💫', name:'Cosmic Alignment',  cat:'global', cost:300000,   req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
+  {id:'g4', icon:'🔮', name:'Void Resonance',    cat:'global', cost:3000000,  req:null,              desc:'All generators ×3 output.',       apply:g=>{g.globalMult*=3;}},
+  {id:'g5', icon:'🌠', name:'Stellar Collapse',  cat:'global', cost:30000000, req:null,              desc:'All generators ×5 output.',       apply:g=>{g.globalMult*=5;}},
+  {id:'g6', icon:'♾️', name:'Dimensional Rift',  cat:'global', cost:300000000,req:null,              desc:'All generators ×10 output.',      apply:g=>{g.globalMult*=10;}},
 ];
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // ACHIEVEMENTS
-// ════════════════════════════════════════════
-const ACHIEVEMENTS = [
-  {id:'a1',  icon:'🌱', name:'First Shard',       check:g=>g.totalEarned>=1},
-  {id:'a2',  icon:'💧', name:'100 Shards',         check:g=>g.totalEarned>=100},
-  {id:'a3',  icon:'🌊', name:'1K Shards',          check:g=>g.totalEarned>=1000},
-  {id:'a4',  icon:'⭐', name:'10K Shards',         check:g=>g.totalEarned>=10000},
-  {id:'a5',  icon:'🌟', name:'100K Shards',        check:g=>g.totalEarned>=100000},
-  {id:'a6',  icon:'💫', name:'1M Shards',          check:g=>g.totalEarned>=1000000},
-  {id:'a7',  icon:'🖱️', name:'100 Clicks',         check:g=>g.totalClicks>=100},
-  {id:'a8',  icon:'✊', name:'1K Clicks',          check:g=>g.totalClicks>=1000},
-  {id:'a9',  icon:'🏋️', name:'10K Clicks',         check:g=>g.totalClicks>=10000},
-  {id:'a10', icon:'🏗️', name:'Builder',            check:g=>totalBuildings(g)>=10},
-  {id:'a11', icon:'🏙️', name:'Architect',          check:g=>totalBuildings(g)>=50},
-  {id:'a12', icon:'🌆', name:'Megastructure',      check:g=>totalBuildings(g)>=100},
-  {id:'a13', icon:'⚗️', name:'Upgrade Seeker',     check:g=>g.upgrades.size>=3},
-  {id:'a14', icon:'🧪', name:'Upgrade Hoarder',    check:g=>g.upgrades.size>=10},
-  {id:'a15', icon:'🌠', name:'First Ascension',    check:g=>g.prestiges>=1},
-  {id:'a16', icon:'🌌', name:'Void Incarnate',     check:g=>g.prestiges>=5},
-  {id:'a17', icon:'⚡', name:'Storm Rider',        check:g=>g.eventsTriggered>=3},
-  {id:'a18', icon:'⭐', name:'Golden Touch',       check:g=>g.goldenClicks>=1},
-  {id:'a19', icon:'💰', name:'Golden Addict',      check:g=>g.goldenClicks>=10},
-  {id:'a20', icon:'🔮', name:'Void God',           check:g=>g.cps>=1000},
+// ══════════════════════════════════════════════════════
+const ACHIEVEMENTS=[
+  // Shards earned
+  {id:'a1', icon:'🌱', name:'First Shard',        check:g=>g.totalEarned>=1},
+  {id:'a2', icon:'💧', name:'100 Shards',          check:g=>g.totalEarned>=100},
+  {id:'a3', icon:'🌊', name:'10K Shards',          check:g=>g.totalEarned>=10000},
+  {id:'a4', icon:'⭐', name:'100K Shards',         check:g=>g.totalEarned>=100000},
+  {id:'a5', icon:'🌟', name:'1M Shards',           check:g=>g.totalEarned>=1000000},
+  {id:'a6', icon:'💫', name:'10M Shards',          check:g=>g.totalEarned>=10000000},
+  {id:'a7', icon:'🌌', name:'1B Shards',           check:g=>g.totalEarned>=1000000000},
+  // Tapping
+  {id:'a8', icon:'👆', name:'First Tap',           check:g=>g.totalClicks>=1},
+  {id:'a9', icon:'✊', name:'100 Taps',            check:g=>g.totalClicks>=100},
+  {id:'a10',icon:'🏋️', name:'10K Taps',            check:g=>g.totalClicks>=10000},
+  {id:'a11',icon:'⚡', name:'100K Taps',           check:g=>g.totalClicks>=100000},
+  // Buildings
+  {id:'a12',icon:'🏗️', name:'Builder',             check:g=>totalBuildings(g)>=10},
+  {id:'a13',icon:'🏙️', name:'Architect',           check:g=>totalBuildings(g)>=50},
+  {id:'a14',icon:'🌆', name:'Megastructure',       check:g=>totalBuildings(g)>=100},
+  {id:'a15',icon:'🌃', name:'Galactic Empire',     check:g=>totalBuildings(g)>=200},
+  // Upgrades
+  {id:'a16',icon:'⚗️', name:'Upgrade Seeker',      check:g=>g.upgrades.size>=3},
+  {id:'a17',icon:'🧪', name:'Upgrade Hoarder',     check:g=>g.upgrades.size>=10},
+  {id:'a18',icon:'🔬', name:'Void Scientist',      check:g=>g.upgrades.size>=20},
+  // Prestige
+  {id:'a19',icon:'🌠', name:'First Ascension',     check:g=>g.prestiges>=1},
+  {id:'a20',icon:'🌌', name:'Void Walker',         check:g=>g.prestiges>=3},
+  {id:'a21',icon:'💜', name:'Void Incarnate',      check:g=>g.prestiges>=5},
+  {id:'a22',icon:'🔮', name:'Beyond the Void',     check:g=>g.prestiges>=10},
+  // Events
+  {id:'a23',icon:'⚡', name:'Storm Rider',         check:g=>g.eventsTriggered>=3},
+  {id:'a24',icon:'🌩️', name:'Event Chaser',        check:g=>g.eventsTriggered>=15},
+  // Golden orbs
+  {id:'a25',icon:'⭐', name:'Golden Touch',        check:g=>g.goldenClicks>=1},
+  {id:'a26',icon:'💰', name:'Golden Addict',       check:g=>g.goldenClicks>=10},
+  {id:'a27',icon:'👑', name:'Orb Collector',       check:g=>g.goldenClicks>=50},
+  // Combo
+  {id:'a28',icon:'🔥', name:'On Fire',             check:g=>g.maxCombo>=10},
+  {id:'a29',icon:'💥', name:'Frenzy Mode',         check:g=>g.frenzyCount>=1},
+  // CPS
+  {id:'a30',icon:'🚀', name:'100/sec',             check:g=>g.cps>=100},
+  {id:'a31',icon:'🛸', name:'10K/sec',             check:g=>g.cps>=10000},
+  {id:'a32',icon:'🌌', name:'1M/sec',              check:g=>g.cps>=1000000},
 ];
 
-// ════════════════════════════════════════════
-// SPECIAL EVENTS
-// ════════════════════════════════════════════
-const EVENTS = [
-  {id:'storm',    name:'Void Storm',      duration:30, mult:2,    banner:'⚡ VOID STORM — 2× ALL SHARDS!',   color:'#ff2d78'},
-  {id:'surge',    name:'Cosmic Surge',    duration:20, mult:3,    banner:'🌌 COSMIC SURGE — 3× ALL SHARDS!',  color:'#9b30ff'},
-  {id:'eclipse',  name:'Dark Eclipse',    duration:40, mult:1.5,  banner:'🌑 DARK ECLIPSE — 1.5× SHARDS!',    color:'#00e5ff'},
-  {id:'nova',     name:'Stellar Nova',    duration:15, mult:5,    banner:'💥 STELLAR NOVA — 5× SHARDS!',      color:'#f0c040'},
+// ══════════════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════════════
+const EVENTS=[
+  {id:'storm',   name:'Void Storm',    dur:30, shardMult:2,   tapMult:1,   banner:'⚡ VOID STORM — ×2 ALL SHARDS!',    color:'#ff2d78'},
+  {id:'surge',   name:'Cosmic Surge',  dur:20, shardMult:3,   tapMult:1,   banner:'🌌 COSMIC SURGE — ×3 ALL SHARDS!',  color:'#9b30ff'},
+  {id:'eclipse', name:'Dark Eclipse',  dur:45, shardMult:1.5, tapMult:1,   banner:'🌑 DARK ECLIPSE — ×1.5 SHARDS!',   color:'#00e5ff'},
+  {id:'nova',    name:'Stellar Nova',  dur:15, shardMult:5,   tapMult:1,   banner:'💥 STELLAR NOVA — ×5 SHARDS!',     color:'#f0c040'},
+  {id:'frenzy',  name:'Tap Frenzy',    dur:20, shardMult:1,   tapMult:7,   banner:'🔥 TAP FRENZY — ×7 TAP POWER!',   color:'#39ff14'},
+  {id:'void',    name:'Void Rupture',  dur:10, shardMult:10,  tapMult:10,  banner:'🔮 VOID RUPTURE — ×10 EVERYTHING!',color:'#f0c040'},
 ];
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // GAME STATE
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function newGame(){
   return {
     shards:0, totalEarned:0, totalClicks:0,
-    clickMult:1, globalMult:1, cpsToClick:0,
-    bMult:{}, buildings:{},
-    upgrades:new Set(),
-    achievements:new Set(),
+    clickMult:1, globalMult:1,
+    cursorMult:1, bMult:{},
+    upgrades:new Set(), achievements:new Set(),
     prestiges:0, prestigeBonus:1,
     cps:0, baseCps:0,
     eventsTriggered:0, goldenClicks:0,
+    frenzyCount:0, maxCombo:0,
     eventActive:null, eventTimer:0,
     goldenOrbVisible:false, goldenOrbTimer:0,
-    nextGoldenOrb:randomGoldenDelay(),
-    nextEvent:randomEventDelay(),
-    ticks:0,
+    nextGoldenOrb:randGolden(),
+    nextEvent:randEvent(),
+    ticks:0, sessionStart:Date.now(),
+    totalPlayTime:0,
   };
 }
-let G = newGame();
+let G=newGame();
+let combo=0, comboTimer=0, isFrenzy=false, frenzyTimer=0;
+const COMBO_DECAY=3, COMBO_MAX=20, FRENZY_THRESH=20, FRENZY_DUR=10;
 
-function randomGoldenDelay(){ return 30+Math.random()*90; } // 30–120s
-function randomEventDelay(){ return 60+Math.random()*120; }
-function totalBuildings(g){ return Object.values(g.buildings).reduce((a,b)=>a+b,0); }
+function randGolden(){return 45+Math.random()*90;}
+function randEvent(){return 90+Math.random()*150;}
+function totalBuildings(g){return Object.values(g.buildings||{}).reduce((a,b)=>a+b,0);}
 
-// ════════════════════════════════════════════
-// COST SCALING: price = base * 1.15^owned
-// ════════════════════════════════════════════
-function buildingCost(b){
-  const owned = G.buildings[b.id]||0;
-  return Math.floor(b.baseCost * Math.pow(1.15, owned));
+// ══════════════════════════════════════════════════════
+// COST SCALING
+// ══════════════════════════════════════════════════════
+function buildCost(b){
+  const owned=G.buildings[b.id]||0;
+  return Math.floor(b.baseCost*Math.pow(1.15,owned));
 }
 
-// ════════════════════════════════════════════
-// RECALCULATE CPS (called after any change)
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// RECALC CPS
+// ══════════════════════════════════════════════════════
 function recalcCps(){
   let total=0;
   BUILDINGS.forEach(b=>{
     const owned=G.buildings[b.id]||0;
+    if(!owned)return;
     const bm=G.bMult[b.id]||1;
-    total += b.baseCps * owned * bm;
+    if(b.id==='cursor'){
+      total+=b.baseCps*owned*(G.cursorMult||1);
+    } else {
+      total+=b.baseCps*owned*bm;
+    }
   });
   G.baseCps=total;
-  G.cps=total*G.globalMult*(G.eventActive?G.eventActive.mult:1)*G.prestigeBonus;
+  const evMult=G.eventActive?G.eventActive.shardMult:1;
+  G.cps=total*G.globalMult*evMult*G.prestigeBonus;
 }
 
-// ════════════════════════════════════════════
-// CLICK POWER
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// CLICK POWER (tap only)
+// ══════════════════════════════════════════════════════
 function clickPower(){
-  let base = 1;
-  // Each Void Cursor directly boosts click power
-  const cursorsOwned = G.buildings['cursor'] || 0;
-  const cursorClickBonus = 0.1; // base bonus per cursor
-  base += cursorsOwned * cursorClickBonus * (G.bMult['cursor'] || 1) * G.globalMult * G.prestigeBonus;
-  // CPS-to-click upgrade bonus
-  base += G.baseCps * G.cpsToClick;
-  return Math.max(1, base) * G.clickMult * (G.eventActive ? G.eventActive.mult : 1) * G.prestigeBonus;
+  const evMult=G.eventActive?G.eventActive.tapMult:1;
+  const frMult=isFrenzy?5:1;
+  const comboMult=1+(Math.min(combo,COMBO_MAX)*0.05); // up to 2× at max combo
+  return Math.max(1,G.clickMult)*evMult*frMult*comboMult*G.prestigeBonus;
 }
 
-// ════════════════════════════════════════════
-// FORMAT NUMBERS
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// FORMAT
+// ══════════════════════════════════════════════════════
 function fmt(n){
+  if(n>=1e15)return(n/1e15).toFixed(2)+'Qa';
   if(n>=1e12)return(n/1e12).toFixed(2)+'T';
   if(n>=1e9)return(n/1e9).toFixed(2)+'B';
   if(n>=1e6)return(n/1e6).toFixed(2)+'M';
@@ -392,85 +460,92 @@ function fmt(n){
   if(n>0)return n.toFixed(2);
   return '0';
 }
+function fmtTime(s){
+  if(s<60)return s+'s';
+  if(s<3600)return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';
+  return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+}
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// UPGRADE VISIBILITY
+// ══════════════════════════════════════════════════════
+function upgradeVisible(u){
+  if(G.upgrades.has(u.id))return true;
+  if(!u.req)return true;
+  if(typeof u.req==='string')return (G.buildings[u.req]||0)>0;
+  if(u.req.b)return (G.buildings[u.req.b]||0)>=u.req.n;
+  return false;
+}
+
+// ══════════════════════════════════════════════════════
 // RENDER
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function render(){
   document.getElementById('sShard').textContent=fmt(G.shards);
   document.getElementById('sCps').textContent=fmt(G.cps)+'/s';
   document.getElementById('sClick').textContent=fmt(clickPower());
   document.getElementById('sTotal').textContent=fmt(G.totalEarned);
 
-  // progress bar toward next prestige milestone
-  const pThresh=prestige_threshold();
-  const pct=Math.min(100,(G.totalEarned/pThresh)*100);
-  document.getElementById('multBar').style.width=pct+'%';
+  // prestige progress bar
+  const thresh=prestigeThresh();
+  const pct=Math.min(100,(G.totalEarned/thresh)*100);
+  document.getElementById('progBar').style.width=pct+'%';
   document.getElementById('cpsLabel').textContent=
-    G.cps>0?`+${fmt(G.cps)} shards/sec`:'Click the Void Orb';
+    G.cps>0?`+${fmt(G.cps)} shards/sec · ${fmt(G.cps*3600)}/hr`:'Tap the Void Orb to begin';
+
+  // combo bar
+  const comboPct=Math.min(100,(combo/FRENZY_THRESH)*100);
+  document.getElementById('comboBar').style.width=comboPct+'%';
+  const cl=document.getElementById('comboLabel');
+  if(isFrenzy){
+    cl.textContent=`🔥 FRENZY! ×5 TAP — ${Math.ceil(frenzyTimer)}s`;
+    cl.style.color='var(--green)';
+  } else if(combo>0){
+    cl.textContent=`COMBO ×${combo} — ${comboMult().toFixed(2)}× power`;
+    cl.style.color='var(--gold)';
+  } else {
+    cl.textContent='';
+  }
 
   renderBuildings();
   renderUpgrades();
   renderAchievements();
   renderPrestige();
   renderRewards();
+  renderStats();
+  renderNews();
 }
 
-function renderRewards(){
-  try{
-    const gemBlocks = Math.floor(G.totalEarned / SHARD_GEM_THRESHOLD);
-    const existing = JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
-    const gemsClaimed = existing.gemBlocksClaimed || 0;
-    const cardsClaimed = existing.cardBlocksClaimed || 0;
-    const gemsAvail = Math.max(0, gemBlocks - gemsClaimed) * GEM_REWARD_AMOUNT;
-    const cardsAvail = Math.max(0, Math.floor(G.prestiges / ASCENSION_CARD_EVERY) - cardsClaimed);
-    document.getElementById('rGems').textContent = gemsAvail > 0 ? '+💎 '+gemsAvail : '0';
-    document.getElementById('rGems').style.color = gemsAvail > 0 ? '#f0c040' : '#4a5568';
-    document.getElementById('rCards').textContent = cardsAvail > 0 ? cardsAvail+' card'+(cardsAvail>1?'s':'') : '0';
-    document.getElementById('rCards').style.color = cardsAvail > 0 ? '#a855f7' : '#4a5568';
-    // Next gem milestone
-    const nextGemBlock = gemsClaimed + 1;
-    const nextGemShards = nextGemBlock * SHARD_GEM_THRESHOLD;
-    if(G.totalEarned >= nextGemShards){
-      document.getElementById('rNextGem').textContent = 'Ready to claim!';
-      document.getElementById('rNextGem').style.color = '#22c55e';
-    } else {
-      const left = nextGemShards - G.totalEarned;
-      document.getElementById('rNextGem').textContent = fmt(left)+' more shards';
-      document.getElementById('rNextGem').style.color = '#f0c040';
-    }
-    // Next card milestone
-    const nextCardBlock = cardsClaimed + 1;
-    const nextAscension = nextCardBlock * ASCENSION_CARD_EVERY;
-    if(G.prestiges >= nextAscension){
-      document.getElementById('rNextCard').textContent = 'Ready to claim!';
-      document.getElementById('rNextCard').style.color = '#22c55e';
-    } else {
-      document.getElementById('rNextCard').textContent = 'Ascension #'+nextAscension;
-      document.getElementById('rNextCard').style.color = '#a855f7';
-    }
-  }catch(e){}
-}
+function comboMult(){return 1+(Math.min(combo,COMBO_MAX)*0.05);}
 
 function renderBuildings(){
   const list=document.getElementById('buildingList');
   list.innerHTML='';
   BUILDINGS.forEach(b=>{
-    const cost=buildingCost(b);
+    const cost=buildCost(b);
     const owned=G.buildings[b.id]||0;
     const canAfford=G.shards>=cost;
+    const locked=!canAfford&&owned===0;
     const div=document.createElement('div');
-    div.className='building'+((!canAfford&&owned===0)?' locked':'');
-    div.innerHTML=`<div class="b-icon">${b.icon}</div>
+    div.className='building'+(locked?' locked':canAfford?' can-afford':'');
+    // milestone pips (5, 10, 25, 50, 100)
+    const milePips=[5,10,25,50,100];
+    const pipsHtml=milePips.map(m=>`<div class="pip${owned>=m?' lit':''}"></div>`).join('');
+    const cpsEach=b.id==='cursor'
+      ?b.baseCps*(G.cursorMult||1)*G.globalMult*G.prestigeBonus
+      :b.baseCps*(G.bMult[b.id]||1)*G.globalMult*G.prestigeBonus;
+    div.innerHTML=`
+      <div class="b-icon">${b.icon}</div>
       <div class="b-info">
         <span class="b-name">${b.name}</span>
-        <span class="b-owned">${owned} owned · ${b.id==='cursor'
-          ? `+${fmt(b.baseCps*(G.bMult[b.id]||1)*G.globalMult*G.prestigeBonus)}/s +${((0.1*(G.bMult['cursor']||1)*G.globalMult*G.prestigeBonus)).toFixed(1)}/click`
-          : `${fmt(b.baseCps*(G.bMult[b.id]||1)*G.globalMult*G.prestigeBonus)}/s each`
-        }</span>
+        <span class="b-stat">${fmt(cpsEach)}/s each</span>
+        <div class="b-pips">${pipsHtml}</div>
       </div>
-      <div class="b-cost ${canAfford?'':'cant'}">${fmt(cost)}✦</div>`;
-    if(canAfford||owned>0) div.addEventListener('click',()=>buyBuilding(b));
+      <div style="text-align:right;flex-shrink:0">
+        <span class="b-cost ${canAfford?'':'cant'}">${fmt(cost)}✦</span>
+        <span class="b-owned-badge">${owned} owned</span>
+      </div>`;
+    if(!locked) div.addEventListener('click',()=>buyBuilding(b));
     list.appendChild(div);
   });
 }
@@ -479,14 +554,13 @@ function renderUpgrades(){
   const grid=document.getElementById('upgradeGrid');
   grid.innerHTML='';
   UPGRADES.forEach(u=>{
+    if(!upgradeVisible(u))return;
     const bought=G.upgrades.has(u.id);
-    const reqMet=!u.req||(G.buildings[u.req]&&G.buildings[u.req]>0);
     const canAfford=G.shards>=u.cost;
-    const visible=bought||reqMet;
-    if(!visible)return;
     const btn=document.createElement('div');
-    btn.className='upg-icon-btn'+(bought?' bought':(!canAfford?' locked-upg':''));
-    btn.innerHTML=`${u.icon}<div class="upg-tip"><b>${u.name}</b><br>${u.desc}<br><span style="color:var(--gold)">${bought?'OWNED':fmt(u.cost)+'✦'}</span></div>`;
+    btn.className='upg-icon-btn'+(bought?' bought':canAfford?' affordable':' locked-upg');
+    const catColor={tap:'tap',idle:'idle',global:'global'}[u.cat]||'';
+    btn.innerHTML=`${u.icon}<div class="upg-tip"><div class="tip-cat ${catColor}">${u.cat.toUpperCase()}</div><b>${u.name}</b><br>${u.desc}<br><span style="color:var(--gold)">${bought?'✓ OWNED':fmt(u.cost)+'✦'}</span></div>`;
     if(!bought&&canAfford) btn.addEventListener('click',()=>buyUpgrade(u));
     grid.appendChild(btn);
   });
@@ -494,45 +568,118 @@ function renderUpgrades(){
 
 function renderAchievements(){
   const grid=document.getElementById('achGrid');
+  const unlocked=ACHIEVEMENTS.filter(a=>G.achievements.has(a.id)).length;
+  document.getElementById('achCount').textContent=`${unlocked}/${ACHIEVEMENTS.length}`;
   grid.innerHTML='';
   ACHIEVEMENTS.forEach(a=>{
-    const unlocked=G.achievements.has(a.id);
+    const u=G.achievements.has(a.id);
     const div=document.createElement('div');
-    div.className='ach '+(unlocked?'unlocked':'locked-ach');
-    div.innerHTML=`<span class="ach-icon">${unlocked?a.icon:'?'}</span><span class="ach-name">${unlocked?a.name:'???'}</span>`;
+    div.className='ach '+(u?'unlocked':'locked-ach');
+    div.innerHTML=`<span class="ach-icon">${u?a.icon:'🔒'}</span><span class="ach-name">${u?a.name:'???'}</span>`;
+    div.title=u?a.name:'Keep playing to unlock';
     grid.appendChild(div);
   });
 }
 
 function renderPrestige(){
-  const thresh=prestige_threshold();
+  const thresh=prestigeThresh();
   const btn=document.getElementById('prestigeBtn');
   const info=document.getElementById('prestigeInfo');
-  const canPrestige=G.totalEarned>=thresh;
-  btn.classList.toggle('vis',canPrestige);
+  const prog=document.getElementById('prestigeProg');
+  const can=G.totalEarned>=thresh;
+  btn.classList.toggle('vis',can);
   if(G.prestiges>0){
-    info.textContent=`✦ Ascensions: ${G.prestiges} · Bonus: ${G.prestigeBonus.toFixed(1)}×`;
+    info.textContent=`✦ Ascensions: ${G.prestiges} · Bonus: ×${G.prestigeBonus.toFixed(1)}`;
+  }
+  if(!can){
+    const pct=Math.min(100,(G.totalEarned/thresh)*100).toFixed(1);
+    prog.textContent=`${pct}% to next ascension (${fmt(thresh-G.totalEarned)} more)`;
+  } else {
+    prog.textContent='Ready to ascend!';
   }
 }
 
-function prestige_threshold(){ return 100000*Math.pow(5,G.prestiges); }
+function prestigeThresh(){return 10000000*Math.pow(5,G.prestiges);}
 
-// ════════════════════════════════════════════
+function renderRewards(){
+  try{
+    const GEM_THRESH=500000, GEM_AMT=50, CARD_EVERY=3;
+    const ex=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
+    const gemBlocks=Math.floor(G.totalEarned/GEM_THRESH);
+    const gemsAvail=Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT;
+    const cardsAvail=Math.max(0,Math.floor(G.prestiges/CARD_EVERY)-(ex.cardBlocksClaimed||0));
+    document.getElementById('rGems').textContent=gemsAvail>0?'+💎 '+gemsAvail:'0';
+    document.getElementById('rGems').style.color=gemsAvail>0?'var(--gold)':'var(--dim)';
+    document.getElementById('rCards').textContent=cardsAvail>0?cardsAvail+' card'+(cardsAvail>1?'s':''):'0';
+    document.getElementById('rCards').style.color=cardsAvail>0?'var(--purple)':'var(--dim)';
+    const nextGem=(Math.floor(G.totalEarned/GEM_THRESH)+1)*GEM_THRESH;
+    const nextCard=(Math.floor(G.prestiges/CARD_EVERY)+1)*CARD_EVERY;
+    document.getElementById('rNextGem').textContent=G.totalEarned>=nextGem?'Ready!':fmt(nextGem-G.totalEarned)+' more shards';
+    document.getElementById('rNextCard').textContent=G.prestiges>=nextCard?'Ready!':'Ascension #'+nextCard;
+  }catch(e){}
+}
+
+function renderStats(){
+  const elapsed=Math.floor((Date.now()-G.sessionStart)/1000)+(G.totalPlayTime||0);
+  const panel=document.getElementById('statsPanel');
+  panel.innerHTML=[
+    ['Time played', fmtTime(elapsed)],
+    ['Total taps', fmt(G.totalClicks)],
+    ['Ascensions', G.prestiges],
+    ['Golden orbs', G.goldenClicks],
+    ['Best combo', G.maxCombo],
+    ['Frenzy count', G.frenzyCount||0],
+    ['Buildings', totalBuildings(G)],
+    ['Upgrades', G.upgrades.size+'/'+UPGRADES.length],
+  ].map(([l,v])=>`<div class="srow"><span class="srow-label">${l}</span><span class="srow-val">${v}</span></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// DYNAMIC NEWS TICKER
+// ══════════════════════════════════════════════════════
+const NEWS_STATIC=[
+  '🎴 New void card packs available at voidcards.org!',
+  '⭐ Scientists baffled by mysterious shard formations...',
+  '🛸 Drone fleets report record collection rates...',
+  '💜 The Void Heart pulses with unprecedented energy...',
+  '🌠 Golden Orbs sighted across the galaxy — click fast!',
+  '🔮 Ancient void ruins discovered — shard surge expected...',
+  '⚡ Void storm warning issued for sectors 7 through 12...',
+  '🌌 Galactic council alarmed by rapid shard accumulation...',
+  '🕳️ Black hole anomalies detected in sector void-9...',
+];
+function renderNews(){
+  const dynamic=[];
+  if(G.totalEarned>0) dynamic.push(`🌌 Void Walker has amassed ${fmt(G.totalEarned)} shards total — galactic council alarmed.`);
+  if(G.cps>1000) dynamic.push(`🛸 ${fmt(G.cps)} shards flowing per second — unprecedented energy readings.`);
+  if(G.prestiges>0) dynamic.push(`🌠 ${G.prestiges} void ascension${G.prestiges>1?'s':''} recorded — the void remembers.`);
+  if(G.goldenClicks>0) dynamic.push(`⭐ ${G.goldenClicks} golden orb${G.goldenClicks>1?'s':''} claimed — fortune favors the swift.`);
+  const all=[...dynamic,...NEWS_STATIC];
+  const idx=Math.floor(Date.now()/8000)%all.length;
+  const el=document.getElementById('newsTicker');
+  if(el.textContent!==all[idx]) el.textContent=all[idx];
+}
+
+// ══════════════════════════════════════════════════════
 // BUY BUILDING
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function buyBuilding(b){
-  const cost=buildingCost(b);
+  const cost=buildCost(b);
   if(G.shards<cost)return;
   G.shards-=cost;
   G.buildings[b.id]=(G.buildings[b.id]||0)+1;
+  // Check milestone pip unlocks
+  const owned=G.buildings[b.id];
+  const miles={5:'×2 power bonus!',10:'×3 power bonus!',25:'×4 power bonus!',50:'Legendary status!',100:'Mythic status!'};
+  if(miles[owned]) showToast(`${b.icon} ${b.name} at ${owned}! ${miles[owned]}`);
   recalcCps();
   checkAchievements();
   render();
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // BUY UPGRADE
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function buyUpgrade(u){
   if(G.upgrades.has(u.id)||G.shards<u.cost)return;
   G.shards-=u.cost;
@@ -544,69 +691,83 @@ function buyUpgrade(u){
   render();
 }
 
-// ════════════════════════════════════════════
-// CLICK ORB
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// TAP ORB
+// ══════════════════════════════════════════════════════
 document.getElementById('orbWrap').addEventListener('click',(e)=>{
   if(e.target.id==='goldenOrb')return;
   const earned=clickPower();
-  const isCrit=Math.random()<.05;
+  const isCrit=Math.random()<.04;
   const final=isCrit?earned*10:earned;
   G.shards+=final;
   G.totalEarned+=final;
   G.totalClicks++;
-  spawnFt(`+${fmt(final)}`,e.clientX,e.clientY,isCrit);
-  if(isCrit)showToast('💥 CRITICAL CLICK! 10×');
+  // combo
+  combo=Math.min(combo+1,COMBO_MAX+5);
+  comboTimer=COMBO_DECAY;
+  if(combo>G.maxCombo) G.maxCombo=combo;
+  // frenzy trigger
+  if(combo>=FRENZY_THRESH&&!isFrenzy){
+    isFrenzy=true;
+    frenzyTimer=FRENZY_DUR;
+    G.frenzyCount=(G.frenzyCount||0)+1;
+    document.getElementById('frenzyRing').classList.add('active');
+    showToast('🔥 FRENZY! ×5 tap power for 10s!');
+    logEvent('🔥 Tap Frenzy triggered!');
+  }
+  spawnFt(`+${fmt(final)}`,e.clientX,e.clientY,isCrit,isFrenzy);
+  if(isCrit) showToast('💥 CRITICAL HIT! ×10');
   checkAchievements();
   checkMilestones();
   render();
 });
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // GOLDEN ORB
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 const goldenOrbEl=document.getElementById('goldenOrb');
 goldenOrbEl.addEventListener('click',(e)=>{
   e.stopPropagation();
   if(!G.goldenOrbVisible)return;
-  const bonus=Math.floor(G.cps*30)||1000;
+  const bonus=Math.floor(Math.max(G.cps*30,G.clickPower||1000));
   G.shards+=bonus;
   G.totalEarned+=bonus;
   G.goldenClicks++;
   G.goldenOrbVisible=false;
   goldenOrbEl.classList.remove('show');
   showToast(`⭐ Golden Orb! +${fmt(bonus)} shards!`);
-  logEvent(`⭐ Golden Orb clicked — +${fmt(bonus)} shards`);
+  logEvent(`⭐ Golden Orb — +${fmt(bonus)} shards`);
   checkAchievements();
   render();
 });
 
 function showGoldenOrb(){
   const wrap=document.getElementById('orbWrap');
-  const w=wrap.offsetWidth, h=wrap.offsetHeight;
-  const x=20+Math.random()*(w-60), y=10+Math.random()*(h-60);
-  goldenOrbEl.style.left=x+'px';
-  goldenOrbEl.style.top=y+'px';
+  const w=wrap.offsetWidth,h=wrap.offsetHeight;
+  goldenOrbEl.style.left=(15+Math.random()*(w-55))+'px';
+  goldenOrbEl.style.top=(10+Math.random()*(h-55))+'px';
   goldenOrbEl.classList.add('show');
   G.goldenOrbVisible=true;
-  G.goldenOrbTimer=15; // disappears in 15s if not clicked
+  G.goldenOrbTimer=13;
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // EVENTS
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function triggerEvent(){
-  const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  // Void Rupture is rare (10% chance)
+  const pool=EVENTS.filter(e=>e.id!=='void');
+  const ev=Math.random()<.1?EVENTS.find(e=>e.id==='void'):pool[Math.floor(Math.random()*pool.length)];
   G.eventActive=ev;
-  G.eventTimer=ev.duration;
+  G.eventTimer=ev.dur;
   G.eventsTriggered++;
   const banner=document.getElementById('eventBanner');
-  banner.textContent=ev.banner;
+  document.getElementById('eventText').textContent=ev.banner;
   banner.style.borderColor=ev.color;
   banner.style.color=ev.color;
   banner.classList.add('show');
   showToast(ev.banner);
-  logEvent(`🌩️ Event: ${ev.name} started (${ev.duration}s)`);
+  logEvent(`🌩️ ${ev.name} started (${ev.dur}s)`);
   recalcCps();
   checkAchievements();
 }
@@ -618,51 +779,62 @@ function endEvent(){
   recalcCps();
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // PRESTIGE
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 document.getElementById('prestigeBtn').addEventListener('click',()=>{
-  if(G.totalEarned<prestige_threshold())return;
-  if(!confirm(`⚠️ Void Ascension\n\nYou will lose all shards and buildings, but gain a permanent ${((G.prestiges+1)*0.5+1).toFixed(1)}× shard multiplier.\n\nAscend?`))return;
+  if(G.totalEarned<prestigeThresh())return;
+  const nextBonus=(G.prestiges+1)*0.5+1;
+  if(!confirm(`⚠️ VOID ASCENSION\n\nAll shards & buildings reset.\nYou gain a permanent ×${nextBonus.toFixed(1)} shard multiplier.\n\nThis stacks with each ascension.\n\nAscend?`))return;
+  const played=Math.floor((Date.now()-G.sessionStart)/1000)+(G.totalPlayTime||0);
   G.prestiges++;
   G.prestigeBonus=1+G.prestiges*0.5;
-  const kept={prestiges:G.prestiges,prestigeBonus:G.prestigeBonus,achievements:G.achievements,totalClicks:G.totalClicks,eventsTriggered:G.eventsTriggered,goldenClicks:G.goldenClicks};
+  const kept={
+    prestiges:G.prestiges, prestigeBonus:G.prestigeBonus,
+    achievements:G.achievements, totalClicks:G.totalClicks,
+    eventsTriggered:G.eventsTriggered, goldenClicks:G.goldenClicks,
+    frenzyCount:G.frenzyCount||0, maxCombo:G.maxCombo||0,
+    totalPlayTime:played,
+  };
   G=Object.assign(newGame(),kept);
+  combo=0;comboTimer=0;isFrenzy=false;frenzyTimer=0;
+  document.getElementById('frenzyRing').classList.remove('active');
   recalcCps();
-  showToast(`✦ Ascension #${G.prestiges}! Bonus: ${G.prestigeBonus.toFixed(1)}×`);
-  logEvent(`🌠 Void Ascension #${G.prestiges} — ${G.prestigeBonus.toFixed(1)}× permanent bonus`);
+  showToast(`✦ Ascension #${G.prestiges}! ×${G.prestigeBonus.toFixed(1)} permanent bonus!`);
+  logEvent(`🌠 Void Ascension #${G.prestiges} — ×${G.prestigeBonus.toFixed(1)} permanent`);
+  saveGame();
   render();
 });
 
-// ════════════════════════════════════════════
-// ACHIEVEMENTS CHECK
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ACHIEVEMENTS
+// ══════════════════════════════════════════════════════
 function checkAchievements(){
   ACHIEVEMENTS.forEach(a=>{
     if(!G.achievements.has(a.id)&&a.check(G)){
       G.achievements.add(a.id);
-      showToast(`🏆 Achievement: ${a.name}!`);
-      logEvent(`🏆 Achievement unlocked: ${a.icon} ${a.name}`);
+      showToast(`🏆 ${a.name} unlocked!`);
+      logEvent(`🏆 Achievement: ${a.icon} ${a.name}`);
     }
   });
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // MILESTONES
-// ════════════════════════════════════════════
-const milestones=[100,1000,10000,100000,1000000,10000000];
-let lastMilestone=0;
+// ══════════════════════════════════════════════════════
+const MILES=[1000,10000,100000,1000000,10000000,100000000,1000000000];
+let lastMile=0;
 function checkMilestones(){
-  const hit=milestones.find(m=>G.totalEarned>=m&&m>lastMilestone);
-  if(hit){lastMilestone=hit;logEvent(`✨ Milestone: ${fmt(hit)} shards reached!`);}
+  const hit=MILES.find(m=>G.totalEarned>=m&&m>lastMile);
+  if(hit){lastMile=hit;logEvent(`✨ ${fmt(hit)} total shards reached!`);}
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // FLOAT TEXT
-// ════════════════════════════════════════════
-function spawnFt(text,x,y,crit){
+// ══════════════════════════════════════════════════════
+function spawnFt(text,x,y,crit,frenzy){
   const el=document.createElement('div');
-  el.className='ft'+(crit?' crit':'');
+  el.className='ft'+(crit?' crit':frenzy?' frenzy':'');
   el.textContent=text;
   el.style.left=(x-20)+'px';
   el.style.top=(y-20)+'px';
@@ -670,92 +842,67 @@ function spawnFt(text,x,y,crit){
   setTimeout(()=>el.remove(),900);
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // TOAST
-// ════════════════════════════════════════════
-let toastTimer;
+// ══════════════════════════════════════════════════════
+let toastQ=[],toastActive=false;
 function showToast(msg){
+  toastQ.push(msg);
+  if(!toastActive)flushToast();
+}
+function flushToast(){
+  if(!toastQ.length){toastActive=false;return;}
+  toastActive=true;
   const t=document.getElementById('toast');
-  t.textContent=msg;
+  t.textContent=toastQ.shift();
   t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+  setTimeout(()=>{t.classList.remove('show');setTimeout(flushToast,200);},2400);
 }
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // EVENT LOG
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function logEvent(msg){
   const log=document.getElementById('eventLog');
   const d=document.createElement('div');
   d.textContent=msg;
   d.style.opacity='.8';
   log.prepend(d);
-  while(log.children.length>20)log.removeChild(log.lastChild);
+  while(log.children.length>25)log.removeChild(log.lastChild);
 }
 
-// ════════════════════════════════════════════
-// NEWS TICKER
-// ════════════════════════════════════════════
-const NEWS=[
-  '🌌 Void shards detected near the Andromeda cluster...',
-  '🎴 New void card packs available at voidcards.org!',
-  '⭐ Scientists baffled by mysterious shard formations...',
-  '🛸 Drone fleets report record shard collection rates...',
-  '💜 The Void Heart pulses with unprecedented energy...',
-  '🌠 Golden Orbs sighted across the galaxy — click fast!',
-  '🔮 Ancient void ruins discovered — 5× shard surge expected...',
-  '⚡ Void storm warning issued for sectors 7 through 12...',
-];
-let newsIdx=0;
-function rotateTicker(){
-  document.getElementById('newsTicker').textContent=NEWS[newsIdx%NEWS.length];
-  newsIdx++;
-}
-rotateTicker();
-setInterval(rotateTicker,8000);
-
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // SAVE / LOAD
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function saveGame(){
   try{
-    const save={...G,upgrades:[...G.upgrades],achievements:[...G.achievements]};
+    const save={
+      ...G,
+      upgrades:[...G.upgrades],
+      achievements:[...G.achievements],
+      totalPlayTime:Math.floor((Date.now()-G.sessionStart)/1000)+(G.totalPlayTime||0),
+    };
     localStorage.setItem('voidcards_save',JSON.stringify(save));
-    writeRewards();
-  }catch(e){}
+  }catch(e){console.warn('Save failed:',e);}
+  try{writeRewards();}catch(e){}
 }
-
-// ════════════════════════════════════════════
-// VOID CARDS REWARDS BRIDGE
-// ════════════════════════════════════════════
-const SHARD_GEM_THRESHOLD = 100000; // 100k total shards = gem reward available
-const GEM_REWARD_AMOUNT   = 150;
-const ASCENSION_CARD_EVERY = 3;     // every 3 ascensions = 1 card reward
 
 function writeRewards(){
-  try{
-    const existing = JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
-    // Gems: available if totalEarned >= 100k, tracked by how many 100k blocks earned
-    const gemBlocks = Math.floor(G.totalEarned / SHARD_GEM_THRESHOLD);
-    const gemsClaimed = existing.gemBlocksClaimed || 0;
-    const gemsAvailable = Math.max(0, gemBlocks - gemsClaimed) * GEM_REWARD_AMOUNT;
-    // Cards: available every 3 ascensions
-    const cardBlocks = Math.floor(G.prestiges / ASCENSION_CARD_EVERY);
-    const cardsClaimed = existing.cardBlocksClaimed || 0;
-    const cardsAvailable = Math.max(0, cardBlocks - cardsClaimed);
-    const rewards = {
-      ...existing,
-      totalShards: Math.floor(G.totalEarned),
-      totalAscensions: G.prestiges,
-      gemBlocks,
-      gemsAvailable,
-      cardsAvailable,
-      lastUpdated: Date.now(),
-    };
-    localStorage.setItem('vc_shard_rewards', JSON.stringify(rewards));
-  }catch(e){}
+  const GEM_THRESH=500000,GEM_AMT=50,CARD_EVERY=3;
+  const ex=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
+  const gemBlocks=Math.floor(G.totalEarned/GEM_THRESH);
+  const rewards={
+    ...ex,
+    totalShards:Math.floor(G.totalEarned),
+    totalAscensions:G.prestiges,
+    gemBlocks,
+    gemsAvailable:Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT,
+    cardsAvailable:Math.max(0,Math.floor(G.prestiges/CARD_EVERY)-(ex.cardBlocksClaimed||0)),
+    lastUpdated:Date.now(),
+  };
+  localStorage.setItem('vc_shard_rewards',JSON.stringify(rewards));
 }
+
 function loadGame(){
   try{
     const raw=localStorage.getItem('voidcards_save');
@@ -763,24 +910,27 @@ function loadGame(){
     const save=JSON.parse(raw);
     save.upgrades=new Set(save.upgrades||[]);
     save.achievements=new Set(save.achievements||[]);
-    // Reapply upgrade effects
-    save.clickMult=1;save.globalMult=1;save.cpsToClick=0;save.bMult={};
+    // reset computed multipliers — reapply from upgrades
+    save.clickMult=1;save.globalMult=1;save.cursorMult=1;save.bMult={};
     G=Object.assign(newGame(),save);
+    G.sessionStart=Date.now(); // fresh session timer
     G.upgrades.forEach(id=>{
       const u=UPGRADES.find(x=>x.id===id);
       if(u)u.apply(G);
     });
-    lastMilestone=milestones.filter(m=>m<=G.totalEarned).pop()||0;
+    lastMile=MILES.filter(m=>m<=G.totalEarned).pop()||0;
     recalcCps();
-    showToast('🔮 Game loaded!');
-    logEvent('💾 Save loaded.');
-  }catch(e){console.warn('Load failed',e);}
+    logEvent('💾 Save loaded. Welcome back, Void Walker.');
+  }catch(e){console.warn('Load failed:',e);}
 }
-setInterval(saveGame,10000); // auto-save every 10s
 
-// ════════════════════════════════════════════
-// MAIN TICK (10 per second)
-// ════════════════════════════════════════════
+setInterval(saveGame,3000);
+window.addEventListener('beforeunload',saveGame);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveGame();});
+
+// ══════════════════════════════════════════════════════
+// MAIN TICK — 10/sec
+// ══════════════════════════════════════════════════════
 setInterval(()=>{
   const dt=.1;
   G.ticks++;
@@ -793,30 +943,44 @@ setInterval(()=>{
     checkMilestones();
   }
 
-  // Void Cursor auto-clicks (once per second per cursor, like Cookie Clicker)
-  const cursors = G.buildings['cursor']||0;
-  if(cursors>0 && G.ticks%10===0){ // every 10 ticks = 1 second
-    const autoPower = cursors * 0.1 * (G.bMult['cursor']||1) * G.globalMult * G.prestigeBonus * G.clickMult * (G.eventActive?G.eventActive.mult:1);
-    G.shards += autoPower;
-    G.totalEarned += autoPower;
-    G.totalClicks += cursors; // counts toward click achievements
+  // Cursor auto-taps (idle only, separate from manual)
+  const cursors=G.buildings['cursor']||0;
+  if(cursors>0&&G.ticks%10===0){
+    const autoPow=cursors*0.1*(G.cursorMult||1)*G.globalMult*G.prestigeBonus*(G.eventActive?G.eventActive.shardMult:1);
+    G.shards+=autoPow;
+    G.totalEarned+=autoPow;
+    G.totalClicks+=cursors;
     checkMilestones();
     checkAchievements();
   }
 
-  // Event timer
-  if(G.eventActive){
-    G.eventTimer-=dt;
-    if(G.eventTimer<=0)endEvent();
-  } else {
-    G.nextEvent-=dt;
-    if(G.nextEvent<=0){
-      G.nextEvent=randomEventDelay();
-      triggerEvent();
+  // Combo decay
+  if(combo>0&&!isFrenzy){
+    comboTimer-=dt;
+    if(comboTimer<=0){combo=Math.max(0,combo-1);comboTimer=COMBO_DECAY;}
+  }
+
+  // Frenzy timer
+  if(isFrenzy){
+    frenzyTimer-=dt;
+    if(frenzyTimer<=0){
+      isFrenzy=false;combo=0;
+      document.getElementById('frenzyRing').classList.remove('active');
+      logEvent('🔥 Frenzy ended.');
     }
   }
 
-  // Golden orb timer
+  // Event countdown display
+  if(G.eventActive){
+    G.eventTimer-=dt;
+    document.getElementById('eventTimer').textContent=`${Math.ceil(G.eventTimer)}s remaining`;
+    if(G.eventTimer<=0)endEvent();
+  } else {
+    G.nextEvent-=dt;
+    if(G.nextEvent<=0){G.nextEvent=randEvent();triggerEvent();}
+  }
+
+  // Golden orb
   if(G.goldenOrbVisible){
     G.goldenOrbTimer-=dt;
     if(G.goldenOrbTimer<=0){
@@ -826,26 +990,20 @@ setInterval(()=>{
     }
   } else {
     G.nextGoldenOrb-=dt;
-    if(G.nextGoldenOrb<=0){
-      G.nextGoldenOrb=randomGoldenDelay();
-      showGoldenOrb();
-      logEvent('⭐ A Golden Orb appeared!');
-    }
+    if(G.nextGoldenOrb<=0){G.nextGoldenOrb=randGolden();showGoldenOrb();logEvent('⭐ A Golden Orb appeared!');}
   }
 
   checkAchievements();
-
-  // Render every 2 ticks (5fps for perf)
   if(G.ticks%2===0)render();
 },100);
 
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // INIT
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 loadGame();
 recalcCps();
 render();
-logEvent('🌌 Shard Collector initialized. Welcome back, Void Walker.');
+logEvent('🌌 Void Shard Collector initialised. Welcome, Void Walker.');
 </script>
 </body>
 </html>
