@@ -2048,90 +2048,234 @@ function DeckBuilderModal({ collection, cardLevels, onSave, onClose }) {
 // ── Main App ──────────────────────────────────────────────────────────────────
 
 // ── Daily Shop ────────────────────────────────────────────────────────────────
-function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuyPack}) {
-  const today = new Date().toDateString();
-  const seed = today.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-  const rr = (n) => ((seed*n*1664525+1013904223)&0x7fffffff)/0x7fffffff;
-  // Pick 3 cards for today: 1 Rare+, 1 Uncommon+, 1 any
-  const byRarity = (rs) => {
-    const pool = ALL_CARDS.filter(c=>rs.includes(c.rarity));
-    return pool[Math.floor(rr(pool.length+1)*pool.length)];
-  };
-  const slots = [
-    { card: byRarity(["Legendary","Epic"]),   price: 800,  label:"⭐ Featured" },
-    { card: byRarity(["Rare","Epic"]),        price: 350,  label:"🔵 Rare Pick" },
-    { card: byRarity(["Uncommon","Common"]),  price: 120,  label:"🟢 Daily Deal" },
+function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuyPack, lastAdWatch, onWatchAd}) {
+  const [shopTab, setShopTab] = useState("packs");
+
+  // Daily seed - refreshes at midnight CST (UTC-6)
+  const nowCST = new Date(Date.now() - 6*60*60*1000);
+  const todayCST = nowCST.toISOString().slice(0,10);
+  const seed = todayCST.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const rr = (n,offset=0) => ((seed*(n+offset+1)*1664525+1013904223)&0x7fffffff)/0x7fffffff;
+
+  // 5 daily cards: 1 Legendary chance (~10%), 1 Epic, 1 Rare, 2 Uncommon/Common
+  const pickCard = (pool, idx) => pool[Math.floor(rr(pool.length, idx)*pool.length)];
+  const dailyCards = [
+    { card: pickCard(rr(1)<0.10 ? ALL_CARDS.filter(c=>c.rarity==="Legendary") : ALL_CARDS.filter(c=>c.rarity==="Epic"), 0), price: rr(1)<0.10 ? 1200 : 500 },
+    { card: pickCard(ALL_CARDS.filter(c=>c.rarity==="Epic"), 1), price: 450 },
+    { card: pickCard(ALL_CARDS.filter(c=>c.rarity==="Rare"), 2), price: 200 },
+    { card: pickCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 3), price: 80 },
+    { card: pickCard(ALL_CARDS.filter(c=>["Uncommon","Common"].includes(c.rarity)), 4), price: 60 },
   ];
+
+  // Countdown to midnight CST
+  const msUntilMidnightCST = () => {
+    const now = new Date();
+    const midnightCST = new Date();
+    midnightCST.setUTCHours(6,0,0,0); // midnight CST = 06:00 UTC
+    if(midnightCST <= now) midnightCST.setUTCDate(midnightCST.getUTCDate()+1);
+    return midnightCST - now;
+  };
+  const [countdown, setCountdown] = useState(msUntilMidnightCST());
+  useEffect(()=>{
+    const t = setInterval(()=>setCountdown(msUntilMidnightCST()), 1000);
+    return ()=>clearInterval(t);
+  },[]);
+  const fmtCountdown = ms => {
+    const h = Math.floor(ms/3600000);
+    const m = Math.floor((ms%3600000)/60000);
+    const s = Math.floor((ms%60000)/1000);
+    return `${h}h ${m}m ${s}s`;
+  };
+
+  // Ad cooldown (30 min)
+  const AD_COOLDOWN = 30*60*1000;
+  const [adWatching, setAdWatching] = useState(false);
+  const [adCountdown, setAdCountdown] = useState(0);
+  const canWatchAd = !lastAdWatch || (Date.now()-lastAdWatch) >= AD_COOLDOWN;
+  const adCooldownLeft = lastAdWatch ? Math.max(0, AD_COOLDOWN-(Date.now()-lastAdWatch)) : 0;
+  const fmtAdCooldown = ms => {
+    const m = Math.floor(ms/60000);
+    const s = Math.floor((ms%60000)/1000);
+    return `${m}:${s.toString().padStart(2,'0')}`;
+  };
+  const [adDisplay, setAdDisplay] = useState(adCooldownLeft);
+  useEffect(()=>{
+    if(canWatchAd) return;
+    const t = setInterval(()=>setAdDisplay(Math.max(0,AD_COOLDOWN-(Date.now()-lastAdWatch))),1000);
+    return ()=>clearInterval(t);
+  },[lastAdWatch]);
+
+  const startAd = () => {
+    SFX.play("click");
+    setAdWatching(true);
+    setAdCountdown(5);
+    const t = setInterval(()=>{
+      setAdCountdown(n=>{
+        if(n<=1){ clearInterval(t); setAdWatching(false); onWatchAd(); return 0; }
+        return n-1;
+      });
+    },1000);
+  };
+
   const owned = new Set(collection.map(c=>c.id));
+
+  const tabBtn = (id, label, color) => (
+    <button onClick={()=>{SFX.play("click");setShopTab(id);}}
+      style={{flex:1,background:shopTab===id?color+"22":"transparent",color:shopTab===id?color:"#475569",
+        border:`1px solid ${shopTab===id?color:"#1e293b"}`,borderRadius:8,padding:"8px 4px",
+        fontSize:11,fontWeight:shopTab===id?700:400,cursor:"pointer",transition:"all .15s"}}>
+      {label}
+    </button>
+  );
+
   return (
     <Modal onClose={onClose} title="🏪 Shop">
       <div style={{maxWidth:520,margin:"0 auto"}}>
 
-        {/* Pity timer */}
-        <div style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b44",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div>
-            <div style={{color:"#f59e0b",fontWeight:700,fontSize:12}}>🌟 Guaranteed Legendary Within</div>
-            <div style={{color:"#64748b",fontSize:11,marginTop:1}}>Every 20 packs, you're guaranteed a Legendary</div>
-          </div>
-          <div style={{textAlign:"center",background:"#1c1008",borderRadius:8,padding:"6px 12px",border:"1px solid #f59e0b33"}}>
-            <div style={{color:"#f59e0b",fontWeight:900,fontSize:24,lineHeight:1}}>{20-packsSinceLeg}</div>
-            <div style={{color:"#475569",fontSize:9}}>packs remaining</div>
-          </div>
+        {/* Gem balance */}
+        <div style={{background:"#0f172a",border:"1px solid #a855f733",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{color:"#64748b",fontSize:12}}>Your balance</span>
+          <span style={{color:"#a855f7",fontWeight:900,fontSize:18}}>💎 {coins.toLocaleString()}</span>
         </div>
 
-        {/* Packs section */}
-        <div style={{color:"#a855f7",fontSize:11,fontWeight:700,letterSpacing:2,marginBottom:10}}>🪐 PACKS</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
-          {PACKS.map(p=>(
-            <div key={p.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
-              <div style={{fontSize:34,flexShrink:0,animation:"float 3s ease-in-out infinite"}}>{p.icon}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:1}}>{p.name}</div>
-                <div style={{color:"#64748b",fontSize:10}}>{p.rarities.length} cards · {p.guaranteed}</div>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-                <span style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {p.price}</span>
-                <button onClick={()=>onBuyPack(p)} disabled={coins<p.price} style={{background:coins>=p.price?"linear-gradient(135deg,#7c3aed,#a855f7)":"#1e293b",color:coins>=p.price?"white":"#475569",border:"none",borderRadius:7,padding:"6px 14px",fontWeight:700,fontSize:11,cursor:coins>=p.price?"pointer":"not-allowed",whiteSpace:"nowrap"}}>Open ✨</button>
-              </div>
+        {/* Tab bar */}
+        <div style={{display:"flex",gap:6,marginBottom:14}}>
+          {tabBtn("packs","🪐 Packs","#a855f7")}
+          {tabBtn("cards","🃏 Daily Cards","#06b6d4")}
+          {tabBtn("purchases","💳 Purchases","#f59e0b")}
+        </div>
+
+        {/* PACKS TAB */}
+        {shopTab==="packs"&&<>
+          <div style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b44",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{color:"#f59e0b",fontWeight:700,fontSize:12}}>🌟 Guaranteed Legendary</div>
+              <div style={{color:"#64748b",fontSize:11,marginTop:1}}>Every 20 packs</div>
             </div>
-          ))}
-        </div>
-
-        {/* Daily cards section */}
-        <div style={{color:"#06b6d4",fontSize:11,fontWeight:700,letterSpacing:2,marginBottom:10}}>🔄 DAILY CARDS · {today}</div>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {slots.map((s,i)=>{
-            const ab=getAbility(s.card);
-            const alreadyOwned=owned.has(s.card.id);
-            const rc=RC[s.card.rarity];
-            return <div key={i} style={{background:`linear-gradient(135deg,#0f172a,${rc.bg})`,border:`1px solid ${rc.color}44`,borderRadius:14,padding:14}}>
-              <div style={{color:rc.color,fontSize:10,fontWeight:700,marginBottom:10,letterSpacing:1}}>{s.label}</div>
-              <div style={{display:"flex",gap:14,alignItems:"center"}}>
-                <Card card={s.card} mini level={1}/>
+            <div style={{textAlign:"center",background:"#1c1008",borderRadius:8,padding:"6px 12px",border:"1px solid #f59e0b33"}}>
+              <div style={{color:"#f59e0b",fontWeight:900,fontSize:24,lineHeight:1}}>{20-packsSinceLeg}</div>
+              <div style={{color:"#475569",fontSize:9}}>packs left</div>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {PACKS.map(p=>(
+              <div key={p.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:34,flexShrink:0,animation:"float 3s ease-in-out infinite"}}>{p.icon}</div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>{s.card.name}</div>
-                  <div style={{color:rc.color,fontSize:11,marginBottom:3}}>{s.card.rarity} · {s.card.type}</div>
-                  {ab&&<div style={{background:"#1e293b",borderRadius:6,padding:"4px 8px",marginBottom:8,display:"inline-flex",alignItems:"center",gap:5}}>
-                    <span style={{fontSize:12}}>{ab.icon}</span>
-                    <span style={{color:"#94a3b8",fontSize:10,fontWeight:600}}>{ab.name}</span>
-                    <span style={{color:"#475569",fontSize:9}}>· {ab.desc}</span>
-                  </div>}
-                  {alreadyOwned&&<div style={{color:"#22c55e",fontSize:10,marginBottom:6}}>✓ Already in collection</div>}
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4}}>
-                    <span style={{color:"#a855f7",fontWeight:800,fontSize:17}}>💎 {s.price}</span>
-                    <button disabled={coins<s.price} onClick={()=>onBuy(s.card,s.price)} style={{background:coins>=s.price?"linear-gradient(135deg,#059669,#10b981)":"#1e293b",color:coins>=s.price?"white":"#475569",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:12,cursor:coins>=s.price?"pointer":"not-allowed"}}>
-                      {coins<s.price?"Not enough 💎":"Buy Card"}
-                    </button>
-                  </div>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:1}}>{p.name}</div>
+                  <div style={{color:"#64748b",fontSize:10}}>{p.rarities.length} cards · {p.guaranteed}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                  <span style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {p.price}</span>
+                  <button onClick={()=>onBuyPack(p)} disabled={coins<p.price} style={{background:coins>=p.price?"linear-gradient(135deg,#7c3aed,#a855f7)":"#1e293b",color:coins>=p.price?"white":"#475569",border:"none",borderRadius:7,padding:"6px 14px",fontWeight:700,fontSize:11,cursor:coins>=p.price?"pointer":"not-allowed",whiteSpace:"nowrap"}}>Open ✨</button>
                 </div>
               </div>
-            </div>;
-          })}
-        </div>
+            ))}
+          </div>
+        </>}
+
+        {/* DAILY CARDS TAB */}
+        {shopTab==="cards"&&<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{color:"#64748b",fontSize:11}}>Refreshes in <span style={{color:"#06b6d4",fontWeight:700}}>{fmtCountdown(countdown)}</span></div>
+            <div style={{color:"#334155",fontSize:10}}>Resets midnight CST</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {dailyCards.map((s,i)=>{
+              if(!s.card) return null;
+              const rc=RC[s.card.rarity]||{color:"#94a3b8",bg:"#1e293b"};
+              const alreadyOwned=owned.has(s.card.id);
+              const ab=getAbility(s.card);
+              return(
+                <div key={i} style={{background:`linear-gradient(135deg,#0f172a,${rc.bg})`,border:`1px solid ${rc.color}44`,borderRadius:14,padding:14}}>
+                  <div style={{display:"flex",gap:14,alignItems:"center"}}>
+                    <div style={{flexShrink:0}}><Card card={s.card} mini level={1}/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,marginBottom:2}}>{s.card.name}</div>
+                      <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{s.card.rarity} · {s.card.type}</div>
+                      {ab&&<div style={{background:"#1e293b",borderRadius:6,padding:"3px 8px",marginBottom:6,display:"inline-flex",alignItems:"center",gap:5}}>
+                        <span style={{fontSize:11}}>{ab.icon}</span>
+                        <span style={{color:"#94a3b8",fontSize:10}}>{ab.name}</span>
+                      </div>}
+                      {alreadyOwned&&<div style={{color:"#22c55e",fontSize:10,marginBottom:4}}>✓ Already owned</div>}
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span style={{color:"#a855f7",fontWeight:800,fontSize:16}}>💎 {s.price}</span>
+                        <button disabled={coins<s.price} onClick={()=>onBuy(s.card,s.price)}
+                          style={{background:coins>=s.price?"linear-gradient(135deg,#059669,#10b981)":"#1e293b",color:coins>=s.price?"white":"#475569",border:"none",borderRadius:8,padding:"8px 14px",fontWeight:700,fontSize:12,cursor:coins>=s.price?"pointer":"not-allowed"}}>
+                          {coins<s.price?"Not enough 💎":"Buy Card"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>}
+
+        {/* PURCHASES TAB */}
+        {shopTab==="purchases"&&<>
+          {/* Watch Ad */}
+          <div style={{background:"linear-gradient(135deg,#0a1628,#0f2040)",border:"1px solid #3b82f644",borderRadius:14,padding:18,marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+              <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>📺</div>
+              <div>
+                <div style={{color:"white",fontWeight:800,fontSize:15,marginBottom:2}}>Watch an Ad</div>
+                <div style={{color:"#64748b",fontSize:12}}>Support the game · earn gems free</div>
+              </div>
+              <div style={{marginLeft:"auto",textAlign:"right"}}>
+                <div style={{color:"#f59e0b",fontWeight:900,fontSize:18}}>+💎 150</div>
+                <div style={{color:"#475569",fontSize:10}}>per watch</div>
+              </div>
+            </div>
+            {adWatching
+              ?<div style={{textAlign:"center",background:"#0f172a",borderRadius:10,padding:16}}>
+                <div style={{color:"#64748b",fontSize:11,marginBottom:4}}>Ad playing...</div>
+                <div style={{color:"#3b82f6",fontWeight:900,fontSize:32}}>{adCountdown}</div>
+                <div style={{color:"#334155",fontSize:10,marginTop:4}}>please wait</div>
+              </div>
+              :canWatchAd
+                ?<button onClick={startAd} style={{width:"100%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 0 20px #3b82f633"}}>
+                  ▶ Watch Ad → +💎 150
+                </button>
+                :<div style={{textAlign:"center",background:"#0f172a",borderRadius:10,padding:12}}>
+                  <div style={{color:"#334155",fontSize:11,marginBottom:4}}>Next ad available in</div>
+                  <div style={{color:"#3b82f6",fontWeight:700,fontSize:18}}>{fmtAdCooldown(adDisplay||adCooldownLeft)}</div>
+                </div>
+            }
+          </div>
+
+          {/* Gem bundles — coming soon */}
+          <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:14,padding:18,opacity:0.6}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{fontSize:24}}>💎</div>
+              <div>
+                <div style={{color:"white",fontWeight:800,fontSize:15}}>Gem Bundles</div>
+                <div style={{color:"#475569",fontSize:11}}>Buy gems directly — coming soon</div>
+              </div>
+              <div style={{marginLeft:"auto",background:"#1e293b",borderRadius:6,padding:"3px 10px",fontSize:10,color:"#475569",fontWeight:700}}>SOON</div>
+            </div>
+            {[
+              {gems:500,price:"$0.99",label:"Starter"},
+              {gems:1200,price:"$1.99",label:"Popular ⭐"},
+              {gems:3000,price:"$3.99",label:"Best Value"},
+            ].map((b,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#1e293b",borderRadius:10,padding:"10px 14px",marginBottom:8,opacity:0.5}}>
+                <div>
+                  <div style={{color:"white",fontWeight:700,fontSize:13}}>💎 {b.gems.toLocaleString()}</div>
+                  <div style={{color:"#475569",fontSize:10}}>{b.label}</div>
+                </div>
+                <div style={{color:"#64748b",fontWeight:700,fontSize:13}}>{b.price}</div>
+              </div>
+            ))}
+          </div>
+        </>}
+
       </div>
     </Modal>
   );
 }
+
 
 // ── 5v5 Deck Battle ───────────────────────────────────────────────────────────
 function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose, savedDecks=[]}) {
@@ -3004,6 +3148,7 @@ function App() {
   const [showDupesOnly,setShowDupesOnly] = useState(false);
   const [showDupesModal,setShowDupesModal] = useState(false);
   const [dailyFreePack,setDailyFreePack]=useState(()=>S.get("dailyFreePack",""));
+  const [lastAdWatch,setLastAdWatch]=useState(()=>S.get("lastAdWatch",null));
   const cardLevels={}; // card leveling removed — kept as empty obj for prop compatibility
   const [onboardingStep,setOnboardingStep]=useState(()=>S.get("onboardingDone",false)?0:-1);
   const [battleResult,setBattleResult]=useState(null); // {won, xp, coins, cardName}
@@ -3068,6 +3213,7 @@ function App() {
   },[tab]);
   useEffect(()=>S.set("streak",streak),[streak]);
   useEffect(()=>S.set("auctions",auctions),[auctions]);
+  useEffect(()=>S.set("lastAdWatch",lastAdWatch),[lastAdWatch]);
   useEffect(()=>{if(tab!=="collection")setShowDupesOnly(false);},[tab]);
   useEffect(()=>S.set("decks",decks),[decks]);
   useEffect(()=>S.set("quests",quests),[quests]);
@@ -3991,7 +4137,18 @@ function App() {
       />}
       {sellCard&&<SellModal card={sellCard} onClose={()=>setSellCard(null)} onSell={doSell}/>}
       {deckBuilder&&<DeckBuilderModal collection={unique} cardLevels={cardLevels} onSave={d=>{SFX.play("achievement");setDecks(p=>[...p,d]);setDeckBuilder(false);notify(`Deck "${d.name}" saved!`);checkAch({collection,wins,coins,streak,cardLevels,decks:[...decks,d],totalSold});}} onClose={()=>setDeckBuilder(false)}/>}
-      {dailyShop&&<DailyShopModal collection={collection} coins={coins} packsSinceLeg={packsSinceLeg} onBuyPack={p=>{buyPack(p);setDailyShop(false);}} onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");setDailyShop(false);}} onClose={()=>setDailyShop(false)}/>}
+      {dailyShop&&<DailyShopModal collection={collection} coins={coins} packsSinceLeg={packsSinceLeg}
+        lastAdWatch={lastAdWatch}
+        onWatchAd={()=>{
+          setLastAdWatch(Date.now());
+          setCoins(c=>c+150);
+          SFX.play("coin");
+          notify("📺 Thanks for watching! +💎 150","ach");
+          updateQuest("spend",0);
+        }}
+        onBuyPack={p=>{buyPack(p);setDailyShop(false);}}
+        onBuy={(card,price)=>{setCoins(c=>c-price);setCollection(prev=>[...prev,card]);SFX.play("coin");notify(`${card.name} added to collection!`,"ach");updateQuest("spend",price);checkAch({collection:[...collection,card],wins,coins:coins-price,streak,cardLevels,decks,totalSold});}}
+        onClose={()=>setDailyShop(false)}/>}
       {deckBattle&&<DeckBattleModal collection={collection} cardLevels={cardLevels} coins={coins} savedDecks={decks} onClose={()=>setDeckBattle(false)} onWin={()=>{const nw=wins+1;setWins(nw);setCoins(c=>c+500);givePlayerXp(150);SFX.play("coin");notify("⚔️ Deck Victory! +500 💎","ach");updateQuest("wins",1);updateQuest("deck",1);updateQuest("deckwin",1);checkAch({collection,wins:nw,coins:coins+500,streak,cardLevels,decks,totalSold,teamWins});setDeckBattle(false);}} onLose={()=>{setLosses(l=>l+1);givePlayerXp(40);setBattleStreak(0);setDeckBattle(false);notify("💀 Deck defeated — +40 XP");SFX.play("click");}}/>}
       {fusionModal&&<FusionModal collection={collection} cardLevels={cardLevels} onFuse={(foilCard,orig)=>{
         let removed=0;
