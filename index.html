@@ -2028,20 +2028,39 @@ function SellModal({ card, onClose, onSell }) {
   const rc=RC[card.rarity];
   const suggested={Legendary:1200,Epic:400,Rare:150,Uncommon:60,Common:20}[card.rarity];
   const [price,setPrice]=useState(suggested);
+  const [customPrice,setCustomPrice]=useState(String(suggested));
+  const [duration,setDuration]=useState(2);
+  const DURATIONS=[2,4,6,12,24];
+  const handleCustom=(v)=>{
+    setCustomPrice(v);
+    const n=parseInt(v);
+    if(!isNaN(n)&&n>0) setPrice(n);
+  };
   return (
     <Modal onClose={onClose} title={`List ${card.name}`}>
       <div style={{maxWidth:340,margin:"0 auto",textAlign:"center"}}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><Card card={card}/></div>
-        <div style={{background:"#1e293b",borderRadius:12,padding:16,marginBottom:20}}>
-          <div style={{color:"#94a3b8",fontSize:13,marginBottom:12}}>Set your asking price:</div>
-          <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:12}}>
-            {[.5,.75,1,1.5,2].map(m=>(
-              <button key={m} onClick={()=>setPrice(Math.round(suggested*m))} style={{background:price===Math.round(suggested*m)?rc.color:"#0f172a",color:price===Math.round(suggested*m)?"#000":"white",border:`1px solid ${rc.color}55`,borderRadius:8,padding:"6px 11px",fontSize:12,fontWeight:600,cursor:"pointer"}}>💎 {Math.round(suggested*m)}</button>
+        <div style={{background:"#1e293b",borderRadius:12,padding:16,marginBottom:14}}>
+          <div style={{color:"#94a3b8",fontSize:12,marginBottom:10,textAlign:"left"}}>💎 Asking Price <span style={{color:"#475569",fontSize:10}}>(market rate: {suggested})</span></div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:10}}>
+            {[.5,.75,1,1.5,2].map(m=>{
+              const v=Math.round(suggested*m);
+              return <button key={m} onClick={()=>{setPrice(v);setCustomPrice(String(v));}} style={{background:price===v?rc.color:"#0f172a",color:price===v?"#000":"white",border:`1px solid ${rc.color}55`,borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>💎{v}</button>;
+            })}
+          </div>
+          <input type="number" value={customPrice} onChange={e=>handleCustom(e.target.value)} min={1}
+            style={{width:"100%",background:"#0f172a",border:`1px solid ${rc.color}55`,borderRadius:8,padding:"8px 12px",color:"white",fontSize:13,textAlign:"center",outline:"none"}}
+            placeholder="Or enter custom price"/>
+        </div>
+        <div style={{background:"#1e293b",borderRadius:12,padding:16,marginBottom:14}}>
+          <div style={{color:"#94a3b8",fontSize:12,marginBottom:10,textAlign:"left"}}>⏱ Auction Duration</div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+            {DURATIONS.map(h=>(
+              <button key={h} onClick={()=>setDuration(h)} style={{background:duration===h?"#7c3aed":"#0f172a",color:"white",border:"1px solid #7c3aed55",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{h}h</button>
             ))}
           </div>
-          <div style={{color:"#64748b",fontSize:11}}>Market rate: 💎 {suggested}</div>
         </div>
-        <button onClick={()=>{SFX.play("sell");onSell(card,price);}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:12,padding:"14px",width:"100%",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:8}}>List for 💎 {price}</button>
+        <button onClick={()=>{SFX.play("sell");onSell(card,price,duration*3600);}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:12,padding:"14px",width:"100%",fontWeight:700,fontSize:15,cursor:"pointer",marginBottom:8}}>List for 💎 {price} · {duration}h</button>
         <button onClick={onClose} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:12,padding:"12px",width:"100%",cursor:"pointer"}}>Cancel</button>
       </div>
     </Modal>
@@ -3266,6 +3285,7 @@ function App() {
     return ()=>clearInterval(t);
   },[tab]);
   useEffect(()=>S.set("streak",streak),[streak]);
+  useEffect(()=>S.set("dailyWins",dailyWins),[dailyWins]);
   useEffect(()=>S.set("auctions",auctions),[auctions]);
   useEffect(()=>S.set("lastAdWatch",lastAdWatch),[lastAdWatch]);
   useEffect(()=>{if(tab!=="collection")setShowDupesOnly(false);},[tab]);
@@ -3428,9 +3448,21 @@ function App() {
 
   // ── Quest win-streak tracking ─────────────────────────────────────────────
   const [battleStreak,setBattleStreak]=useState(0);
+  const [dailyWins,setDailyWins]         = useState(()=>S.get("dailyWins",{date:"",count:0}));
 
   const onWin=cardId=>{
-    const nw=wins+1; setWins(nw); setCoins(c=>c+150); SFX.play("coin");
+    const nw=wins+1; setWins(nw);
+    // Daily win cap — first 10 wins per day give gems, after that XP only
+    const todayStr2=new Date().toDateString();
+    const dw=dailyWins.date===todayStr2?dailyWins:{date:todayStr2,count:0};
+    const newDwCount=dw.count+1;
+    setDailyWins({date:todayStr2,count:newDwCount});
+    if(newDwCount<=10){
+      setCoins(c=>c+150); SFX.play("coin");
+      notify("⚔️ Victory! +150 💎"+(newDwCount===10?" (daily gem limit reached — XP only after this)":""));
+    } else {
+      notify("⚔️ Victory! +XP only (daily gem limit reached)");
+    }
     givePlayerXp(120);
     updateQuest("wins",1);
     const ns=battleStreak+1; setBattleStreak(ns); updateQuest("streak",ns);
@@ -3489,10 +3521,10 @@ function App() {
     notify(`⚔️ Bid 💎${newPrice} on ${item.card.name}`);
   };
 
-  const doSell=(card,price)=>{
+  const doSell=(card,price,durationSecs=2*60*60)=>{
     setCollection(prev=>{const idx=prev.findIndex(c=>c.id===card.id);if(idx===-1)return prev;const n=[...prev];n.splice(idx,1);return n;});
     // Coins paid out when auction ends, not immediately
-    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:2*60*60,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
+    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:durationSecs,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
     setTotalSold(t=>t+1);setSellCard(null);
     updateQuest("sells",1);
     SFX.play("sell");
@@ -3577,6 +3609,27 @@ function App() {
       setUnlockedAch([]); setTeamWins(0); setPullHistory([]);
       setPacksSinceLeg(0); setClaimedMilestones([]); setDailyFreePack("");
       setNewPlayer(true);
+    }
+    // Daily reset — runs AFTER cloud restore so always wins over stale saved data
+    const _today=new Date().toDateString();
+    const _dateNum=parseInt(new Date().toISOString().slice(0,10).replace(/-/g,""));
+    const _storedLogin=S.get("lastLogin","");
+    const _storedQuestDate=parseInt(S.get("questDate",0));
+    if(_storedLogin!==_today){
+      const _yesterday=new Date(Date.now()-86400000).toDateString();
+      const _ns=_storedLogin===_yesterday?(S.get("streak",0)+1):1;
+      setStreak(_ns);setLastLogin(_today);setDailyGems("");
+      S.set("dailyGems","");S.set("lastLogin",_today);S.set("streak",_ns);
+      setDailyWins({date:_today,count:0});S.set("dailyWins",{date:_today,count:0});
+    }
+    if(_storedQuestDate!==_dateNum||!S.get("quests",null)){
+      const _pool=DAILY_QUESTS_POOL.filter(q=>{
+        if(["wins","streak"].includes(q.type)) return q.target<=5;
+        return true;
+      });
+      const _seeded=[..._pool].map((q,i)=>({q,sort:((_dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
+      setQuests(_seeded);setQuestProg({});
+      S.set("quests",_seeded);S.set("questProgress",{});S.set("questDate",_dateNum);
     }
     setAuthed(true);
   };
@@ -3943,6 +3996,17 @@ function App() {
           <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:12}}>🤖</span>
             <span style={{color:"#475569",fontSize:11}}>Simulated auction — real player trading coming soon</span>
+          </div>
+          <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+            <div style={{color:"#64748b",fontSize:10,fontWeight:700,letterSpacing:1,marginBottom:8}}>📊 AVERAGE MARKET PRICES</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {[["Common","#94a3b8",20],["Uncommon","#22c55e",60],["Rare","#3b82f6",150],["Epic","#a855f7",400],["Legendary","#f59e0b",1200]].map(([r,c,p])=>(
+                <div key={r} style={{background:"#1e293b",borderRadius:7,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{color:c,fontSize:10,fontWeight:700}}>{r}</span>
+                  <span style={{color:"#f59e0b",fontSize:10}}>💎{p}</span>
+                </div>
+              ))}
+            </div>
           </div>
           {/* Won auction popup */}
           {wonAuction&&<div style={{background:"linear-gradient(135deg,#052e16,#14532d)",border:"1px solid #22c55e",borderRadius:14,padding:16,marginBottom:14,textAlign:"center",animation:"fadeIn .4s"}}>
