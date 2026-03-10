@@ -1256,6 +1256,17 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
   const effP=playerCard.power+(lv-1)*8, effD=playerCard.defense+(lv-1)*5;
   const MAX_ENERGY=5;
   const ENERGY_COST={attack:1,special:3,defend:0};
+  // Card abilities for 1v1
+  const pAbility = ABILITIES[playerCard.passive]||null;
+  const eAbility = ABILITIES[enemyCard.passive]||null;
+  // Entry ability: fires once at battle start
+  useEffect(()=>{
+    if(pAbility?.type==="entry"){
+      if(pAbility.id==="rallycry"){setPlayerHp(h=>Math.min(playerCard.hp+(lv-1)*15+50,h+pAbility.value));addLog(`📣 Rally Cry! Healed ${pAbility.value} HP on entry`,"ability");}
+      if(pAbility.id==="intimidate"){addLog(`👁️ Intimidate! Enemy power reduced 20%`,"ability");}
+    }
+  // eslint-disable-next-line
+  },[]);
 
   const showDmg=(who,dmg,isSpecial)=>{ setDmgPop({who,dmg,isSpecial}); setTimeout(()=>setDmgPop(null),900); };
 
@@ -1266,15 +1277,36 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
       if(roll<.25){rawDmg=Math.round(enemyCard.power*enemyCard.specialMult+Math.random()*10);msg="💥 "+enemyCard.special+"!";type="special";SFX.play("specialHit");}
       else if(roll<.6){rawDmg=Math.round(enemyCard.power*.85+Math.random()*8);msg="⚔️ "+enemyCard.name+" attacks";type="attack";SFX.play("hit");}
       else{rawDmg=Math.round(enemyCard.power*.5+Math.random()*6);msg="🌀 Glancing blow";type="attack";SFX.play("hit");}
-      const dmg=isDefending?Math.max(0,rawDmg-effD):Math.max(1,rawDmg-Math.round(effD*.3));
+      // Intimidate: enemy power -20% if player has intimidate entry ability
+      const intimidateMult = eAbility?.id==="intimidate"? 0 : (pAbility?.id==="intimidate"?0.8:1);
+      const adjustedRaw = Math.round(rawDmg * intimidateMult);
+      const dmg=isDefending?Math.max(0,adjustedRaw-effD):Math.max(1,adjustedRaw-Math.round(effD*.3));
       const fullMsg=isDefending
         ?(msg+": "+rawDmg+" atk − "+Math.min(rawDmg,effD)+" blocked = "+dmg+" dmg")
         :(msg+": "+dmg+" dmg");
-      const newHp=Math.max(0,pHp-dmg);
-      setPlayerHp(newHp); showDmg("player",dmg,type==="special");
+      // Thorns: reflect 25% back; Shield: first hit -60%
+      let reflectMsg="";
+      if(pAbility?.id==="thorns"&&dmg>0){
+        const reflect=Math.round(dmg*.25);
+        setEnemyHp(h=>Math.max(0,h-reflect));
+        reflectMsg=` 🌵 Thorns: ${reflect} reflected!`;
+      }
+      const shieldPop=pAbility?.id==="shield"&&!statusEffects?.shieldUsed;
+      const finalDmg=shieldPop?Math.round(dmg*.4):dmg;
+      if(shieldPop){setStatusEffects(s=>({...s,shieldUsed:true}));reflectMsg+=" 🛡️ Shield blocked 60%!";}
+      const newHp=Math.max(0,pHp-finalDmg);
+      setPlayerHp(newHp); showDmg("player",finalDmg,type==="special");
       addLog(fullMsg,type);
       setDefending(false);
-      if(newHp<=0){addLog("💀 Defeated...","system");SFX.play("lose");setPhase("lost");setAnimating(false);}
+      // HOT: regen heals player at end of enemy turn
+      let regenHp=newHp;
+      if(pAbility?.type==="hot"&&newHp>0){
+        const heal=pAbility.value;
+        regenHp=Math.min(maxHp,newHp+heal);
+        setPlayerHp(regenHp);
+        addLog(`${pAbility.icon} ${pAbility.name}: healed ${heal} HP`,"ability");
+      }
+      if(regenHp<=0){addLog("💀 Defeated...","system");SFX.play("lose");setPhase("lost");setAnimating(false);}
       else{
         const newEnergy=Math.min(MAX_ENERGY,curEnergy+1);
         setEnergy(newEnergy);
@@ -1302,13 +1334,22 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
       return;
     }
     let dmg,msg,logType;
-    if(type==="attack"){dmg=Math.max(1,Math.round(effP*.9-enemyCard.defense*.3+Math.random()*10));msg="⚔️ Attack: "+dmg+" dmg · "+newEnergy+"⚡ left";logType="attack";SFX.play("hit");}
-    else{dmg=Math.max(1,Math.round(effP*playerCard.specialMult-enemyCard.defense*.25+Math.random()*12));msg="✨ "+playerCard.special+": "+dmg+" dmg!";logType="special";SFX.play("specialHit");}
+    const pierced=pAbility?.id==="pierce"?0.6:1; // pierce ignores 40% of enemy def
+    if(type==="attack"){dmg=Math.max(1,Math.round(effP*.9-enemyCard.defense*.3*pierced+Math.random()*10));msg="⚔️ Attack: "+dmg+" dmg"+( pAbility?.id==="pierce"?" 🗡️ Pierce!":"")+" · "+newEnergy+"⚡ left";logType="attack";SFX.play("hit");}
+    else{dmg=Math.max(1,Math.round(effP*playerCard.specialMult-enemyCard.defense*.25*pierced+Math.random()*12));msg="✨ "+playerCard.special+": "+dmg+" dmg!";logType="special";SFX.play("specialHit");}
     const newEHp=Math.max(0,enemyHp-dmg);
     setEnemyHp(newEHp); showDmg("enemy",dmg,logType==="special");
     addLog(msg,logType);
     setTimeout(()=>{
-      if(newEHp<=0){addLog("🏆 Victory!","system");SFX.play("win");setPhase("won");setAnimating(false);}
+      // DOT: player ability damages enemy each turn
+      let dotEHp=newEHp;
+      if(pAbility?.type==="dot"&&newEHp>0){
+        const dotDmg=pAbility.value;
+        dotEHp=Math.max(0,newEHp-dotDmg);
+        setEnemyHp(dotEHp);
+        addLog(`${pAbility.icon} ${pAbility.name}: ${dotDmg} dmg!`,"ability");
+      }
+      if(dotEHp<=0){addLog("🏆 Victory!","system");SFX.play("win");setPhase("won");setAnimating(false);}
       else{setPhase("enemy");setAnimating(false);setTimeout(()=>enemyTurn(playerHp,newEnergy,false),400);}
     },500);
   };
@@ -3207,9 +3248,9 @@ function App() {
             return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true};
           }
           if(a.seller==="You"&&!a.settled){
-            // Player's own listing ended — pay them out
-            setCoins(c=>c+a.price);
-            notify(`💰 ${a.card.name} sold for 💎 ${a.price}!`,"ok");
+            // Player's own listing ended — pay them out at FINAL bid price
+            setCoins(c=>c+newPrice);
+            notify(`💰 ${a.card.name} sold for 💎 ${newPrice}!`,"ok");
             SFX.play("coin");
             return {...a,secsLeft:0,settled:true};
           }
@@ -3320,7 +3361,6 @@ function App() {
   };
 
   const onCardsEarned=cards=>{
-    givePlayerXp(50);
     const newCollection=[...collection,...cards];
     setCollection(newCollection);
     // Mark newly pulled cards as "new" — cleared when user visits binder
