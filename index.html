@@ -2842,9 +2842,8 @@ function CardOfTheDay({setDetail, setBattleCard, setTab}) {
           <div style={{color:"#64748b",fontSize:10,lineHeight:1.5,fontStyle:"italic"}}>
             "{featCard.description.substring(0,80)}{featCard.description.length>80?"...":""}"
           </div>
-          <button onClick={()=>{if(setBattleCard&&setTab){setBattleCard(featCard);setTab("battle");}}} style={{marginTop:6,background:`linear-gradient(135deg,${rc.bg},${rc.color}44)`,border:`1px solid ${rc.color}66`,borderRadius:8,padding:"6px 12px",color:rc.color,fontWeight:700,fontSize:10,cursor:"pointer",width:"100%"}}>⚔️ Battle with {featCard.name}</button>
-          </div>
-          <div style={{color:"#334155",fontSize:9,marginTop:6}}>Tap card to view details</div>
+          <div style={{color:"#334155",fontSize:9,marginTop:4,marginBottom:4}}>Tap card to view details</div>
+          <button onClick={()=>{if(setBattleCard&&setTab){setBattleCard(featCard);setTab("battle");}}} style={{marginTop:2,background:`linear-gradient(135deg,${rc.bg},${rc.color}44)`,border:`1px solid ${rc.color}66`,borderRadius:8,padding:"6px 12px",color:rc.color,fontWeight:700,fontSize:10,cursor:"pointer",width:"100%"}}>⚔️ Battle with {featCard.name}</button>
         </div>
       </div>
     </div>
