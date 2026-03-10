@@ -190,6 +190,9 @@ const SFX = {
         bid:         ()=>{ sweep(400,600,"sine",0.08,0.1); },
         sell:        ()=>{ sweep(600,900,"sine",0.08,0.12); osc(1200,"sine",0.1,0.15,0.08); },
         daily:       ()=>{ [440,550,660,880].forEach((f,i)=>osc(f,"sine",i*0.09,0.3,0.15)); },
+        fusion:      ()=>{ sweep(200,800,"sine",0.4,0.2); [0,0.15,0.3].forEach((s,i)=>osc(400+i*200,"triangle",s,0.4,0.15)); },
+        teamWin:     ()=>{ [[523,0],[659,0.1],[784,0.2],[1047,0.3],[1568,0.4],[2093,0.5]].forEach(([f,s])=>osc(f,"triangle",s,0.5,0.2)); },
+        sub:         ()=>{ sweep(800,400,"sine",0.12,0.1); },
       })[type]?.();
     } catch(e){}
   },
@@ -1250,6 +1253,7 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
   const [animating,setAnimating]=useState(false);
   const [dmgPop,setDmgPop]=useState(null);
   const [defending,setDefending]=useState(false);
+  const [statusEffects,setStatusEffects]=useState({});
   const logRef=useRef(null);
   useEffect(()=>{ if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight; },[log]);
   const addLog=(text,type="normal")=>setLog(l=>[...l,{text,type}]);
@@ -1423,7 +1427,7 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
           <div style={{color:"#ef4444",fontWeight:800,fontSize:18,marginBottom:14}}>Defeated!</div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
             <button onClick={()=>{onLose?.();onClose();}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
-            <button onClick={()=>{setPhase("pick");setTeam([]);setActiveIdx(0);setEnemyIdx(0);setHps({});setEnemyHps({});setEnergy(1);setLog([{text:"⚔️ 3v3 Team Battle — pick your team!",type:"system"}]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
+            <button onClick={()=>{setPhase("player");setPlayerHp(maxHp);setEnemyHp(enemyCard.hp);setEnergy(1);setDefending(false);setStatusEffects({});setLog([{text:"⚔️ Battle begins! You have 1 ⚡",type:"system"}]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"12px 20px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
           </div>
         </div>}
       </div>
@@ -2815,7 +2819,7 @@ function FusionCandidates({collection, cardLevels, onOpenFusion}) {
 }
 
 // ── Card of the Day ───────────────────────────────────────────────────────────
-function CardOfTheDay({setDetail}) {
+function CardOfTheDay({setDetail, setBattleCard, setTab}) {
   const seed=new Date().toDateString().split("").reduce((a,c)=>a+c.charCodeAt(0),0);
   const featCard=ALL_CARDS[(seed*1664525+1013904223)%ALL_CARDS.length];
   const rc=RC[featCard.rarity];
@@ -2837,6 +2841,8 @@ function CardOfTheDay({setDetail}) {
           </div>}
           <div style={{color:"#64748b",fontSize:10,lineHeight:1.5,fontStyle:"italic"}}>
             "{featCard.description.substring(0,80)}{featCard.description.length>80?"...":""}"
+          </div>
+          <button onClick={()=>{if(setBattleCard&&setTab){setBattleCard(featCard);setTab("battle");}}} style={{marginTop:6,background:`linear-gradient(135deg,${rc.bg},${rc.color}44)`,border:`1px solid ${rc.color}66`,borderRadius:8,padding:"6px 12px",color:rc.color,fontWeight:700,fontSize:10,cursor:"pointer",width:"100%"}}>⚔️ Battle with {featCard.name}</button>
           </div>
           <div style={{color:"#334155",fontSize:9,marginTop:6}}>Tap card to view details</div>
         </div>
@@ -3287,21 +3293,25 @@ function App() {
 
   useEffect(()=>{
     const today=new Date().toDateString();
-    if(lastLogin===today)return;
-    const yesterday=new Date(Date.now()-86400000).toDateString();
-    const ns=lastLogin===yesterday?streak+1:1;
-    setStreak(ns);setLastLogin(today);setDailyGems("");S.set("dailyGems","");
-    S.set("lastLogin",today);S.set("streak",ns);
-    // Seed shuffle by date so same day always gives same 5 quests
     const dateNum=parseInt(new Date().toISOString().slice(0,10).replace(/-/g,""));
-    const dailyPool=DAILY_QUESTS_POOL.filter(q=>{
-      // Only cap battle-count quests — spend/cards use different scales
-      if(["wins","streak"].includes(q.type)) return q.target<=5;
-      return true;
-    });
-    const seeded=[...dailyPool].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
-    setQuests(seeded);setQuestProg({});
-    S.set("quests",seeded);S.set("questProgress",{});
+    const storedQuestDate=parseInt(S.get("questDate",0));
+    // New day check
+    if(lastLogin!==today){
+      const yesterday=new Date(Date.now()-86400000).toDateString();
+      const ns=lastLogin===yesterday?streak+1:1;
+      setStreak(ns);setLastLogin(today);setDailyGems("");S.set("dailyGems","");
+      S.set("lastLogin",today);S.set("streak",ns);
+    }
+    // Reseed quests if date changed OR quests are missing
+    if(storedQuestDate!==dateNum||!quests||quests.length===0){
+      const dailyPool=DAILY_QUESTS_POOL.filter(q=>{
+        if(["wins","streak"].includes(q.type)) return q.target<=5;
+        return true;
+      });
+      const seeded=[...dailyPool].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
+      setQuests(seeded);setQuestProg({});
+      S.set("quests",seeded);S.set("questProgress",{});S.set("questDate",dateNum);
+    }
   },[]);
 
   const checkAch=useCallback((state)=>{
@@ -3641,7 +3651,7 @@ function App() {
           <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>{muted?"🔇":"🔊"}</button>
           <button onClick={()=>setShowSettings(true)} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>⚙️</button>
           {canClaimDailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:800,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #f59e0b44"}}>🎁 Daily</button>}
-          <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop</button>
+          <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop {packsSinceLeg>0&&<span style={{fontSize:9,opacity:.8}}>({20-packsSinceLeg} to 🌟)</span>}</button>
           <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid #7c3aed55",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 0 16px #7c3aed22"}}>
             <span style={{fontSize:14}}>💎</span>
             <span style={{color:"#c084fc",fontWeight:900,fontSize:16,textShadow:"0 0 8px #a855f7"}}>{coins.toLocaleString()}</span>
@@ -3788,7 +3798,7 @@ function App() {
           </div>
 
           {/* Today's featured card */}
-          <CardOfTheDay setDetail={setDetail}/>
+          <CardOfTheDay setDetail={setDetail} setBattleCard={setBattleCard} setTab={setTab}/>
 
           {/* Guaranteed Legendary tracker + collection progress */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -3847,7 +3857,7 @@ function App() {
           {unique.length>=5&&<button onClick={()=>{SFX.play("click");setDeckBattle(true);}} style={{width:"100%",background:"linear-gradient(135deg,#7f1d1d,#dc2626)",color:"white",border:"none",borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             ⚔️ 5v5 Deck Battle <span style={{background:"rgba(255,255,255,.2)",borderRadius:6,padding:"2px 8px",fontSize:11}}>+500 💎</span>
           </button>}
-          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>1v1 — Pick a card and fight! Win = +150💎 + XP · <span style={{color:"#a855f7"}}>Save decks in the Binder tab to unlock 3v3 &amp; 5v5!</span>{battleStreak>=2&&<span style={{color:"#f59e0b",fontWeight:700}}> · 🔥 {battleStreak} win streak!</span>}</div>
+          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>1v1 — Pick a card and fight! Enemy is random. Win = +150💎 + XP · <span style={{color:"#a855f7"}}>Save decks in the Binder tab to unlock 3v3 &amp; 5v5!</span>{battleStreak>=2&&<span style={{color:"#f59e0b",fontWeight:700}}> · 🔥 {battleStreak} win streak!</span>}</div>
           {!unique.length
             ?<div style={{textAlign:"center",color:"#334155",paddingTop:40}}><div style={{fontSize:48}}>⚔️</div><div style={{marginTop:12}}>Get cards from the Shop first!</div></div>
             :<div style={{display:"flex",flexWrap:"wrap",gap:12}}>
