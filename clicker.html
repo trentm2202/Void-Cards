@@ -31,8 +31,8 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 .panel-title{font-family:'Cinzel Decorative',serif;font-size:.6rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;}
 
 /* BUILDINGS */
-.building{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
-.building::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(155,48,255,.07),transparent);transform:translateX(-100%);transition:transform .4s;}
+.building{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:visible;}
+.building::before{content:'';position:absolute;inset:0;border-radius:8px;background:linear-gradient(90deg,transparent,rgba(155,48,255,.07),transparent);transform:translateX(-100%);transition:transform .4s;pointer-events:none;overflow:hidden;}
 .building:hover::before{transform:translateX(100%);}
 .building:hover:not(.locked){border-color:rgba(155,48,255,.5);background:rgba(155,48,255,.08);}
 .building.locked{opacity:.35;cursor:not-allowed;}
@@ -89,7 +89,8 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 .upg-icon-btn:hover:not(.bought):not(.locked-upg){border-color:var(--gold);background:rgba(240,192,64,.1);transform:scale(1.1);}
 .upg-icon-btn.bought{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.08);opacity:.7;}
 .upg-icon-btn.locked-upg{opacity:.2;cursor:not-allowed;}
-.upg-icon-btn .upg-tip{position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#0d0525;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.65rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s;z-index:99;min-width:140px;text-align:center;line-height:1.4;}
+.upg-icon-btn{position:relative;overflow:visible!important;}
+.upg-icon-btn .upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0d0525;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:6px 10px;font-size:.65rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;min-width:140px;text-align:center;line-height:1.4;box-shadow:0 4px 20px rgba(0,0,0,.6);}
 .upg-icon-btn:hover .upg-tip{opacity:1;}
 
 /* PRESTIGE */
@@ -382,12 +383,14 @@ function clickPower(){
 // FORMAT NUMBERS
 // ════════════════════════════════════════════
 function fmt(n){
-  n=Math.floor(n);
   if(n>=1e12)return(n/1e12).toFixed(2)+'T';
   if(n>=1e9)return(n/1e9).toFixed(2)+'B';
   if(n>=1e6)return(n/1e6).toFixed(2)+'M';
   if(n>=1e3)return(n/1e3).toFixed(1)+'K';
-  return n.toString();
+  if(n>=10)return Math.floor(n).toString();
+  if(n>=1)return n.toFixed(1);
+  if(n>0)return n.toFixed(2);
+  return '0';
 }
 
 // ════════════════════════════════════════════
@@ -788,6 +791,17 @@ setInterval(()=>{
     G.shards+=earned;
     G.totalEarned+=earned;
     checkMilestones();
+  }
+
+  // Void Cursor auto-clicks (once per second per cursor, like Cookie Clicker)
+  const cursors = G.buildings['cursor']||0;
+  if(cursors>0 && G.ticks%10===0){ // every 10 ticks = 1 second
+    const autoPower = cursors * 0.1 * (G.bMult['cursor']||1) * G.globalMult * G.prestigeBonus * G.clickMult * (G.eventActive?G.eventActive.mult:1);
+    G.shards += autoPower;
+    G.totalEarned += autoPower;
+    G.totalClicks += cursors; // counts toward click achievements
+    checkMilestones();
+    checkAchievements();
   }
 
   // Event timer
