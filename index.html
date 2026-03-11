@@ -21,6 +21,19 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #020617; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
     #root { min-height: 100vh; }
+    :root {
+      --t1: #7c3aed;
+      --t2: #a855f7;
+      --t3: #6d28d9;
+      --t4: #1e0a3c;
+      --t5: #0f0a1e;
+      --t2b: #a855f733;
+      --t1b: #7c3aed44;
+    }
+    .theme-nebula  { --t1:#1d4ed8; --t2:#60a5fa; --t3:#1e40af; --t4:#0a1628; --t5:#060d1a; --t2b:#60a5fa33; --t1b:#1d4ed844; }
+    .theme-matrix  { --t1:#15803d; --t2:#4ade80; --t3:#166534; --t4:#052e16; --t5:#020c07; --t2b:#4ade8033; --t1b:#15803d44; }
+    .theme-inferno { --t1:#b91c1c; --t2:#f87171; --t3:#991b1b; --t4:#2d0a0a; --t5:#150404; --t2b:#f8717133; --t1b:#b91c1c44; }
+    .theme-solar   { --t1:#b45309; --t2:#fbbf24; --t3:#92400e; --t4:#2d1a00; --t5:#150d00; --t2b:#fbbf2433; --t1b:#b4530944; }
   </style>
 </head>
 <body>
@@ -29,26 +42,26 @@
     <div style="background:#020617;color:white;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;">
       <div style="font-size:64px;margin-bottom:16px;">🌌</div>
       <h1 style="font-size:32px;font-weight:900;margin-bottom:8px;">Void Cards</h1>
-      <p style="color:#a855f7;letter-spacing:4px;font-size:11px;margin-bottom:16px;">GALACTIC CARD BATTLE GAME</p>
+      <p style="color:var(--t2);letter-spacing:4px;font-size:11px;margin-bottom:16px;">GALACTIC CARD BATTLE GAME</p>
       <p style="color:#94a3b8;max-width:480px;line-height:1.8;margin-bottom:24px;">Void Cards is a free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards across 6 types — Alien, Robot, Knight, Mage, Dragon, and Beast. Battle enemies, fuse cards into powerful Foils, and compete in the Auction House. No download required.</p>
       <p style="color:#475569;font-size:13px;">JavaScript is required to play. Please enable JavaScript in your browser.</p>
       <div style="margin-top:32px;color:#334155;font-size:12px;">
-        <a href="/about.html" style="color:#a855f7;margin:0 12px;">About</a>
-        <a href="/guide.html" style="color:#a855f7;margin:0 12px;">How to Play</a>
-        <a href="/cards.html" style="color:#a855f7;margin:0 12px;">All Cards</a>
-        <a href="/privacy.html" style="color:#a855f7;margin:0 12px;">Privacy</a>
+        <a href="/about.html" style="color:var(--t2);margin:0 12px;">About</a>
+        <a href="/guide.html" style="color:var(--t2);margin:0 12px;">How to Play</a>
+        <a href="/cards.html" style="color:var(--t2);margin:0 12px;">All Cards</a>
+        <a href="/privacy.html" style="color:var(--t2);margin:0 12px;">Privacy</a>
       </div>
     </div>
   </noscript>
 
   <div id="loader" style="position:fixed;inset:0;background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',system-ui,sans-serif">
     <div style="font-size:64px;margin-bottom:16px;animation:loaderFloat 2s ease-in-out infinite">🌌</div>
-    <div style="color:#a855f7;font-size:9px;letter-spacing:6px;font-weight:800;margin-bottom:6px">GALACTIC</div>
+    <div style="color:var(--t2);font-size:9px;letter-spacing:6px;font-weight:800;margin-bottom:6px">GALACTIC</div>
     <div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#e2e8f0,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:24px">VOID CARDS</div>
     <div style="display:flex;gap:6px">
-      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0s"></div>
-      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.2s"></div>
-      <div style="width:8px;height:8px;background:#a855f7;border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.4s"></div>
+      <div style="width:8px;height:8px;background:var(--t2);border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0s"></div>
+      <div style="width:8px;height:8px;background:var(--t2);border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.2s"></div>
+      <div style="width:8px;height:8px;background:var(--t2);border-radius:50%;animation:loaderDot 1.2s ease-in-out infinite 0.4s"></div>
     </div>
   </div>
   <style>
@@ -1117,7 +1130,7 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
           <div style={{color:"white",fontSize:22,fontWeight:900,marginBottom:4,letterSpacing:-.5}}>{pack.name}</div>
           <div style={{color:"#64748b",marginBottom:3,fontSize:13}}>{pack.rarities.length} cards · {pack.guaranteed}</div>
           <div style={{color:"#a855f7",fontWeight:900,fontSize:22,marginBottom:28,textShadow:"0 0 16px #a855f7"}}>💎 {pack.price}</div>
-          <button onClick={open} style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:14,padding:"18px 48px",fontSize:19,fontWeight:800,cursor:"pointer",width:"100%",maxWidth:300,boxShadow:"0 8px 32px #7c3aed55",letterSpacing:.5}}>✨ Open Pack!</button>
+          <button onClick={open} style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:14,padding:"18px 48px",fontSize:19,fontWeight:800,cursor:"pointer",width:"100%",maxWidth:300,boxShadow:"0 8px 32px var(--t1b)",letterSpacing:.5}}>✨ Open Pack!</button>
         </>}
 
         {phase==="tearing"&&<>
@@ -1215,7 +1228,7 @@ function WelcomeScreen({ onClaim }) {
             <div style={{color:"#94a3b8",fontSize:13,marginBottom:4}}>5 cards · 1 Rare guaranteed</div>
             <div style={{color:"#22c55e",fontSize:12,fontWeight:600}}>+ 500 💎 starting credits</div>
           </div>
-          <button onClick={openPack} style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:12,padding:"16px 40px",fontSize:17,fontWeight:800,cursor:"pointer",width:"100%",maxWidth:300}}>Claim & Start Playing ✨</button>
+          <button onClick={openPack} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"16px 40px",fontSize:17,fontWeight:800,cursor:"pointer",width:"100%",maxWidth:300}}>Claim & Start Playing ✨</button>
         </>}
         {phase==="opening"&&<>
           <div style={{fontSize:90,marginBottom:20,animation:"pulse .5s infinite"}}>🪐</div>
@@ -1402,7 +1415,7 @@ function BattleScreen({ playerCard, cardLevels, onClose, onWin, onBack }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
             {[
               {type:"attack", icon:"⚔️", label:"Attack",           cost:1, sub:`~${Math.round(effP*.9)}-${Math.round(effP*.9+10)}`, color:"linear-gradient(135deg,#991b1b,#dc2626)"},
-              {type:"special",icon:"✨", label:playerCard.special,  cost:3, sub:`~${Math.round(effP*playerCard.specialMult)}-${Math.round(effP*playerCard.specialMult+12)}`, color:"linear-gradient(135deg,#6d28d9,#a855f7)"},
+              {type:"special",icon:"✨", label:playerCard.special,  cost:3, sub:`~${Math.round(effP*playerCard.specialMult)}-${Math.round(effP*playerCard.specialMult+12)}`, color:"linear-gradient(135deg,var(--t3),var(--t2))"},
               {type:"defend", icon:"🛡", label:"Defend",            cost:0, sub:"block "+effD+" dmg +1⚡",                            color:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
             ].map(b=>{
               const canAfford=energy>=b.cost;
@@ -1762,7 +1775,7 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,onLose,savedDe
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:8}}>
             {[
               {t:"attack", i:"⚔️",l:"Attack",  cost:1, s:`~${Math.round(effP*.9)}-${Math.round(effP*.9+10)}`,c:"linear-gradient(135deg,#991b1b,#dc2626)"},
-              {t:"special",i:"✨",l:pc?.special||"Special",cost:3,s:`~${Math.round(effP*(pc?.specialMult||1.5))}`,c:"linear-gradient(135deg,#6d28d9,#a855f7)"},
+              {t:"special",i:"✨",l:pc?.special||"Special",cost:3,s:`~${Math.round(effP*(pc?.specialMult||1.5))}`,c:"linear-gradient(135deg,var(--t3),var(--t2))"},
               {t:"defend", i:"🛡",l:"Defend",  cost:0, s:"+1⚡",c:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
               {t:"sub",    i:"🔄",l:"Sub Out", cost:0, s:"free",c:"linear-gradient(135deg,#065f46,#059669)"},
             ].map(b=>{
@@ -1920,7 +1933,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
   });
 
   return(
-    <div>
+    <div className={theme!=="void"?`theme-${theme}`:undefined}>
       {/* Header stats */}
       <div style={{marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
@@ -1940,7 +1953,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
       {/* Quick actions */}
       <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
         <button onClick={()=>{SFX.play("click");setShowDupesModal?.(true);}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>♻️ Manage Dupes</button>
-        <button onClick={()=>{SFX.play("click");setDeckBuilder(true);}} style={{background:"linear-gradient(135deg,#6d28d9,#a855f7)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>🃏 Decks</button>
+        <button onClick={()=>{SFX.play("click");setDeckBuilder(true);}} style={{background:"linear-gradient(135deg,var(--t3),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>🃏 Decks</button>
         <button onClick={()=>{SFX.play("click");setFusionModal(true);}} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flex:1}}>✨ Fuse</button>
         <button onClick={()=>{SFX.play("click");setShowDupesOnly?.(!showDupesOnly);}} style={{background:showDupesOnly?"linear-gradient(135deg,#0e7490,#06b6d4)":"#1e293b",color:showDupesOnly?"white":"#64748b",border:`1px solid ${showDupesOnly?"#06b6d4":"#334155"}`,borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:600,cursor:"pointer",position:"relative"}}>
           🎴 Dupes{dupeCount>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"white",fontSize:8,fontWeight:800,borderRadius:999,width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{dupeCount}</span>}
@@ -1996,7 +2009,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
             return (
               <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}}>
                 {isNew&&<div style={{position:"absolute",top:-4,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",fontSize:7,fontWeight:800,borderRadius:4,padding:"2px 6px",letterSpacing:1,zIndex:10,whiteSpace:"nowrap",boxShadow:"0 0 8px #22c55e88",animation:"pulse 1.5s ease-in-out infinite"}}>✨ NEW</div>}
-                <Card card={c} mini onClick={setDetail} count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
+                <Card card={c} mini onClick={(card)=>{setDetail(card);if(newCardIds.has(card.id)){const s=new Set(newCardIds);s.delete(card.id);setNewCardIds(s);}}} count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
 
               </div>
             );
@@ -2056,7 +2069,7 @@ function SellModal({ card, onClose, onSell }) {
           <div style={{color:"#94a3b8",fontSize:12,marginBottom:10,textAlign:"left"}}>⏱ Auction Duration</div>
           <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
             {DURATIONS.map(h=>(
-              <button key={h} onClick={()=>setDuration(h)} style={{background:duration===h?"#7c3aed":"#0f172a",color:"white",border:"1px solid #7c3aed55",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{h}h</button>
+              <button key={h} onClick={()=>setDuration(h)} style={{background:duration===h?"#7c3aed":"#0f172a",color:"white",border:"1px solid var(--t1b)",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{h}h</button>
             ))}
           </div>
         </div>
@@ -2096,7 +2109,7 @@ function DeckBuilderModal({ collection, cardLevels, onSave, onClose }) {
             </div>
           }
         </div>
-        <button disabled={selected.length===0} onClick={()=>{SFX.play("achievement");onSave({name:deckName,cards:selected});}} style={{background:selected.length>0?"linear-gradient(135deg,#7c3aed,#a855f7)":"#1e293b",color:selected.length>0?"white":"#475569",border:"none",borderRadius:12,padding:"13px",width:"100%",fontWeight:700,fontSize:14,cursor:selected.length>0?"pointer":"not-allowed",marginBottom:14}}>
+        <button disabled={selected.length===0} onClick={()=>{SFX.play("achievement");onSave({name:deckName,cards:selected});}} style={{background:selected.length>0?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:selected.length>0?"white":"#475569",border:"none",borderRadius:12,padding:"13px",width:"100%",fontWeight:700,fontSize:14,cursor:selected.length>0?"pointer":"not-allowed",marginBottom:14}}>
           💾 Save Deck ({selected.length}/5 cards)
         </button>
         <div style={{color:"#94a3b8",fontSize:12,marginBottom:10}}>Your cards:</div>
@@ -2204,7 +2217,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
       <div style={{maxWidth:520,margin:"0 auto"}}>
 
         {/* Gem balance */}
-        <div style={{background:"#0f172a",border:"1px solid #a855f733",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{background:"#0f172a",border:"1px solid var(--t2b)",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span style={{color:"#64748b",fontSize:12}}>Your balance</span>
           <span style={{color:"#a855f7",fontWeight:900,fontSize:18}}>💎 {coins.toLocaleString()}</span>
         </div>
@@ -2238,7 +2251,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                   <span style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {p.price}</span>
-                  <button onClick={()=>onBuyPack(p)} disabled={coins<p.price} style={{background:coins>=p.price?"linear-gradient(135deg,#7c3aed,#a855f7)":"#1e293b",color:coins>=p.price?"white":"#475569",border:"none",borderRadius:7,padding:"6px 14px",fontWeight:700,fontSize:11,cursor:coins>=p.price?"pointer":"not-allowed",whiteSpace:"nowrap"}}>Open ✨</button>
+                  <button onClick={()=>onBuyPack(p)} disabled={coins<p.price} style={{background:coins>=p.price?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:coins>=p.price?"white":"#475569",border:"none",borderRadius:7,padding:"6px 14px",fontWeight:700,fontSize:11,cursor:coins>=p.price?"pointer":"not-allowed",whiteSpace:"nowrap"}}>Open ✨</button>
                 </div>
               </div>
             ))}
@@ -2669,7 +2682,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
           {!animating&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
             {[
               {t:"attack", i:"⚔️",l:"Attack",  cost:1, s:`~${Math.round(effP*.9)}-${Math.round(effP*.9+10)}`,c:"linear-gradient(135deg,#991b1b,#dc2626)"},
-              {t:"special",i:"✨",l:pc?.special||"Special",cost:3,s:`~${Math.round(effP*(pc?.specialMult||1.5))}`,c:"linear-gradient(135deg,#6d28d9,#a855f7)"},
+              {t:"special",i:"✨",l:pc?.special||"Special",cost:3,s:`~${Math.round(effP*(pc?.specialMult||1.5))}`,c:"linear-gradient(135deg,var(--t3),var(--t2))"},
               {t:"defend", i:"🛡",l:"Defend",  cost:0, s:"+1⚡",c:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
             ].map(b=>{
               const can=energy>=b.cost;
@@ -2879,7 +2892,7 @@ function LandingPage({onPlay}){
         <div style={{display:"flex",gap:16,alignItems:"center"}}>
           <a href="/about.html" style={{color:"#475569",textDecoration:"none",fontSize:12,fontWeight:600}}>About</a>
           <a href="/privacy.html" style={{color:"#475569",textDecoration:"none",fontSize:12,fontWeight:600}}>Privacy</a>
-          <button onClick={onPlay} style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:8,padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Play Free →</button>
+          <button onClick={onPlay} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Play Free →</button>
         </div>
       </nav>
 
@@ -2891,7 +2904,7 @@ function LandingPage({onPlay}){
         <p style={{color:"#64748b",fontSize:15,maxWidth:480,lineHeight:1.8,margin:"16px auto 36px"}}>Collect 100+ unique sci-fi cards, battle enemies, fuse cards into powerful Foils, and dominate the galactic auction house. Free to play — no download required.</p>
 
         <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center",marginBottom:48}}>
-          <button onClick={onPlay} style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:12,padding:"16px 40px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 0 40px #a855f744",fontFamily:"'Orbitron',monospace",letterSpacing:1}}>🚀 Play For Free</button>
+          <button onClick={onPlay} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"16px 40px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 0 40px #a855f744",fontFamily:"'Orbitron',monospace",letterSpacing:1}}>🚀 Play For Free</button>
           <a href="/about.html" style={{background:"transparent",color:"#475569",border:"1px solid #ffffff14",borderRadius:12,padding:"16px 28px",fontWeight:700,fontSize:13,textDecoration:"none",display:"flex",alignItems:"center"}}>Learn More →</a>
         </div>
 
@@ -3035,7 +3048,7 @@ function ResetPasswordScreen({token, refreshToken, onDone}){
                   onKeyDown={e=>e.key==="Enter"&&submit()}/>
               </div>
               {error&&<div style={{background:"#1a0000",border:"1px solid #ef444455",borderRadius:8,padding:"10px 12px",color:"#ef4444",fontSize:12,marginBottom:14}}>{error}</div>}
-              <button onClick={submit} disabled={loading} style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer"}}>
+              <button onClick={submit} disabled={loading} style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer"}}>
                 {loading?"Updating...":"Update Password 🚀"}
               </button>
             </>
@@ -3085,7 +3098,7 @@ function AuthScreen({onAuth}){
           {/* Mode toggle */}
           <div style={{display:"flex",background:"#0f172a",borderRadius:10,padding:3,marginBottom:20}}>
             {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");}} style={{flex:1,background:mode===m?"linear-gradient(135deg,#7c3aed,#a855f7)":"transparent",color:mode===m?"white":"#475569",border:"none",borderRadius:8,padding:"8px",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .2s"}}>
+              <button key={m} onClick={()=>{setMode(m);setError("");}} style={{flex:1,background:mode===m?"linear-gradient(135deg,var(--t1),var(--t2))":"transparent",color:mode===m?"white":"#475569",border:"none",borderRadius:8,padding:"8px",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .2s"}}>
                 {m==="login"?"Sign In":"Sign Up"}
               </button>
             ))}
@@ -3111,7 +3124,7 @@ function AuthScreen({onAuth}){
           {error&&<div style={{background:"#1a0000",border:"1px solid #ef444455",borderRadius:8,padding:"10px 12px",color:"#ef4444",fontSize:12,marginBottom:14}}>{error}</div>}
 
           {/* Submit */}
-          <button onClick={submit} disabled={loading} style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer",boxShadow:loading?"none":"0 0 20px #a855f744",transition:"all .2s"}}>
+          <button onClick={submit} disabled={loading} style={{width:"100%",background:loading?"#1e293b":"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:loading?"not-allowed":"pointer",boxShadow:loading?"none":"0 0 20px #a855f744",transition:"all .2s"}}>
             {loading?"Connecting...":mode==="login"?"Sign In ✨":"Create Account 🚀"}
           </button>
 
@@ -3286,6 +3299,7 @@ function App() {
   },[tab]);
   useEffect(()=>S.set("streak",streak),[streak]);
   useEffect(()=>S.set("dailyWins",dailyWins),[dailyWins]);
+  useEffect(()=>S.set("theme",theme),[theme]);
   useEffect(()=>S.set("auctions",auctions),[auctions]);
   useEffect(()=>S.set("lastAdWatch",lastAdWatch),[lastAdWatch]);
   useEffect(()=>{if(tab!=="collection")setShowDupesOnly(false);},[tab]);
@@ -3395,7 +3409,7 @@ function App() {
     // Mark newly pulled cards as "new" — cleared when user visits binder
     const existingIds=new Set(collection.map(c=>c.id));
     const brandNew=cards.filter(c=>!existingIds.has(c.id)).map(c=>c.id);
-    if(brandNew.length>0) setNewCardIds(prev=>new Set([...prev,...brandNew]));
+    if(brandNew.length>0){ setNewCardIds(prev=>new Set([...prev,...brandNew])); SFX.play("achievement"); }
     setTotalPacks(t=>t+1);
     updateQuest("cards",cards.length);
     updateQuest("packs",1);
@@ -3448,6 +3462,7 @@ function App() {
 
   // ── Quest win-streak tracking ─────────────────────────────────────────────
   const [battleStreak,setBattleStreak]=useState(0);
+  const [theme,setTheme] = useState(()=>S.get("theme","void"));
   const [dailyWins,setDailyWins]         = useState(()=>S.get("dailyWins",{date:"",count:0}));
 
   const onWin=cardId=>{
@@ -3674,7 +3689,7 @@ function App() {
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         @keyframes fadeOut{from{opacity:.4}to{opacity:0}}
         @keyframes goldFlare{0%{transform:translateX(-120%) skewX(-20deg);opacity:0} 40%{opacity:0.7} 100%{transform:translateX(220%) skewX(-20deg);opacity:0}}
-        @keyframes epicGlow{0%,100%{box-shadow:0 0 8px #a855f733} 50%{box-shadow:0 0 22px #a855f766}}
+        @keyframes epicGlow{0%,100%{box-shadow:0 0 8px var(--t2b)} 50%{box-shadow:0 0 22px #a855f766}}
         @keyframes cardBreathe{0%,100%{transform:scale(1)} 50%{transform:scale(1.012)}}
         @keyframes foilRainbow{0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)}}
         @keyframes starDrift{0%{transform:translateY(0)} 100%{transform:translateY(-100vh)}}
@@ -3704,7 +3719,7 @@ function App() {
           <button onClick={()=>setShowSettings(true)} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>⚙️</button>
           {canClaimDailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:800,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #f59e0b44"}}>🎁 Daily</button>}
           <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop {packsSinceLeg>0&&<span style={{fontSize:9,opacity:.8}}>({20-packsSinceLeg} to 🌟)</span>}</button>
-          <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid #7c3aed55",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 0 16px #7c3aed22"}}>
+          <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid var(--t1b)",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 0 16px #7c3aed22"}}>
             <span style={{fontSize:14}}>💎</span>
             <span style={{color:"#c084fc",fontWeight:900,fontSize:16,textShadow:"0 0 8px #a855f7"}}>{coins.toLocaleString()}</span>
           </div>
@@ -3739,7 +3754,7 @@ function App() {
           </button>;
         })}
         <div style={{marginTop:"auto",paddingTop:16,borderTop:"1px solid #ffffff08"}}>
-          <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid #7c3aed55",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:6}}>
+          <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid var(--t1b)",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:6}}>
             <span style={{fontSize:14}}>💎</span>
             <span style={{color:"#c084fc",fontWeight:900,fontSize:15}}>{coins.toLocaleString()}</span>
           </div>
@@ -3903,7 +3918,7 @@ function App() {
             ))}
           </div>
           {/* 3v3 banner */}
-          {unique.length>=3&&<button onClick={()=>{SFX.play("click");setTeamBattle(true);}} style={{width:"100%",background:"linear-gradient(135deg,#6d28d9,#a855f7)",color:"white",border:"none",borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {unique.length>=3&&<button onClick={()=>{SFX.play("click");setTeamBattle(true);}} style={{width:"100%",background:"linear-gradient(135deg,var(--t3),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             🤝 3v3 Team Battle <span style={{background:"rgba(255,255,255,.2)",borderRadius:6,padding:"2px 8px",fontSize:11}}>+300 💎</span>
           </button>}
           {unique.length>=5&&<button onClick={()=>{SFX.play("click");setDeckBattle(true);}} style={{width:"100%",background:"linear-gradient(135deg,#7f1d1d,#dc2626)",color:"white",border:"none",borderRadius:12,padding:"13px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -3928,7 +3943,7 @@ function App() {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div style={{color:"white",fontWeight:700}}>{d.name} <span style={{color:"#475569",fontSize:11}}>({d.cards.length} cards)</span></div>
                   <div style={{display:"flex",gap:6}}>
-                    {d.cards.length>=3&&<button onClick={()=>{SFX.play("click");setTeamBattle(true);}} style={{background:"linear-gradient(135deg,#6d28d9,#a855f7)",color:"white",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>3v3 ▶</button>}
+                    {d.cards.length>=3&&<button onClick={()=>{SFX.play("click");setTeamBattle(true);}} style={{background:"linear-gradient(135deg,var(--t3),var(--t2))",color:"white",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>3v3 ▶</button>}
                     {d.cards.length>=5&&<button onClick={()=>{SFX.play("click");setDeckBattle(true);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:7,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>5v5 ▶</button>}
                   </div>
                 </div>
@@ -4077,7 +4092,7 @@ function App() {
                     <div style={{color:"#334155",fontSize:9}}>min raise: +{item.minBid}</div>
                   </div>
                   {item.seller!=="You"&&item.secsLeft>0&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
-                    <button onClick={()=>bid(item,item.minBid)} disabled={coins<item.price+item.minBid} style={{background:coins>=item.price+item.minBid?"linear-gradient(135deg,#7c3aed,#a855f7)":"#1e293b",color:coins>=item.price+item.minBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
+                    <button onClick={()=>bid(item,item.minBid)} disabled={coins<item.price+item.minBid} style={{background:coins>=item.price+item.minBid?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:coins>=item.price+item.minBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
                       Bid +{item.minBid} 💎
                     </button>
                     <button onClick={()=>bid(item,item.minBid*5)} disabled={coins<item.price+item.minBid*5} style={{background:coins>=item.price+item.minBid*5?"linear-gradient(135deg,#991b1b,#dc2626)":"#1e293b",color:coins>=item.price+item.minBid*5?"white":"#475569",border:"none",borderRadius:7,padding:"6px 16px",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>
@@ -4218,10 +4233,41 @@ function App() {
             }catch(e){return null;}
           })()}
 
+          <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:14,marginBottom:14}}>
+            <div style={{color:"white",fontWeight:700,marginBottom:10}}>🎨 UI Theme</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {[["void","🟣","Void","#7c3aed"],["nebula","🔵","Nebula","#1d4ed8"],["matrix","🟢","Matrix","#15803d"],["inferno","🔴","Inferno","#b91c1c"],["solar","🟡","Solar","#b45309"]].map(([id,icon,label,color])=>(
+                <button key={id} onClick={()=>setTheme(id)} style={{background:theme===id?color+"33":"#1e293b",border:`2px solid ${theme===id?color:"#334155"}`,borderRadius:10,padding:"8px 14px",color:theme===id?color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"#ef4444",fontWeight:700,marginBottom:8}}>⚠️ Reset Game</div>
             <div style={{color:"#64748b",fontSize:12,marginBottom:10}}>Clears all progress and returns to the welcome screen. Cannot be undone.</div>
             <button onClick={async()=>{if(window.confirm("Reset everything? This cannot be undone.")){await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));window.location.reload();}}} style={{background:"linear-gradient(135deg,#7f1d1d,#ef4444)",color:"white",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,fontSize:13,cursor:"pointer",width:"100%"}}>🗑️ Reset & Start Over</button>
+          </div>
+          <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:14,marginBottom:14}}>
+            <div style={{color:"white",fontWeight:700,marginBottom:12}}>⚔️ Battle Record</div>
+            <div style={{display:"flex",gap:10}}>
+              <div style={{flex:1,background:"#052e16",border:"1px solid #14532d",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:"#22c55e",fontSize:22,fontWeight:900}}>{wins}</div>
+                <div style={{color:"#64748b",fontSize:11}}>Wins</div>
+              </div>
+              <div style={{flex:1,background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:"#ef4444",fontSize:22,fontWeight:900}}>{losses}</div>
+                <div style={{color:"#64748b",fontSize:11}}>Losses</div>
+              </div>
+              <div style={{flex:1,background:"#1e293b",border:"1px solid #334155",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:"#f59e0b",fontSize:22,fontWeight:900}}>{wins+losses>0?Math.round(wins/(wins+losses)*100):0}%</div>
+                <div style={{color:"#64748b",fontSize:11}}>Win Rate</div>
+              </div>
+              <div style={{flex:1,background:"#1e0a3c",border:"1px solid var(--t1b)",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                <div style={{color:"var(--t2)",fontSize:22,fontWeight:900}}>{teamWins}</div>
+                <div style={{color:"#64748b",fontSize:11}}>Team Wins</div>
+              </div>
+            </div>
           </div>
           <div style={{background:"#1c1008",border:"1px solid #f59e0b33",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"#f59e0b",fontWeight:700,marginBottom:10}}>🌟 Collection Progress</div>
@@ -4317,7 +4363,7 @@ function App() {
             <div style={{color:"#a855f7",fontWeight:700,marginBottom:12}}>🔊 Audio</div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               <span style={{color:"#94a3b8",fontSize:13}}>Music & SFX</span>
-              <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:muted?"#1e293b":"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:8,padding:"6px 14px",fontWeight:700,fontSize:12,cursor:"pointer"}}>{muted?"Off":"On"}</button>
+              <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:muted?"#1e293b":"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 14px",fontWeight:700,fontSize:12,cursor:"pointer"}}>{muted?"Off":"On"}</button>
             </div>
           </div>
 
@@ -4418,7 +4464,7 @@ function App() {
 
       {/* Onboarding Overlay — only shows on first visit, step by step */}
       {onboardingStep===-1&&collection.length===0&&<div style={{position:"fixed",inset:0,zIndex:5000,display:"flex",alignItems:"center",justifyContent:"center",background:"#000000ee",backdropFilter:"blur(10px)"}}>
-        <div style={{background:"linear-gradient(135deg,#0f0a1e,#1e0a3c)",border:"1px solid #7c3aed55",borderRadius:20,padding:32,maxWidth:320,width:"90%",textAlign:"center",animation:"fadeIn .5s ease-out"}}>
+        <div style={{background:"linear-gradient(135deg,#0f0a1e,#1e0a3c)",border:"1px solid var(--t1b)",borderRadius:20,padding:32,maxWidth:320,width:"90%",textAlign:"center",animation:"fadeIn .5s ease-out"}}>
           <div style={{fontSize:52,marginBottom:12}}>🌌</div>
           <div style={{color:"#a855f7",fontSize:9,letterSpacing:4,fontWeight:800,marginBottom:8}}>WELCOME COMMANDER</div>
           <div style={{color:"white",fontWeight:900,fontSize:20,marginBottom:10}}>Your first mission</div>
@@ -4439,7 +4485,7 @@ function App() {
               </div>
             ))}
           </div>
-          <button onClick={()=>{setOnboardingStep(0);S.set("onboardingDone",true);SFX.play("click");}} style={{width:"100%",background:"linear-gradient(135deg,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 0 20px #a855f744"}}>
+          <button onClick={()=>{setOnboardingStep(0);S.set("onboardingDone",true);SFX.play("click");}} style={{width:"100%",background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 0 20px #a855f744"}}>
             Let's Go! 🚀
           </button>
         </div>
