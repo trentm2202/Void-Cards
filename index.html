@@ -1903,7 +1903,7 @@ function DupesModal({collection,onClose,onSellOne,onSellAll}){
   );
 }
 
-function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),showDupesOnly=false,setShowDupesOnly,setShowDupesModal}){
+function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal}){
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
   const [typeFilter,setTypeFilter]=useState("All");
@@ -3646,6 +3646,8 @@ function App() {
       setQuests(_seeded);setQuestProg({});
       S.set("quests",_seeded);S.set("questProgress",{});S.set("questDate",_dateNum);
     }
+    // Save token + uid to localStorage so clicker.html can identify the user for Supabase sync
+    if(sb._token) { localStorage.setItem("vc_token", sb._token); localStorage.setItem("vc_uid", sb._uid); }
     setAuthed(true);
   };
 
@@ -3903,7 +3905,7 @@ function App() {
           </div>}
         </div>}
 
-                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal}/></div>}
+                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal}/></div>}
 
         {/* SHOP */}
         {/* BATTLE */}
@@ -4108,7 +4110,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.1</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.19</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4246,7 +4248,7 @@ function App() {
           <div style={{background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"#ef4444",fontWeight:700,marginBottom:8}}>⚠️ Reset Game</div>
             <div style={{color:"#64748b",fontSize:12,marginBottom:10}}>Clears all progress and returns to the welcome screen. Cannot be undone.</div>
-            <button onClick={async()=>{if(window.confirm("Reset everything? This cannot be undone.")){await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));window.location.reload();}}} style={{background:"linear-gradient(135deg,#7f1d1d,#ef4444)",color:"white",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,fontSize:13,cursor:"pointer",width:"100%"}}>🗑️ Reset & Start Over</button>
+            <button onClick={async()=>{if(window.confirm("Reset everything? This cannot be undone.")){await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));localStorage.removeItem("vc_token");localStorage.removeItem("vc_uid");window.location.reload();}}} style={{background:"linear-gradient(135deg,#7f1d1d,#ef4444)",color:"white",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,fontSize:13,cursor:"pointer",width:"100%"}}>🗑️ Reset & Start Over</button>
           </div>
           <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"white",fontWeight:700,marginBottom:12}}>⚔️ Battle Record</div>
