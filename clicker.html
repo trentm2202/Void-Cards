@@ -29,8 +29,7 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 
 /* BUILDINGS */
 .building{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,background .15s;position:relative;overflow:visible;}
-.building::before{content:'';position:absolute;inset:0;border-radius:8px;background:linear-gradient(90deg,transparent,rgba(155,48,255,.07),transparent);transform:translateX(-100%);transition:transform .4s;pointer-events:none;}
-.building:hover::before{transform:translateX(100%);}
+.building::before{content:none;}
 .building:hover:not(.locked){border-color:rgba(155,48,255,.5);background:rgba(155,48,255,.08);}
 .building.locked{opacity:.3;cursor:not-allowed;}
 .building.can-afford{border-color:rgba(0,229,255,.3);}
@@ -104,9 +103,9 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 .upg-icon-btn.bought{border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.07);opacity:.65;}
 .upg-icon-btn.locked-upg{opacity:.18;cursor:not-allowed;}
 .upg-icon-btn.affordable{border-color:rgba(240,192,64,.6);box-shadow:0 0 8px rgba(240,192,64,.25);}
-.upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0a0220;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:7px 10px;font-size:.63rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s ease 0.4s;z-index:9999;min-width:150px;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.8);}
-.upg-icon-btn:hover .upg-tip{opacity:1;transition:opacity .2s ease 0.4s;}
-.upg-icon-btn:not(:hover) .upg-tip{opacity:0;transition:opacity .1s ease 0s;}
+.upg-tip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:#0a0220;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:7px 10px;font-size:.63rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s ease;transition-delay:0.5s;z-index:9999;min-width:150px;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.8);}
+.upg-icon-btn:hover .upg-tip{opacity:1;transition-delay:0.5s;}
+.upg-icon-btn:not(:hover) .upg-tip{opacity:0;transition-delay:0s;}
 .tip-cat{font-size:.55rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
 .tip-cat.tap{color:var(--pink);}
 .tip-cat.idle{color:var(--cyan);}
