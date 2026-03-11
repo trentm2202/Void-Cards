@@ -104,8 +104,9 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 .upg-icon-btn.bought{border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.07);opacity:.65;}
 .upg-icon-btn.locked-upg{opacity:.18;cursor:not-allowed;}
 .upg-icon-btn.affordable{border-color:rgba(240,192,64,.6);box-shadow:0 0 8px rgba(240,192,64,.25);}
-.upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0a0220;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:7px 10px;font-size:.63rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;min-width:150px;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.8);}
-.upg-icon-btn:hover .upg-tip{opacity:1;}
+.upg-tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#0a0220;border:1px solid rgba(155,48,255,.5);border-radius:8px;padding:7px 10px;font-size:.63rem;white-space:nowrap;color:var(--text);pointer-events:none;opacity:0;transition:opacity .2s ease 0.4s;z-index:9999;min-width:150px;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.8);}
+.upg-icon-btn:hover .upg-tip{opacity:1;transition:opacity .2s ease 0.4s;}
+.upg-icon-btn:not(:hover) .upg-tip{opacity:0;transition:opacity .1s ease 0s;}
 .tip-cat{font-size:.55rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
 .tip-cat.tap{color:var(--pink);}
 .tip-cat.idle{color:var(--cyan);}
@@ -185,6 +186,9 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
 
 <!-- CENTER -->
 <div id="center">
+  <div style="width:100%;display:flex;justify-content:flex-start;">
+    <a href="/index.html" id="backBtn" style="font-size:.6rem;color:var(--dim);text-decoration:none;letter-spacing:2px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;">← VOID CARDS</a>
+  </div>
   <div class="logo"><h1>VOID CARDS</h1><p>Shard Collector · Galactic Edition</p></div>
 
   <div class="stats-row">
@@ -386,7 +390,7 @@ function newGame(){
   return {
     shards:0, totalEarned:0, totalClicks:0,
     clickMult:1, globalMult:1,
-    cursorMult:1, bMult:{},
+    cursorMult:1, bMult:{}, buildings:{},
     upgrades:new Set(), achievements:new Set(),
     prestiges:0, prestigeBonus:1,
     cps:0, baseCps:0,
@@ -729,7 +733,7 @@ const goldenOrbEl=document.getElementById('goldenOrb');
 goldenOrbEl.addEventListener('click',(e)=>{
   e.stopPropagation();
   if(!G.goldenOrbVisible)return;
-  const bonus=Math.floor(Math.max(G.cps*30,G.clickPower||1000));
+  const bonus=Math.floor(Math.max(G.cps*30,clickPower()*100,1000));
   G.shards+=bonus;
   G.totalEarned+=bonus;
   G.goldenClicks++;
