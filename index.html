@@ -3311,6 +3311,27 @@ function App() {
   useEffect(()=>{ MUSIC.setTab(tab); },[tab]);
   useEffect(()=>{ if(tab==="collection") setNewCardIds(new Set()); },[tab]);
 
+  // ── Session restore on mount — auto-login if token exists in localStorage ──────
+  useEffect(()=>{
+    const token=localStorage.getItem("vc_token");
+    const uid=localStorage.getItem("vc_uid");
+    if(!token||!uid||authed) return;
+    // Restore session into sb client
+    sb._token=token;
+    sb._uid=uid;
+    // Load cloud save and restore
+    (async()=>{
+      try{
+        const save=await sb.loadSave();
+        onAuth(save);
+      }catch(e){
+        // Token expired or invalid - clear it and show login
+        localStorage.removeItem("vc_token");
+        localStorage.removeItem("vc_uid");
+      }
+    })();
+  },[]);
+
   // ── Cloud save sync — writes to Supabase every 30s and on key changes ───────
   const getSaveData=()=>({
     coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
@@ -4110,7 +4131,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.19</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.20</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
