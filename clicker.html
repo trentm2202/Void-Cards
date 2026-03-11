@@ -878,6 +878,54 @@ function logEvent(msg){
 // ══════════════════════════════════════════════════════
 // SAVE / LOAD
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// SUPABASE CLOUD SYNC
+// ══════════════════════════════════════════════════════
+const SB_URL  = 'https://ibnhebsiullstslowbhc.supabase.co';
+const SB_KEY  = 'sb_publishable_zX69scQZ1mYXAmlDAyr9LA_Edq1Yasj';
+
+function sbHeaders(){
+  const token = localStorage.getItem('vc_token');
+  const h = {
+    'Content-Type':'application/json',
+    'apikey': SB_KEY,
+  };
+  if(token) h['Authorization'] = 'Bearer '+token;
+  return h;
+}
+
+function isLoggedIn(){
+  return !!(localStorage.getItem('vc_token') && localStorage.getItem('vc_uid'));
+}
+
+async function cloudSave(json){
+  if(!isLoggedIn()) return;
+  const userId = localStorage.getItem('vc_uid');
+  try{
+    await fetch(SB_URL+'/rest/v1/clicker_saves', {
+      method:'POST',
+      headers:{...sbHeaders(), 'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({user_id:userId, save_data:json}),
+    });
+  }catch(e){console.warn('Cloud save failed:',e);}
+}
+
+async function cloudLoad(){
+  if(!isLoggedIn()) return null;
+  const userId = localStorage.getItem('vc_uid');
+  try{
+    const res = await fetch(SB_URL+'/rest/v1/clicker_saves?user_id=eq.'+userId+'&select=save_data', {
+      headers: sbHeaders(),
+    });
+    const rows = await res.json();
+    if(rows && rows[0] && rows[0].save_data) return rows[0].save_data;
+  }catch(e){console.warn('Cloud load failed:',e);}
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+// SAVE / LOAD
+// ══════════════════════════════════════════════════════
 function saveGame(){
   try{
     const save={
@@ -886,7 +934,9 @@ function saveGame(){
       achievements:[...G.achievements],
       totalPlayTime:Math.floor((Date.now()-G.sessionStart)/1000)+(G.totalPlayTime||0),
     };
-    localStorage.setItem('voidcards_save',JSON.stringify(save));
+    const json = JSON.stringify(save);
+    localStorage.setItem('voidcards_save', json);
+    cloudSave(json); // async, non-blocking
   }catch(e){console.warn('Save failed:',e);}
   try{writeRewards();}catch(e){}
 }
@@ -907,25 +957,53 @@ function writeRewards(){
   localStorage.setItem('vc_shard_rewards',JSON.stringify(rewards));
 }
 
-function loadGame(){
+function applyRawSave(raw){
+  const save=JSON.parse(raw);
+  save.upgrades=new Set(save.upgrades||[]);
+  save.achievements=new Set(save.achievements||[]);
+  save.clickMult=1;save.globalMult=1;save.cursorMult=1;save.bMult={};
+  G=Object.assign(newGame(),save);
+  G.sessionStart=Date.now();
+  G.upgrades.forEach(id=>{
+    const u=UPGRADES.find(x=>x.id===id);
+    if(u)u.apply(G);
+  });
+  lastMile=MILES.filter(m=>m<=G.totalEarned).pop()||0;
+  recalcCps();
+}
+
+async function loadGame(){
   try{
-    const raw=localStorage.getItem('voidcards_save');
-    if(!raw)return;
-    const save=JSON.parse(raw);
-    save.upgrades=new Set(save.upgrades||[]);
-    save.achievements=new Set(save.achievements||[]);
-    // reset computed multipliers — reapply from upgrades
-    save.clickMult=1;save.globalMult=1;save.cursorMult=1;save.bMult={};
-    G=Object.assign(newGame(),save);
-    G.sessionStart=Date.now(); // fresh session timer
-    G.upgrades.forEach(id=>{
-      const u=UPGRADES.find(x=>x.id===id);
-      if(u)u.apply(G);
-    });
-    lastMile=MILES.filter(m=>m<=G.totalEarned).pop()||0;
-    recalcCps();
-    logEvent('💾 Save loaded. Welcome back, Void Walker.');
-  }catch(e){console.warn('Load failed:',e);}
+    // Try cloud first if logged in
+    const cloudRaw = await cloudLoad();
+    const localRaw = localStorage.getItem('voidcards_save');
+
+    if(cloudRaw && localRaw){
+      // Pick whichever save is further along
+      const cloudSave = JSON.parse(cloudRaw);
+      const localSave = JSON.parse(localRaw);
+      const best = (cloudSave.totalEarned||0) >= (localSave.totalEarned||0) ? cloudRaw : localRaw;
+      applyRawSave(best);
+      logEvent('☁️ Save synced from cloud. Welcome back, Void Walker.');
+    } else if(cloudRaw){
+      applyRawSave(cloudRaw);
+      localStorage.setItem('voidcards_save', cloudRaw);
+      logEvent('☁️ Save loaded from cloud. Welcome back, Void Walker.');
+    } else if(localRaw){
+      applyRawSave(localRaw);
+      logEvent('💾 Save loaded. Welcome back, Void Walker.');
+    } else {
+      logEvent('🌌 New game started. Welcome, Void Walker.');
+    }
+  }catch(e){
+    console.warn('Load failed:',e);
+    // fallback to localStorage
+    try{
+      const raw=localStorage.getItem('voidcards_save');
+      if(raw){ applyRawSave(raw); logEvent('💾 Save loaded. Welcome back, Void Walker.'); }
+    }catch(e2){}
+  }
+  render();
 }
 
 setInterval(saveGame,3000);
@@ -1004,9 +1082,10 @@ setInterval(()=>{
 // ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
-loadGame();
-recalcCps();
-render();
+loadGame().then(()=>{
+  recalcCps();
+  render();
+});
 logEvent('🌌 Void Shard Collector initialised. Welcome, Void Walker.');
 </script>
 </body>
