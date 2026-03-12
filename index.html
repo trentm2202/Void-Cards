@@ -3726,7 +3726,7 @@ function App() {
   const [tbg,tborder]=(toastQ[toast?.type]||toastQ.ok).split("|");
 
   return (
-    <div style={{minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:"white",position:"relative",overflow:"hidden"}}>
+    <div className={theme!=="void"?`theme-${theme}`:undefined} style={{minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",color:"white",position:"relative",overflow:"hidden"}}>
       {/* ── Animated starfield background ── */}
       <div style={{position:"fixed",inset:0,zIndex:0,background:"linear-gradient(180deg,#020617,#0a0520 40%,#020617)",pointerEvents:"none"}}/>
       <StarField tab={tab}/>
@@ -4184,7 +4184,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.32</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.33</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
