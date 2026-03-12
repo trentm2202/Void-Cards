@@ -3169,6 +3169,7 @@ function useWindowWidth(){
 
 function App() {
   const [authed,setAuthed]         = useState(false);
+  const [isRestoring,setIsRestoring] = useState(()=>!!localStorage.getItem("vc_token"));
   const [showAuth,setShowAuth]     = useState(false);
   const [cloudSave,setCloudSave]   = useState(null); // loaded save from Supabase
   const [newPlayer,setNewPlayer]   = useState(()=>S.get("newPlayer",true));
@@ -3315,7 +3316,7 @@ function App() {
   useEffect(()=>{
     const token=localStorage.getItem("vc_token");
     const uid=localStorage.getItem("vc_uid");
-    if(!token||!uid||authed) return;
+    if(!token||!uid||authed){setIsRestoring(false);return;}
     // Restore session into sb client
     sb._token=token;
     sb._uid=uid;
@@ -3328,6 +3329,8 @@ function App() {
         // Token expired or invalid - clear it and show login
         localStorage.removeItem("vc_token");
         localStorage.removeItem("vc_uid");
+      }finally{
+        setIsRestoring(false);
       }
     })();
   },[]);
@@ -3683,10 +3686,11 @@ function App() {
   })();
 
   if(resetData) return <ResetPasswordScreen token={resetData.token} refreshToken={resetData.refresh} onDone={()=>{window.location.hash="";window.location.reload();}}/>;
+  if(isRestoring) return <div style={{minHeight:"100vh",background:"#020617",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#a855f7",fontSize:14,fontWeight:700,animation:"pulse 1.5s infinite"}}>Loading your profile...</div></div>;
   if(!authed) return showAuth
     ? <AuthScreen onAuth={onAuth}/>
     : <LandingPage onPlay={()=>setShowAuth(true)}/>;
-  if(newPlayer||collection.length===0) return <WelcomeScreen onClaim={cards=>{setCollection(cards);setNewPlayer(false);S.set("newPlayer",false);notify("Welcome! Progress auto-saves. 🚀");}}/>;
+  if(authed&&(newPlayer||collection.length===0)) return <WelcomeScreen onClaim={cards=>{setCollection(cards);setNewPlayer(false);S.set("newPlayer",false);notify("Welcome! Progress auto-saves. 🚀");}}/>;
 
   const [tbg,tborder]=(toastQ[toast?.type]||toastQ.ok).split("|");
 
@@ -4131,7 +4135,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.20</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.23</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4356,7 +4360,11 @@ function App() {
 
       {/* Modals */}
       {detail&&<Modal onClose={()=>setDetail(null)} title={detail.name}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:260,alignItems:"flex-start"}}><Card card={detail} level={1}/></div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:300,alignItems:"flex-start",paddingTop:20}}>
+          <div style={{transform:"scale(1.7)",transformOrigin:"top center"}}>
+            <Card card={detail} level={1}/>
+          </div>
+        </div>
         <div style={{maxWidth:320,margin:"0 auto",background:"#1e293b",borderRadius:12,padding:16}}>
           <div style={{color:"#94a3b8",fontSize:12,marginBottom:14,lineHeight:1.7,textAlign:"center",fontStyle:"italic"}}>"{detail.description}"</div>
           <div style={{display:"flex",justifyContent:"space-around",marginBottom:12}}>
