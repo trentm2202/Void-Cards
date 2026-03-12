@@ -3251,6 +3251,8 @@ function App() {
   });
   const [auctionLog,setAuctionLog] = useState([]);
   const [wonAuction,setWonAuction] = useState(null); // card just won
+  const [auctionTab,setAuctionTab] = useState("market"); // market|mybids|mylistings|sell
+  const [bidInputs,setBidInputs]   = useState({}); // {auctionId: bidAmount string}
   const [toast,setToast]           = useState(null);
   const [detail,setDetail]         = useState(null);
   const [battleCard,setBattleCard] = useState(null);
@@ -3304,25 +3306,39 @@ function App() {
         const newSecs=a.secsLeft-1;
         // Rival auto-bid: based on rivalSpeed (lower = more aggressive)
         let newPrice=a.price, newBids=a.bids, rivalBid=null;
-        if(newSecs>0 && Math.random()*a.rivalSpeed<1){
+        let wasLeading=a.playerBid&&a.lastBidder==="You";
+        let stillLeading=wasLeading;
+        if(newSecs>0 && !a.isPlayer && Math.random()*a.rivalSpeed<1){
           const rival=RIVALS[Math.floor(Math.random()*RIVALS.length)];
           const bump=a.minBid+Math.floor(Math.random()*a.minBid);
           newPrice=a.price+bump;
           newBids=a.bids+1;
-          rivalBid={rival,amount:newPrice,cardName:a.card.name};
+          rivalBid={rival,amount:newPrice,cardName:a.card.name,isPlayer:false};
+          // If player was leading, they just got outbid
+          if(wasLeading){ stillLeading=false; }
         }
         if(rivalBid){
           setAuctionLog(l=>[{...rivalBid,ts:Date.now()},...l].slice(0,12));
+          if(wasLeading&&!stillLeading){
+            notify(`😤 Outbid on ${a.card.name}! Current: 💎${newPrice}`,"err");
+          }
         }
         // Auction ends
         if(newSecs<=0){
-          if(a.playerBid&&!a.settled){
-            // Player won a bid! Gems already deducted at bid time — just give the card
+          if(a.playerBid&&stillLeading&&!a.settled){
+            // Player WON — now deduct the reserved gems
+            const bidAmt=a.playerBidAmount||a.price;
+            setCoins(c=>c-bidAmt);
             setWonAuction(a.card);
             setCollection(prev=>[...prev,a.card]);
-            notify(`🏆 Won auction: ${a.card.name}!`,"ach");
+            notify(`🏆 Won auction: ${a.card.name} for 💎${bidAmt}!`,"ach");
             SFX.play("achievement");
-            return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true};
+            return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true,playerBid:false};
+          }
+          if(a.playerBid&&!stillLeading&&!a.settled){
+            // Player bid but lost — reservation released (gems were never deducted)
+            notify(`❌ Lost auction for ${a.card.name}`,"err");
+            return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true,playerBid:false,playerBidAmount:0};
           }
           if(a.isPlayer&&!a.settled){
             // Player's own listing ended — pay them out at FINAL bid price
@@ -3332,7 +3348,7 @@ function App() {
             return {...a,secsLeft:0,settled:true};
           }
         }
-        return {...a,secsLeft:newSecs,price:newPrice,bids:newBids};
+        return {...a,secsLeft:newSecs,price:newPrice,bids:newBids,lastBidder:rivalBid&&wasLeading?"rival":a.lastBidder};
       }));
     },1000);
     return ()=>clearInterval(t);
@@ -3592,20 +3608,32 @@ function App() {
     checkAch({collection,wins,coins:coins+bonus,streak,cardLevels,decks,totalSold});
   };
 
-  const bid=(item,bump)=>{
-    const newPrice=item.price+(bump||item.minBid||50);
-    if(coins<newPrice){notify("Not enough gems!","err");return;}
+  // Compute reserved gems — sum of player's highest bids on active auctions
+  const reservedGems = auctions.reduce((sum,a)=>{
+    if(a.playerBid&&a.secsLeft>0&&!a.settled&&!a.isPlayer) return sum+(a.playerBidAmount||0);
+    return sum;
+  },0);
+  const spendableCoins = coins - reservedGems;
+
+  const bid=(item,customAmount)=>{
+    const minBid=item.price+item.minBid;
+    const bidAmt=customAmount!==undefined?parseInt(customAmount):minBid;
+    if(isNaN(bidAmt)||bidAmt<minBid){notify(`Min bid is 💎${minBid}`,"err");return;}
+    if(bidAmt>coins){notify("Not enough gems!","err");return;}
+    // Check spendable — but allow rebidding own auction (replace old reservation)
+    const prevReserved=item.playerBid?(item.playerBidAmount||0):0;
+    const newSpendable=coins-reservedGems+prevReserved;
+    if(bidAmt>newSpendable){notify(`Only 💎${newSpendable} available (rest reserved for other bids)`,"err");return;}
     SFX.play("coin");
-    // Deduct the difference from previous player bid if any
-    const prevBid=item.playerBid?item.price:0;
-    setCoins(c=>c-(newPrice-prevBid));
+    // Don't deduct gems — just reserve them by tracking playerBidAmount
     setAuctions(prev=>prev.map(a=>a.id===item.id
-      ?{...a,price:newPrice,bids:a.bids+1,playerBid:true,lastBidder:"You",
+      ?{...a,price:bidAmt,bids:a.bids+1,playerBid:true,playerBidAmount:bidAmt,lastBidder:"You",
          secsLeft:a.secsLeft<30?30:a.secsLeft}
       :a));
-    setAuctionLog(l=>[{rival:"You",amount:newPrice,cardName:item.card.name,ts:Date.now(),isPlayer:true},...l].slice(0,12));
+    setBidInputs(prev=>({...prev,[item.id]:""}));
+    setAuctionLog(l=>[{rival:"You",amount:bidAmt,cardName:item.card.name,ts:Date.now(),isPlayer:true},...l].slice(0,12));
     updateQuest("bids",1);
-    notify(`⚔️ Bid 💎${newPrice} on ${item.card.name}`);
+    notify(`⚔️ Bid 💎${bidAmt} on ${item.card.name} (reserved)`);
   };
 
   const doSell=(card,price,durationSecs=2*60*60)=>{
@@ -4109,21 +4137,7 @@ function App() {
 
         {/* AUCTION */}
         {tab==="auction"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
-          <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12}}>🤖</span>
-            <span style={{color:"#475569",fontSize:11}}>Simulated auction — real player trading coming soon</span>
-          </div>
-          <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
-            <div style={{color:"#64748b",fontSize:10,fontWeight:700,letterSpacing:1,marginBottom:8}}>📊 AVERAGE MARKET PRICES</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {[["Common","#94a3b8",20],["Uncommon","#22c55e",60],["Rare","#3b82f6",150],["Epic","#a855f7",400],["Legendary","#f59e0b",1200]].map(([r,c,p])=>(
-                <div key={r} style={{background:"#1e293b",borderRadius:7,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
-                  <span style={{color:c,fontSize:10,fontWeight:700}}>{r}</span>
-                  <span style={{color:"#f59e0b",fontSize:10}}>💎{p}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+
           {/* Won auction popup */}
           {wonAuction&&<div style={{background:"linear-gradient(135deg,#052e16,#14532d)",border:"1px solid #22c55e",borderRadius:14,padding:16,marginBottom:14,textAlign:"center",animation:"fadeIn .4s"}}>
             <div style={{fontSize:32,marginBottom:4}}>🏆</div>
@@ -4132,78 +4146,249 @@ function App() {
             <button onClick={()=>setWonAuction(null)} style={{background:"#22c55e",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontWeight:700,cursor:"pointer"}}>Awesome!</button>
           </div>}
 
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+          {/* Header */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{fontSize:16,fontWeight:700}}>⚖️ Auction House</div>
-            <div style={{color:"#64748b",fontSize:11}}>{auctions.filter(a=>a.secsLeft>0).length} live auctions</div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
+              <div style={{color:"#a855f7",fontWeight:800,fontSize:13}}>💎 {coins.toLocaleString()}</div>
+              {reservedGems>0&&<div style={{color:"#f59e0b",fontSize:9,fontWeight:600}}>💎{reservedGems} reserved</div>}
+            </div>
           </div>
-          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>Outbid rivals · Snipe protection: bids with &lt;30s add time</div>
 
-          {/* Live bid feed */}
-          {auctionLog.length>0&&<div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"8px 12px",marginBottom:14,maxHeight:100,overflowY:"auto"}}>
-            <div style={{color:"#475569",fontSize:9,fontWeight:700,letterSpacing:2,marginBottom:5}}>LIVE BIDS</div>
-            {auctionLog.map((l,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3,opacity:Math.max(0.3,1-i*.07)}}>
-                <span style={{color:l.isPlayer?"#22c55e":"#ef4444",fontSize:9,fontWeight:700,flexShrink:0}}>{l.isPlayer?"YOU":"RIVAL"}</span>
-                <span style={{color:"#94a3b8",fontSize:9,flex:1}}>{l.rival} bid 💎{l.amount} on {l.cardName}</span>
-              </div>
+          {/* 4 tabs */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4,marginBottom:14}}>
+            {[
+              {id:"market",    l:"Market",      i:"🏪"},
+              {id:"mybids",    l:"My Bids",     i:"🤝"},
+              {id:"mylistings",l:"Listings",    i:"📢"},
+              {id:"sell",      l:"Sell",        i:"💰"},
+            ].map(t=>(
+              <button key={t.id} onClick={()=>{SFX.play("click");setAuctionTab(t.id);}}
+                style={{background:auctionTab===t.id?"linear-gradient(135deg,var(--t1),var(--t2))":"#0f172a",
+                  color:auctionTab===t.id?"white":"#475569",border:`1px solid ${auctionTab===t.id?"transparent":"#1e293b"}`,
+                  borderRadius:8,padding:"8px 4px",fontWeight:700,fontSize:10,cursor:"pointer",textAlign:"center"}}>
+                <div style={{fontSize:14,marginBottom:2}}>{t.i}</div>
+                <div>{t.l}</div>
+              </button>
             ))}
-          </div>}
+          </div>
 
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {auctions.map(item=>{
-              const rc=RC[item.card.rarity];
-              const mins=Math.floor(item.secsLeft/60), secs=item.secsLeft%60;
-              const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
-              const urgent=item.secsLeft>0&&item.secsLeft<60;
-              const ending=item.secsLeft>0&&item.secsLeft<300;
-              const isWinning=item.playerBid&&item.lastBidder==="You";
-              return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`2px solid ${isWinning?"#22c55e":urgent?"#ef4444":rc.color}44`,borderRadius:14,padding:14,opacity:item.secsLeft<=0?0.5:1}}>
-                {item.isPlayer&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{color:"#f59e0b",fontSize:10,fontWeight:700}}>📢 YOUR LISTING</div>
-                  {item.secsLeft>0&&<button onClick={()=>{
-                    SFX.play("click");
-                    // Refund the card back to collection
-                    setCollection(prev=>[...prev,item.card]);
-                    setAuctions(prev=>prev.filter(a=>a.id!==item.id));
-                    notify(`${item.card.name} listing cancelled — card returned`);
-                  }} style={{background:"#1e293b",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700,cursor:"pointer"}}>✕ Cancel</button>}
-                </div>}
-                {isWinning&&<div style={{color:"#22c55e",fontSize:10,fontWeight:700,marginBottom:6,animation:"pulse 1.5s infinite"}}>✅ YOU'RE WINNING</div>}
-                {item.secsLeft<=0&&<div style={{color:"#475569",fontSize:10,fontWeight:700,marginBottom:6}}>🔒 AUCTION ENDED</div>}
-
-                <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
-                  <div style={{flexShrink:0}} onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:700,marginBottom:1}}>{item.card.name}</div>
-                    <div style={{color:rc.color,fontSize:11,fontWeight:600,marginBottom:3}}>{item.card.rarity} · {item.card.type}</div>
-                    <div style={{color:"#64748b",fontSize:10,marginBottom:2}}>by <span style={{color:"#94a3b8"}}>{item.seller}</span> · {item.bids} bids</div>
-                    {/* Countdown */}
-                    <div style={{display:"flex",alignItems:"center",gap:5}}>
-                      <div style={{background:urgent?"#7f1d1d":ending?"#78350f":"#1e293b",border:`1px solid ${urgent?"#ef4444":ending?"#f59e0b":"#334155"}`,borderRadius:6,padding:"2px 8px"}}>
-                        <span style={{color:urgent?"#ef4444":ending?"#f59e0b":"#94a3b8",fontSize:11,fontWeight:800,animation:urgent?"pulse .5s infinite":"none"}}>⏱ {timeStr}</span>
+          {/* MARKET TAB */}
+          {auctionTab==="market"&&<>
+            <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"6px 12px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span style={{color:"#475569",fontSize:11}}>🤖 Simulated — real trading coming soon</span>
+              <span style={{color:"#64748b",fontSize:11}}>{auctions.filter(a=>a.secsLeft>0&&!a.isPlayer).length} live</span>
+            </div>
+            {/* Market prices */}
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
+              {[["Common","#94a3b8",20],["Uncommon","#22c55e",60],["Rare","#3b82f6",150],["Epic","#a855f7",400],["Legendary","#f59e0b",1200]].map(([r,c,p])=>(
+                <div key={r} style={{background:"#1e293b",borderRadius:6,padding:"3px 8px",display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{color:c,fontSize:9,fontWeight:700}}>{r}</span>
+                  <span style={{color:"#f59e0b",fontSize:9}}>💎{p}</span>
+                </div>
+              ))}
+            </div>
+            {/* Live bid feed */}
+            {auctionLog.length>0&&<div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"8px 12px",marginBottom:12,maxHeight:80,overflowY:"auto"}}>
+              <div style={{color:"#475569",fontSize:9,fontWeight:700,letterSpacing:2,marginBottom:4}}>LIVE BIDS</div>
+              {auctionLog.map((l,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2,opacity:Math.max(0.3,1-i*.1)}}>
+                  <span style={{color:l.isPlayer?"#22c55e":"#ef4444",fontSize:9,fontWeight:700,flexShrink:0}}>{l.isPlayer?"YOU":"RIVAL"}</span>
+                  <span style={{color:"#94a3b8",fontSize:9,flex:1}}>{l.rival} bid 💎{l.amount} on {l.cardName}</span>
+                </div>
+              ))}
+            </div>}
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {auctions.filter(a=>!a.isPlayer).map(item=>{
+                const rc=RC[item.card.rarity];
+                const mins=Math.floor(item.secsLeft/60), secs=item.secsLeft%60;
+                const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
+                const urgent=item.secsLeft>0&&item.secsLeft<60;
+                const ending=item.secsLeft>0&&item.secsLeft<300;
+                const isWinning=item.playerBid&&item.lastBidder==="You";
+                const minBid=item.price+item.minBid;
+                const bidVal=bidInputs[item.id]!==undefined?bidInputs[item.id]:String(minBid);
+                const bidNum=parseInt(bidVal)||0;
+                const canBid=item.secsLeft>0&&bidNum>=minBid&&bidNum<=(coins-reservedGems+(item.playerBid?(item.playerBidAmount||0):0));
+                return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`2px solid ${isWinning?"#22c55e":urgent?"#ef4444":rc.color}44`,borderRadius:14,padding:14,opacity:item.secsLeft<=0?0.5:1}}>
+                  {isWinning&&<div style={{color:"#22c55e",fontSize:10,fontWeight:700,marginBottom:6,animation:"pulse 1.5s infinite"}}>✅ YOU'RE WINNING — 💎{item.playerBidAmount} reserved</div>}
+                  {item.secsLeft<=0&&<div style={{color:"#475569",fontSize:10,fontWeight:700,marginBottom:6}}>🔒 AUCTION ENDED</div>}
+                  <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
+                    <div style={{flexShrink:0}} onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,fontWeight:700,marginBottom:1}}>{item.card.name}</div>
+                      <div style={{color:rc.color,fontSize:11,fontWeight:600,marginBottom:3}}>{item.card.rarity} · {item.card.type}</div>
+                      <div style={{color:"#64748b",fontSize:10,marginBottom:4}}>by <span style={{color:"#94a3b8"}}>{item.seller}</span> · {item.bids} bid{item.bids!==1?"s":""}</div>
+                      <div style={{background:urgent?"#7f1d1d":ending?"#78350f":"#1e293b",border:`1px solid ${urgent?"#ef4444":ending?"#f59e0b":"#334155"}`,borderRadius:6,padding:"2px 8px",display:"inline-block"}}>
+                        <span style={{color:urgent?"#ef4444":ending?"#f59e0b":"#94a3b8",fontSize:11,fontWeight:800}}>⏱ {timeStr}</span>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderTop:"1px solid #1e293b",paddingTop:10}}>
-                  <div>
-                    <div style={{color:"#475569",fontSize:9,letterSpacing:1}}>CURRENT BID</div>
-                    <div style={{color:"#a855f7",fontWeight:900,fontSize:20,lineHeight:1}}>💎 {item.price}</div>
-                    <div style={{color:"#334155",fontSize:9}}>min raise: +{item.minBid}</div>
+                  <div style={{borderTop:"1px solid #1e293b",paddingTop:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div>
+                        <div style={{color:"#475569",fontSize:9,letterSpacing:1}}>CURRENT BID</div>
+                        <div style={{color:"#a855f7",fontWeight:900,fontSize:20,lineHeight:1}}>💎 {item.price}</div>
+                        <div style={{color:"#334155",fontSize:9}}>min raise: +{item.minBid}</div>
+                      </div>
+                      <div style={{color:"#475569",fontSize:9,textAlign:"right"}}>
+                        <div>Available</div>
+                        <div style={{color:"#22c55e",fontWeight:700,fontSize:12}}>💎 {(coins-reservedGems+(item.playerBid?(item.playerBidAmount||0):0)).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    {item.secsLeft>0&&<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <input
+                        type="number"
+                        value={bidVal}
+                        min={minBid}
+                        max={coins}
+                        onChange={e=>setBidInputs(prev=>({...prev,[item.id]:e.target.value}))}
+                        style={{flex:1,background:"#1e293b",border:`1px solid ${canBid?"#7c3aed44":"#334155"}`,borderRadius:8,padding:"8px 10px",color:"white",fontSize:13,fontWeight:700,minWidth:0}}
+                      />
+                      <button onClick={()=>bid(item,parseInt(bidVal))} disabled={!canBid}
+                        style={{background:canBid?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:canBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 14px",fontWeight:700,fontSize:12,cursor:canBid?"pointer":"not-allowed",whiteSpace:"nowrap",flexShrink:0}}>
+                        Bid 💎
+                      </button>
+                    </div>}
+                    {item.secsLeft>0&&<div style={{color:"#334155",fontSize:9,marginTop:4}}>Gems reserved until auction ends · you only pay if you win</div>}
                   </div>
-                  {!item.isPlayer&&item.secsLeft>0&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
-                    <button onClick={()=>bid(item,item.minBid)} disabled={coins<item.price+item.minBid} style={{background:coins>=item.price+item.minBid?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:coins>=item.price+item.minBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      Bid +{item.minBid} 💎
-                    </button>
-                    <button onClick={()=>bid(item,item.minBid*5)} disabled={coins<item.price+item.minBid*5} style={{background:coins>=item.price+item.minBid*5?"linear-gradient(135deg,#991b1b,#dc2626)":"#1e293b",color:coins>=item.price+item.minBid*5?"white":"#475569",border:"none",borderRadius:7,padding:"6px 16px",fontWeight:700,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      Snipe ×5 🔥
-                    </button>
-                  </div>}
-                </div>
-              </div>;
-            })}
-          </div>
+                </div>;
+              })}
+            </div>
+          </>}
+
+          {/* MY BIDS TAB */}
+          {auctionTab==="mybids"&&<>
+            {auctions.filter(a=>a.playerBid&&!a.isPlayer).length===0
+              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
+                <div style={{fontSize:40,marginBottom:12}}>🤝</div>
+                <div>No active bids yet</div>
+                <div style={{fontSize:12,marginTop:6,color:"#1e293b"}}>Go to Market to bid on cards</div>
+              </div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {auctions.filter(a=>a.playerBid&&!a.isPlayer).map(item=>{
+                  const rc=RC[item.card.rarity];
+                  const mins=Math.floor(item.secsLeft/60),secs=item.secsLeft%60;
+                  const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
+                  const isWinning=item.lastBidder==="You";
+                  return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${isWinning?"#22c55e44":item.secsLeft<=0?"#33415544":"#7c3aed33"}`,borderRadius:12,padding:12}}>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <div onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{item.card.name}</div>
+                        <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{item.card.rarity}</div>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <div>
+                            <div style={{color:"#475569",fontSize:9}}>YOUR BID</div>
+                            <div style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {item.playerBidAmount||item.price}</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{color:isWinning?"#22c55e":"#ef4444",fontSize:10,fontWeight:700}}>{isWinning?"✅ WINNING":"😤 OUTBID"}</div>
+                            <div style={{color:"#475569",fontSize:10}}>⏱ {timeStr}</div>
+                          </div>
+                        </div>
+                        {item.secsLeft<=0&&isWinning&&<div style={{color:"#22c55e",fontSize:10,marginTop:4,fontWeight:600}}>🏆 Won! Card added to collection</div>}
+                        {item.secsLeft<=0&&!isWinning&&<div style={{color:"#475569",fontSize:10,marginTop:4}}>Auction ended — gems released</div>}
+                      </div>
+                    </div>
+                  </div>;
+                })}
+              </div>
+            }
+          </>}
+
+          {/* MY LISTINGS TAB */}
+          {auctionTab==="mylistings"&&<>
+            {auctions.filter(a=>a.isPlayer).length===0
+              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
+                <div style={{fontSize:40,marginBottom:12}}>📢</div>
+                <div>No active listings</div>
+                <div style={{fontSize:12,marginTop:6,color:"#1e293b"}}>Go to Sell tab to list a card</div>
+              </div>
+              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {auctions.filter(a=>a.isPlayer).map(item=>{
+                  const rc=RC[item.card.rarity];
+                  const mins=Math.floor(item.secsLeft/60),secs=item.secsLeft%60;
+                  const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
+                  return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #f59e0b33",borderRadius:12,padding:12}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <div style={{color:"#f59e0b",fontSize:10,fontWeight:700}}>📢 YOUR LISTING</div>
+                      {item.secsLeft>0&&<button onClick={()=>{SFX.play("click");setCollection(prev=>[...prev,item.card]);setAuctions(prev=>prev.filter(a=>a.id!==item.id));notify(`${item.card.name} cancelled — card returned`);}}
+                        style={{background:"#1e293b",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700,cursor:"pointer"}}>✕ Cancel</button>}
+                    </div>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <div onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{item.card.name}</div>
+                        <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{item.card.rarity}</div>
+                        <div style={{display:"flex",justifyContent:"space-between"}}>
+                          <div>
+                            <div style={{color:"#475569",fontSize:9}}>CURRENT BID</div>
+                            <div style={{color:"#22c55e",fontWeight:800,fontSize:15}}>💎 {item.price}</div>
+                          </div>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{color:"#64748b",fontSize:10}}>{item.bids} bid{item.bids!==1?"s":""}</div>
+                            <div style={{color:"#475569",fontSize:10}}>⏱ {timeStr}</div>
+                          </div>
+                        </div>
+                        {item.secsLeft<=0&&<div style={{color:"#22c55e",fontSize:10,marginTop:4,fontWeight:600}}>✅ Sold! Gems paid out</div>}
+                      </div>
+                    </div>
+                  </div>;
+                })}
+              </div>
+            }
+          </>}
+
+          {/* SELL TAB */}
+          {auctionTab==="sell"&&<>
+            <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 12px",marginBottom:12,color:"#475569",fontSize:11}}>
+              💡 List any card for auction. Card is held until sold or cancelled.
+            </div>
+            {collection.length===0
+              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
+                <div style={{fontSize:40,marginBottom:12}}>💰</div>
+                <div>No cards to sell yet</div>
+              </div>
+              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id+(c.foil?"f":""),{...base,...c}];})).values()].map((card,i)=>{
+                  const rc=RC[card.rarity];
+                  const suggested={Common:20,Uncommon:60,Rare:150,Epic:400,Legendary:1200}[card.rarity]||50;
+                  const sellKey=`sell_${card.id}${card.foil?"f":""}`;
+                  const priceVal=bidInputs[sellKey]!==undefined?bidInputs[sellKey]:String(suggested);
+                  const priceNum=parseInt(priceVal)||0;
+                  const alreadyListed=auctions.some(a=>a.isPlayer&&a.card.id===card.id&&a.secsLeft>0);
+                  return <div key={i} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${rc.color}33`,borderRadius:12,padding:12,opacity:alreadyListed?0.5:1}}>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      <div onClick={()=>setDetail(card)}><Card card={card} mini/></div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:13,marginBottom:1}}>{card.name}{card.foil?" ⭐":""}</div>
+                        <div style={{color:rc.color,fontSize:11,marginBottom:6}}>{card.rarity} · {card.type}</div>
+                        {alreadyListed
+                          ?<div style={{color:"#f59e0b",fontSize:11,fontWeight:600}}>📢 Already listed</div>
+                          :<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <input
+                              type="number"
+                              value={priceVal}
+                              min={1}
+                              onChange={e=>setBidInputs(prev=>({...prev,[sellKey]:e.target.value}))}
+                              style={{width:80,background:"#1e293b",border:"1px solid #334155",borderRadius:7,padding:"6px 8px",color:"white",fontSize:12,fontWeight:700}}
+                            />
+                            <span style={{color:"#475569",fontSize:11}}>💎</span>
+                            <button onClick={()=>{if(priceNum<1){notify("Enter a valid price","err");return;}doSell(card,priceNum);SFX.play("sell");setBidInputs(prev=>({...prev,[sellKey]:""}));}}
+                              style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:8,padding:"7px 12px",fontWeight:700,fontSize:11,cursor:"pointer",flexShrink:0}}>
+                              List
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>;
+                })}
+              </div>
+            }
+          </>}
+
         </div>}
 
         {/* PROFILE */}
@@ -4227,7 +4412,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.40</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.41</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
