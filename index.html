@@ -1450,7 +1450,7 @@ function FusionModal({collection,cardLevels,onFuse,onClose}){
 }
 
 // ── GALAXY BATTLE MODAL ──────────────────────────────────────────────────────
-function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node, stamina, onSpendStamina}){
+function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node, stamina, onSpendStamina, playerLevel=1}){
   const staminaCost=1;
   // Phase: deckpick | battle | won | lost
   const [phase,setPhase]=useState("deckpick");
@@ -1476,6 +1476,11 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [selectedField,setSelectedField]=useState(null); // index of player field card selected to attack with
   const [phase2,setPhase2]=useState("free");           // free|attacking|targeting
   const [rewardCard,setRewardCard]=useState(null);
+  const [playerHp,setPlayerHp]=useState(0); // set in startBattle based on level
+  const [playerMaxHp,setPlayerMaxHp]=useState(0);
+  const [actedCards,setActedCards]=useState(new Set()); // uids of cards that acted this turn
+  const [specialUsed,setSpecialUsed]=useState(new Set()); // uids that used special this battle
+  const [coinFlip,setCoinFlip]=useState(null); // null|"heads"|"tails"
 
   const addLog=(text,type="info")=>setLog(prev=>[{text,type,id:Date.now()+Math.random()},...prev].slice(0,20));
   const addDmg=(text,color,fieldIdx,isEnemy)=>{
@@ -1487,20 +1492,46 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const MANA_COST={Common:1,Uncommon:1,Rare:2,Epic:3,Legendary:4};
 
   // Start battle after deck is chosen
-  const startBattle=(deck)=>{
-    const shuffled=[...deck].sort(()=>Math.random()-.5);
+  const startBattle=(deck, plLevel)=>{
+    // Guaranteed opening hand: at least 1 Common or Uncommon
+    const cheap=deck.filter(c=>c.rarity==="Common"||c.rarity==="Uncommon");
+    const rest=deck.filter(c=>c.rarity!=="Common"&&c.rarity!=="Uncommon");
+    const shuffledCheap=[...cheap].sort(()=>Math.random()-.5);
+    const shuffledRest=[...rest].sort(()=>Math.random()-.5);
+    const guaranteed=shuffledCheap.slice(0,1);
+    const remaining=[...shuffledCheap.slice(1),...shuffledRest].sort(()=>Math.random()-.5);
+    const fullDeck=[...guaranteed,...remaining];
+    const shuffled=fullDeck;
     const startHand=shuffled.slice(0,4);
     const deckLeft=shuffled.slice(4);
-    const enemyStart=enemyDeckFull.slice(0,4);
+    // Player health: base 5, +1 per 5 levels
+    const maxHp=5+Math.floor((plLevel||1)/5);
+    setPlayerHp(maxHp);
+    setPlayerMaxHp(maxHp);
+    // Enemy also starts with hand of 4, 0 on field
+    const enemyStartHand=enemyDeckFull.slice(0,4);
     const enemyLeft=enemyDeckFull.slice(4);
+    // Coin flip — heads = player goes first, tails = enemy goes first
+    const flip=Math.random()<0.5?"heads":"tails";
+    const playerFirst=flip==="heads";
+    setCoinFlip(flip);
     setPlayerHand(startHand.map(c=>({...c,uid:Math.random()})));
     setPlayerDeckLeft(deckLeft.map(c=>({...c,uid:Math.random()})));
     setPlayerField([]);
-    setEnemyField(enemyStart.map(c=>({...c,uid:Math.random(),hp:c.hp,maxHp:c.hp,defending:false})));
-    setEnemyHand(enemyLeft.map(c=>({...c,uid:Math.random()})));
-    setMana(1); setMaxMana(1); setTurn(1); setPlayerTurn(true);
-    setLog([{text:`⚔️ Battle starts! Turn 1 — you have 1 mana. ${node.name}: "${node.dialogue}"`,type:"system",id:1}]);
+    setEnemyField([]);
+    setEnemyHand([...enemyStartHand,...enemyLeft].map(c=>({...c,uid:Math.random()})));
+    setActedCards(new Set());
+    setSpecialUsed(new Set());
+    setMana(playerFirst?1:0); setMaxMana(playerFirst?1:0); setTurn(1); setPlayerTurn(playerFirst);
+    setLog([
+      {text:`🪙 Coin flip: ${flip.toUpperCase()}! ${playerFirst?"You go first!":"Enemy goes first!"}`,type:"system",id:0},
+      {text:`⚔️ Turn 1 — ${node.name}: "${node.dialogue}"`,type:"system",id:1}
+    ]);
     setPhase("battle");
+    // If enemy goes first, trigger their turn after short delay
+    if(!playerFirst){
+      setTimeout(()=>doEnemyTurn(),1200);
+    }
   };
 
   // Play a card from hand onto field
@@ -1533,6 +1564,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setMana(m=>m-cost);
     setPhase2("free");
     setSelectedField(null);
+    // Mark this card as having acted this turn
+    setActedCards(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
+    if(isSpecial) setSpecialUsed(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
 
     const atk=playerField[attackerIdx];
     const def=enemyField[targetIdx];
@@ -1610,6 +1644,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       next[fieldIdx]={...next[fieldIdx],defending:true};
       return next;
     });
+    setActedCards(prev=>{const next=new Set(prev);next.add(card.uid);return next;});
     setMana(m=>m+1); // gain 1 mana for defending
     addLog(`🛡 ${card.name} takes a defensive stance. +1 mana!`,"player");
     SFX.play("click");
@@ -1691,16 +1726,16 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
         return ef;
       });
 
-      // Refill enemy field
-      setEnemyField(ef=>{
-        setEnemyHand(eh=>{
-          const slots=4-ef.length;
-          if(slots<=0||eh.length===0) return eh;
-          const drawn=eh.slice(0,slots).map(c=>({...c,defending:false}));
-          setEnemyField(f=>[...f,...drawn]);
-          return eh.slice(slots);
+      // Enemy plays cards from hand to field (1-2 per turn, max field 4)
+      setEnemyHand(eh=>{
+        setEnemyField(ef=>{
+          const slots=Math.min(4-ef.length, Math.min(2, eh.length)); // play up to 2 per turn
+          if(slots<=0) return ef;
+          const toPlay=eh.slice(0,slots).map(c=>({...c,defending:false,hp:c.hp,maxHp:c.hp}));
+          if(toPlay.length>0) addLog(`🤖 ${node.name} plays ${toPlay.map(c=>c.name).join(", ")} to field`,"info");
+          return [...ef,...toPlay];
         });
-        return ef;
+        return eh.slice(Math.min(2,eh.length));
       });
 
       // Start next player turn
@@ -1723,6 +1758,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           addLog(`── Turn ${nt} — ${newMax} mana ──`,"system");
           return nt;
         });
+        setActedCards(new Set());
         setPlayerTurn(true);
         setAnimating(false);
       },800);
@@ -1731,6 +1767,19 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
   const endTurn=()=>{
     if(!playerTurn||animating)return;
+    // Direct damage if player has no cards on field
+    if(playerField.length===0&&enemyField.length>0){
+      const dmg=enemyField.length;
+      setPlayerHp(hp=>{
+        const newHp=hp-dmg;
+        addLog(`💥 No cards on field! Enemy deals ${dmg} direct damage to you! (${Math.max(0,newHp)} HP left)`,"err");
+        if(newHp<=0){
+          setTimeout(()=>setPhase("lost"),400);
+        }
+        return Math.max(0,newHp);
+      });
+      SFX.play("hit");
+    }
     setPlayerTurn(false);
     setPhase2("free");
     setSelectedField(null);
@@ -1781,7 +1830,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
               {savedDecks.map((d,i)=>{
                 const cards=d.cards.slice(0,12).map(dc=>collection.find(c=>c.id===dc.id)||dc).filter(Boolean);
                 const padded=[...cards,...Array(Math.max(0,12-cards.length)).fill(null)].map((c,j)=>c||allUnique[j%allUnique.length]||allUnique[0]).slice(0,12);
-                return <button key={i} onClick={()=>{if(stamina<staminaCost){alert("Not enough stamina!");return;}onSpendStamina(staminaCost);startBattle(padded);}}
+                return <button key={i} onClick={()=>{if(stamina<staminaCost){alert("Not enough stamina!");return;}onSpendStamina(staminaCost);startBattle(padded, playerLevel);}}
                   style={{background:"linear-gradient(135deg,#1e0a3c,#0f172a)",border:"1px solid #4c1d9544",borderRadius:10,padding:"10px 14px",color:"white",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontWeight:700}}>{d.name} <span style={{color:"#475569",fontSize:11}}>({d.cards.length} cards)</span></span>
                   <span style={{color:"#a855f7",fontSize:12}}>Use →</span>
@@ -1805,11 +1854,13 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             })}
           </div>
           <button onClick={()=>{
+            const cheapCount=customDeck.filter(c=>c.rarity==="Common"||c.rarity==="Uncommon").length;
             if(customDeck.length<6){alert("Pick at least 6 cards!");return;}
+            if(cheapCount<4){alert("Need at least 4 Common or Uncommon cards in your deck — otherwise you might not be able to play anything on Turn 1!");return;}
             const deck=customDeck.length<12?[...customDeck,...customDeck].slice(0,12):customDeck;
             if(stamina<staminaCost){alert("Not enough stamina!");return;}
             onSpendStamina(staminaCost);
-            startBattle(deck);
+            startBattle(deck, playerLevel);
           }} disabled={customDeck.length<6}
             style={{width:"100%",background:customDeck.length>=6?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:customDeck.length>=6?"white":"#475569",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:customDeck.length>=6?"pointer":"not-allowed"}}>
             ⚔️ Battle! ({customDeck.length}/12 cards)
@@ -1825,14 +1876,26 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     return(
       <Modal onClose={onClose} title={`⚔️ vs ${node.name} — Turn ${turn}`}>
         <div style={{maxWidth:500,margin:"0 auto"}}>
-          {/* Mana bar */}
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,background:"#0f172a",borderRadius:10,padding:"8px 12px"}}>
-            <span style={{color:"#a855f7",fontWeight:800,fontSize:13}}>⚡ Mana: {mana}/{maxMana}</span>
-            <div style={{flex:1,background:"#1e293b",borderRadius:999,height:8}}>
-              <div style={{width:`${maxMana>0?mana/maxMana*100:0}%`,height:"100%",background:"linear-gradient(90deg,#7c3aed,#a855f7)",borderRadius:999,transition:"width .3s"}}/>
+          {/* Coin flip result banner - shown briefly */}
+          {coinFlip&&turn===1&&<div style={{background:coinFlip==="heads"?"linear-gradient(135deg,#052e16,#14532d)":"linear-gradient(135deg,#1a0000,#7f1d1d)",border:`1px solid ${coinFlip==="heads"?"#22c55e":"#ef4444"}`,borderRadius:10,padding:"8px 12px",marginBottom:8,textAlign:"center",fontSize:12,fontWeight:700,color:coinFlip==="heads"?"#22c55e":"#ef4444"}}>
+            🪙 {coinFlip==="heads"?"HEADS — You go first!":"TAILS — Enemy goes first!"}
+          </div>}
+          {/* Player HP + Mana bar */}
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <div style={{background:"#0f172a",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:6,flex:1}}>
+              <span style={{color:"#ef4444",fontWeight:800,fontSize:13}}>❤️ {playerHp}/{playerMaxHp}</span>
+              <div style={{flex:1,background:"#1e293b",borderRadius:999,height:6}}>
+                <div style={{width:`${playerMaxHp>0?playerHp/playerMaxHp*100:0}%`,height:"100%",background:"linear-gradient(90deg,#dc2626,#ef4444)",borderRadius:999,transition:"width .3s"}}/>
+              </div>
             </div>
-            <span style={{color:"#475569",fontSize:10}}>Turn {turn}</span>
+            <div style={{background:"#0f172a",borderRadius:10,padding:"8px 12px",display:"flex",alignItems:"center",gap:6,flex:1}}>
+              <span style={{color:"#a855f7",fontWeight:800,fontSize:13}}>⚡ {mana}/{maxMana}</span>
+              <div style={{flex:1,background:"#1e293b",borderRadius:999,height:6}}>
+                <div style={{width:`${maxMana>0?mana/maxMana*100:0}%`,height:"100%",background:"linear-gradient(90deg,#7c3aed,#a855f7)",borderRadius:999,transition:"width .3s"}}/>
+              </div>
+            </div>
           </div>
+
 
           {/* Enemy field */}
           <div style={{marginBottom:8}}>
@@ -1871,11 +1934,14 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                     {dmgPops.filter(p=>!p.isEnemy&&p.fieldIdx===i).map(p=>(
                       <div key={p.id} style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",color:p.color,fontWeight:900,fontSize:14,animation:"dmgPop .8s ease-out forwards",pointerEvents:"none",whiteSpace:"nowrap",zIndex:10}}>{p.text}</div>
                     ))}
-                    {playerTurn&&!animating&&<div style={{display:"flex",gap:3,marginTop:3,justifyContent:"center"}}>
-                      <button onClick={()=>selectAttacker(i)} style={{background:"#7f1d1d",color:"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:"pointer"}}>⚔️1</button>
-                      <button onClick={()=>{setSelectedField(i);setPhase2("special");if(enemyField.length>0)doAttack(i,Math.floor(Math.random()*enemyField.length),true);}} style={{background:"#4c1d95",color:"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:"pointer"}}>✨3</button>
-                      <button onClick={()=>doDefend(i)} style={{background:"#1e3a5f",color:"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:"pointer"}}>🛡+1</button>
-                    </div>}
+                    {playerTurn&&!animating&&(()=>{
+                      const acted=actedCards.has(card.uid);
+                      return <div style={{display:"flex",gap:3,marginTop:3,justifyContent:"center"}}>
+                        <button onClick={()=>!acted&&selectAttacker(i)} style={{background:acted?"#1e293b":"#7f1d1d",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>⚔️1</button>
+                        (()=>{const su=specialUsed.has(card.uid);const dis=acted||su;return <button onClick={()=>!dis&&(setSelectedField(i),setPhase2("special"),enemyField.length>0&&doAttack(i,Math.floor(Math.random()*enemyField.length),true))} style={{background:dis?"#1e293b":"#4c1d95",color:dis?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:dis?"not-allowed":"pointer",opacity:dis?0.4:1}}>{su?"✨✓":"✨3"}</button>;})()
+                        <button onClick={()=>!acted&&doDefend(i)} style={{background:acted?"#1e293b":"#1e3a5f",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>🛡+1</button>
+                      </div>;
+                    })()}
                   </div>
                 ))}
               </div>
@@ -3067,7 +3133,7 @@ function App() {
 
   // ── Stamina regen (1 per 30 min, max = 5 + playerLevel) ────────────────────
   useEffect(()=>{
-    const maxStam=5+playerLevel;
+    const maxStam=5+Math.floor(playerLevel/3);
     const t=setInterval(()=>{
       setStamina(s=>{
         if(s>=maxStam) return s;
@@ -3853,16 +3919,27 @@ function App() {
           </div>
 
           {/* Stamina bar */}
-          <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <span style={{color:"#f59e0b",fontWeight:700,fontSize:13}}>⚡ Stamina</span>
-              <span style={{color:"#f59e0b",fontWeight:900,fontSize:16}}>{stamina} / {5+playerLevel}</span>
-            </div>
-            <div style={{background:"#1e293b",borderRadius:999,height:8,marginBottom:4}}>
-              <div style={{width:`${Math.min(100,stamina/(5+playerLevel)*100)}%`,height:"100%",background:"linear-gradient(90deg,#f59e0b,#fbbf24)",borderRadius:999,transition:"width .4s"}}/>
-            </div>
-            <div style={{color:"#475569",fontSize:10}}>Refills 1 per 30 min · Level up for more max stamina</div>
-          </div>
+          {(()=>{
+            const maxStam=5+Math.floor(playerLevel/3);
+            const msSince=Date.now()-lastStaminaRefill;
+            const msPerStam=30*60*1000;
+            const msUntilNext=msPerStam-(msSince%msPerStam);
+            const minsLeft=Math.ceil(msUntilNext/60000);
+            return(
+              <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{color:"#f59e0b",fontWeight:700,fontSize:13}}>⚡ Stamina</span>
+                  <span style={{color:"#f59e0b",fontWeight:900,fontSize:16}}>{stamina} / {maxStam}</span>
+                </div>
+                <div style={{background:"#1e293b",borderRadius:999,height:8,marginBottom:4}}>
+                  <div style={{width:`${Math.min(100,stamina/maxStam*100)}%`,height:"100%",background:"linear-gradient(90deg,#f59e0b,#fbbf24)",borderRadius:999,transition:"width .4s"}}/>
+                </div>
+                <div style={{color:"#475569",fontSize:10}}>
+                  {stamina<maxStam?`Next regen in ${minsLeft} min · `:"Full · "}Level up every 3 levels for +1 max
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Galaxy Map header */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -3886,6 +3963,7 @@ function App() {
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div style={{flex:1}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                        <span style={{color:"#334155",fontSize:10,fontWeight:700,minWidth:22}}>#{node.id}</span>
                         <span style={{color:done?"#22c55e":node.boss?"#f59e0b":"#a855f7",fontWeight:800,fontSize:13}}>
                           {done?"✅":locked?"🔒":node.boss?"👑":"⚔️"} {node.name}
                         </span>
@@ -4241,7 +4319,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.47</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.50</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4572,6 +4650,7 @@ function App() {
         savedDecks={decks}
         node={galaxyBattle}
         stamina={stamina}
+        playerLevel={playerLevel}
         onSpendStamina={(cost)=>setStamina(s=>Math.max(0,s-cost))}
         onClose={()=>setGalaxyBattle(null)}
         onWin={(gems,card)=>{
