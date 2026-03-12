@@ -213,6 +213,52 @@ const SFX = {
   toggle() { this._muted = !this._muted; return this._muted; }
 };
 
+// ── Background Music ──────────────────────────────────────────────────────────
+const MUSIC = {
+  _muted:false, _ctx:null, _node:null, _tab:null, _currentTab:null,
+  ctx(){if(!this._ctx)this._ctx=new(window.AudioContext||window.webkitAudioContext)();return this._ctx;},
+  fadeOut(cb,dur=400){
+    if(this._node){
+      try{
+        const g=this._node._gain;
+        if(g){g.gain.setValueAtTime(g.gain.value,this.ctx().currentTime);g.gain.linearRampToValueAtTime(0,this.ctx().currentTime+dur/1000);}
+      }catch(e){}
+    }
+    if(cb)setTimeout(cb,dur);
+  },
+  fadeIn(dur=600){
+    if(this._node){
+      try{
+        const g=this._node._gain;
+        if(g){g.gain.setValueAtTime(0,this.ctx().currentTime);g.gain.linearRampToValueAtTime(0.06,this.ctx().currentTime+dur/1000);}
+      }catch(e){}
+    }
+  },
+  _home(){this._play([261,329,392,523],"sine",0.04,2.0);},
+  _binder(){this._play([196,247,294,392],"sine",0.04,2.5);},
+  _shop(){this._play([329,415,494,659],"triangle",0.04,1.8);},
+  _battle(){this._play([110,138,165,220],"sawtooth",0.035,0.8);},
+  _quests(){this._play([261,311,392,494],"sine",0.04,2.2);},
+  _auction(){this._play([220,277,330,440],"triangle",0.04,2.0);},
+  _play(freqs,type,vol,speed){
+    if(this._muted)return;
+    try{
+      const ctx=this.ctx();
+      if(this._node){try{this._node.stop();}catch(e){}}
+      const g=ctx.createGain();g.gain.value=0;g.connect(ctx.destination);
+      const oscs=freqs.map((f,i)=>{
+        const o=ctx.createOscillator();o.type=type;o.frequency.value=f;
+        o.connect(g);return o;
+      });
+      oscs.forEach(o=>o.start());
+      this._node={stop:()=>oscs.forEach(o=>{try{o.stop();}catch(e){};}),_gain:g};
+      g.gain.linearRampToValueAtTime(vol,ctx.currentTime+0.6);
+    }catch(e){}
+  },
+  setTab(tab){this._currentTab=tab;if(this._muted||this._tab===tab)return;this._tab=tab;const T={home:()=>this._home(),collection:()=>this._binder(),shop:()=>this._shop(),battle:()=>this._battle(),quests:()=>this._quests(),auction:()=>this._auction(),profile:()=>this._binder(),fusion:()=>this._shop()};this.fadeOut(()=>{if(this._muted)return;T[tab]?.();this.fadeIn();},550);},
+  toggle(){this._muted=!this._muted;if(this._muted){this.fadeOut(null,400);}else{this._tab=null;if(this._currentTab)this.setTab(this._currentTab);}return this._muted;},
+};
+
 // ── Persistent Storage ────────────────────────────────────────────────────────
 const S = {
   get: (k,def) => { try { const v=localStorage.getItem("vc_"+k); return v!==null?JSON.parse(v):def; } catch { return def; } },
@@ -3526,7 +3572,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.45</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.46</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
