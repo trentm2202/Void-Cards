@@ -450,11 +450,24 @@ const ALL_CARDS = [
 ];
 
 
+// Weighted rarity draw helper
+function drawRarity(weights){
+  const total=Object.values(weights).reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(const [rarity,w] of Object.entries(weights)){r-=w;if(r<=0)return rarity;}
+  return Object.keys(weights).pop();
+}
+const PACK_ODDS = {
+  starter:   {Common:65,Uncommon:30,Rare:5,Epic:0,Legendary:0},
+  nebula:    {Common:45,Uncommon:30,Rare:20,Epic:5,Legendary:0},
+  void:      {Common:25,Uncommon:30,Rare:25,Epic:17,Legendary:3},
+  legendary: {Common:0,Uncommon:10,Rare:30,Epic:40,Legendary:20},
+};
 const PACKS = [
-  { id:1, name:"Starter Pack",   price:100,  icon:"🌌", rarities:["Common","Common","Uncommon"],                 guaranteed:"1 Uncommon+" },
-  { id:2, name:"Nebula Pack",    price:250,  icon:"🪐", rarities:["Common","Common","Uncommon","Rare","Rare"],   guaranteed:"1 Rare+" },
-  { id:3, name:"Void Pack",      price:600,  icon:"⚡", rarities:["Uncommon","Rare","Rare","Epic","Epic"],       guaranteed:"1 Epic+" },
-  { id:4, name:"Legendary Pack", price:1500, icon:"🌟", rarities:["Rare","Epic","Epic","Legendary","Legendary"], guaranteed:"1 Legendary" },
+  { id:1, name:"Starter Pack",   price:100,  icon:"🌌", count:3, oddsKey:"starter",   guaranteed:"Chance at Rare",    guaranteedRarity:"Uncommon" },
+  { id:2, name:"Nebula Pack",    price:250,  icon:"🪐", count:5, oddsKey:"nebula",    guaranteed:"Chance at Epic",     guaranteedRarity:"Rare" },
+  { id:3, name:"Void Pack",      price:600,  icon:"⚡", count:5, oddsKey:"void",      guaranteed:"Chance at Legendary",guaranteedRarity:"Epic" },
+  { id:4, name:"Legendary Pack", price:1500, icon:"🌟", count:5, oddsKey:"legendary", guaranteed:"20% Legendary chance",guaranteedRarity:"Rare" },
 ];
 
 const RC = {
@@ -1030,7 +1043,7 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level }
         </div>
         {/* Name */}
         <div style={{color:"white",fontSize:mini?8:10,fontWeight:800,textAlign:"center",marginBottom:mini?1:2,letterSpacing:.3,position:"relative",zIndex:1,lineHeight:1.2}}>{card.name}</div>
-        {!mini&&<div style={{color:"#64748b",fontSize:7,textAlign:"center",marginBottom:3,lineHeight:1.4,position:"relative",zIndex:1,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{card.description}</div>}
+
         {/* Stars */}
         <div style={{textAlign:"center",marginBottom:mini?2:3,position:"relative",zIndex:1}}>
           {[...Array(rc.stars)].map((_,i)=><span key={i} style={{color:rc.color,fontSize:mini?7:8}}>★</span>)}
@@ -1089,17 +1102,27 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
   const open = () => {
     SFX.play("packCrinkle");
     // Each slot has a small upgrade chance — any slot can pop off
-    const upgradeChance = {Common:0.03, Uncommon:0.05, Rare:0.08, Epic:0.12, Legendary:1};
-    const rarityUpgrade = {Common:"Uncommon", Uncommon:"Rare", Rare:"Epic", Epic:"Legendary"};
-    const drawn = pack.rarities.map(r=>{
-      let finalRarity = r;
-      // Roll for upgrade — each tier can upgrade to next
-      while(finalRarity !== "Legendary" && Math.random() < upgradeChance[finalRarity]) {
-        finalRarity = rarityUpgrade[finalRarity];
+    // Draw cards using weighted odds, guarantee at least one of guaranteedRarity or higher
+    const rarityOrder=["Common","Uncommon","Rare","Epic","Legendary"];
+    const odds=PACK_ODDS[pack.oddsKey]||PACK_ODDS.starter;
+    const count=pack.count||5;
+    const drawn=[];
+    for(let i=0;i<count;i++){
+      const r=drawRarity(odds);
+      const opts=ALL_CARDS.filter(c=>c.rarity===r);
+      if(opts.length) drawn.push(opts[Math.floor(Math.random()*opts.length)]);
+    }
+    // Guarantee at least one card of guaranteedRarity or higher
+    const minIdx=rarityOrder.indexOf(pack.guaranteedRarity||"Common");
+    const hasMin=drawn.some(c=>rarityOrder.indexOf(c.rarity)>=minIdx);
+    if(!hasMin){
+      // Replace the first Common with a guaranteed card
+      const replaceIdx=drawn.findIndex(c=>rarityOrder.indexOf(c.rarity)<minIdx);
+      const guaranteedOpts=ALL_CARDS.filter(c=>rarityOrder.indexOf(c.rarity)>=minIdx);
+      if(replaceIdx>=0&&guaranteedOpts.length){
+        drawn[replaceIdx]=guaranteedOpts[Math.floor(Math.random()*guaranteedOpts.length)];
       }
-      const opts=ALL_CARDS.filter(c=>c.rarity===finalRarity);
-      return opts[Math.floor(Math.random()*opts.length)];
-    });
+    }
     setCards(drawn);
     setPhase("tearing");
     setTimeout(()=>{ setPhase("reveal"); revealOne(drawn, 0); }, 1000);
@@ -1134,7 +1157,7 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
         {phase==="sealed"&&<>
           <div style={{fontSize:96,marginBottom:16,animation:"float 2s ease-in-out infinite",filter:"drop-shadow(0 0 28px #a855f766)"}}>{pack.icon}</div>
           <div style={{color:"white",fontSize:22,fontWeight:900,marginBottom:4,letterSpacing:-.5}}>{pack.name}</div>
-          <div style={{color:"#64748b",marginBottom:3,fontSize:13}}>{pack.rarities.length} cards · {pack.guaranteed}</div>
+          <div style={{color:"#64748b",marginBottom:3,fontSize:13}}>{pack.count||5} cards · {pack.guaranteed}</div>
           <div style={{color:"#a855f7",fontWeight:900,fontSize:22,marginBottom:28,textShadow:"0 0 16px #a855f7"}}>💎 {pack.price}</div>
           <button onClick={open} style={{background:"linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",color:"white",border:"none",borderRadius:14,padding:"18px 48px",fontSize:19,fontWeight:800,cursor:"pointer",width:"100%",maxWidth:300,boxShadow:"0 8px 32px var(--t1b)",letterSpacing:.5}}>✨ Open Pack!</button>
         </>}
@@ -1207,7 +1230,7 @@ function WelcomeScreen({ onClaim }) {
 
   const openPack=()=>{
     SFX.play("packCrinkle");
-    const drawn=PACKS[1].rarities.map(r=>{const opts=ALL_CARDS.filter(c=>c.rarity===r);return opts[Math.floor(Math.random()*opts.length)];});
+    const drawn=[...Array(5)].map(()=>{const r=drawRarity(PACK_ODDS.nebula);const opts=ALL_CARDS.filter(c=>c.rarity===r);return opts[Math.floor(Math.random()*opts.length)];});
     setCards(drawn); setPhase("opening");
     setTimeout(()=>{
       setPhase("reveal");
@@ -2253,7 +2276,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
                 <div style={{fontSize:34,flexShrink:0,animation:"float 3s ease-in-out infinite"}}>{p.icon}</div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:700,marginBottom:1}}>{p.name}</div>
-                  <div style={{color:"#64748b",fontSize:10}}>{p.rarities.length} cards · {p.guaranteed}</div>
+                  <div style={{color:"#64748b",fontSize:10}}>{p.count||5} cards · {p.guaranteed}</div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                   <span style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {p.price}</span>
@@ -3423,8 +3446,8 @@ function App() {
       setStreak(ns);setLastLogin(today);setDailyGems("");S.set("dailyGems","");
       S.set("lastLogin",today);S.set("streak",ns);
     }
-    // Reseed quests if date changed OR quests are missing
-    if(storedQuestDate!==dateNum||!quests||quests.length===0){
+    // Reseed quests ONLY if date actually changed (not on every mount)
+    if(storedQuestDate!==dateNum){
       const dailyPool=DAILY_QUESTS_POOL.filter(q=>{
         if(["wins","streak"].includes(q.type)) return q.target<=5;
         return true;
@@ -3432,6 +3455,10 @@ function App() {
       const seeded=[...dailyPool].map((q,i)=>({q,sort:((dateNum*(i+1)*1664525+1013904223)&0x7fffffff)})).sort((a,b)=>a.sort-b.sort).map(x=>x.q).slice(0,5);
       setQuests(seeded);setQuestProg({});
       S.set("quests",seeded);S.set("questProgress",{});S.set("questDate",dateNum);
+    } else if(!quests||quests.length===0){
+      // Quests missing but date is correct — restore from storage without resetting progress
+      const saved=S.get("quests",null);
+      if(saved&&saved.length>0) setQuests(saved);
     }
   },[]);
 
@@ -3551,6 +3578,13 @@ function App() {
   // ── Quest win-streak tracking ─────────────────────────────────────────────
   const [battleStreak,setBattleStreak]=useState(0);
   const [theme,setTheme] = useState(()=>S.get("theme","void"));
+  // Apply theme class to body so CSS vars work on ALL elements including fixed/portal elements
+  useEffect(()=>{
+    const body=document.body;
+    ["void","nebula","matrix","inferno","solar"].forEach(t=>body.classList.remove(`theme-${t}`));
+    if(theme!=="void") body.classList.add(`theme-${theme}`);
+    return()=>["void","nebula","matrix","inferno","solar"].forEach(t=>body.classList.remove(`theme-${t}`));
+  },[theme]);
   const [dailyWins,setDailyWins]         = useState(()=>S.get("dailyWins",{date:"",count:0}));
 
   const onWin=cardId=>{
@@ -3740,7 +3774,7 @@ function App() {
       S.set("dailyGems","");S.set("lastLogin",_today);S.set("streak",_ns);
       setDailyWins({date:_today,count:0});S.set("dailyWins",{date:_today,count:0});
     }
-    if(_storedQuestDate!==_dateNum||!S.get("quests",null)){
+    if(_storedQuestDate!==_dateNum){
       const _pool=DAILY_QUESTS_POOL.filter(q=>{
         if(["wins","streak"].includes(q.type)) return q.target<=5;
         return true;
@@ -4412,7 +4446,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.41</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.42</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4537,16 +4571,7 @@ function App() {
             }catch(e){return null;}
           })()}
 
-          <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:14,marginBottom:14}}>
-            <div style={{color:"white",fontWeight:700,marginBottom:10}}>🎨 UI Theme</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {[["void","🟣","Void","#7c3aed"],["nebula","🔵","Nebula","#1d4ed8"],["matrix","🟢","Matrix","#15803d"],["inferno","🔴","Inferno","#b91c1c"],["solar","🟡","Solar","#b45309"]].map(([id,icon,label,color])=>(
-                <button key={id} onClick={()=>setTheme(id)} style={{background:theme===id?color+"33":"#1e293b",border:`2px solid ${theme===id?color:"#334155"}`,borderRadius:10,padding:"8px 14px",color:theme===id?color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                  {icon} {label}
-                </button>
-              ))}
-            </div>
-          </div>
+
           <div style={{background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"#ef4444",fontWeight:700,marginBottom:8}}>⚠️ Reset Game</div>
             <div style={{color:"#64748b",fontSize:12,marginBottom:10}}>Clears all progress and returns to the welcome screen. Cannot be undone.</div>
@@ -4672,6 +4697,19 @@ function App() {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               <span style={{color:"#94a3b8",fontSize:13}}>Music & SFX</span>
               <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:muted?"#1e293b":"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 14px",fontWeight:700,fontSize:12,cursor:"pointer"}}>{muted?"Off":"On"}</button>
+            </div>
+          </div>
+
+          {/* Theme */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
+            <div style={{color:"#a855f7",fontWeight:700,marginBottom:12}}>🎨 UI Theme</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {[["void","🟣","Void","#7c3aed"],["nebula","🔵","Nebula","#1d4ed8"],["matrix","🟢","Matrix","#15803d"],["inferno","🔴","Inferno","#b91c1c"],["solar","🟡","Solar","#b45309"]].map(([id,icon,label,color])=>(
+                <button key={id} onClick={()=>{setTheme(id);SFX.play("click");}}
+                  style={{background:theme===id?color+"33":"#0f172a",border:`2px solid ${theme===id?color:"#334155"}`,borderRadius:10,padding:"8px 14px",color:theme===id?color:"#64748b",fontWeight:700,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  {icon} {label}
+                </button>
+              ))}
             </div>
           </div>
 
