@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Void Cards"/>
@@ -3324,11 +3327,20 @@ function App() {
     (async()=>{
       try{
         const save=await sb.loadSave();
-        onAuth(save);
+        if(save){
+          // Valid save found - restore session
+          onAuth(save);
+        } else {
+          // Token exists but no save - clear token, show landing page
+          localStorage.removeItem("vc_token");
+          localStorage.removeItem("vc_uid");
+          sb._token=null;sb._uid=null;
+        }
       }catch(e){
         // Token expired or invalid - clear it and show login
         localStorage.removeItem("vc_token");
         localStorage.removeItem("vc_uid");
+        sb._token=null;sb._uid=null;
       }finally{
         setIsRestoring(false);
       }
@@ -3690,7 +3702,7 @@ function App() {
   if(!authed) return showAuth
     ? <AuthScreen onAuth={onAuth}/>
     : <LandingPage onPlay={()=>setShowAuth(true)}/>;
-  if(authed&&(newPlayer||collection.length===0)) return <WelcomeScreen onClaim={cards=>{setCollection(cards);setNewPlayer(false);S.set("newPlayer",false);notify("Welcome! Progress auto-saves. 🚀");}}/>;
+  if(authed&&newPlayer) return <WelcomeScreen onClaim={cards=>{setCollection(cards);setNewPlayer(false);S.set("newPlayer",false);notify("Welcome! Progress auto-saves. 🚀");}}/>;
 
   const [tbg,tborder]=(toastQ[toast?.type]||toastQ.ok).split("|");
 
@@ -4135,7 +4147,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.23</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.25</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
