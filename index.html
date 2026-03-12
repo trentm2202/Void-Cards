@@ -3179,6 +3179,8 @@ function App() {
   const [cloudSave,setCloudSave]   = useState(null); // loaded save from Supabase
   const [newPlayer,setNewPlayer]   = useState(()=>S.get("newPlayer",true));
   const [username,setUsername]       = useState(()=>S.get("username",""));
+  const [editingUsername,setEditingUsername] = useState(false);
+  const [usernameDraft,setUsernameDraft]     = useState("");
   const [coins,setCoins]           = useState(()=>S.get("coins",500));
   const [collection,setCollection] = useState(()=>S.get("collection",[]));
   const [playerXp,setPlayerXp]     = useState(()=>S.get("playerXp",0));
@@ -4151,29 +4153,25 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Username */}
-          {(()=>{
-            const [editing,setEditing]=React.useState(false);
-            const [draft,setDraft]=React.useState(username);
-            return <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{fontSize:28}}>👤</div>
-              <div style={{flex:1}}>
-                {editing
-                  ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>  
-                    <button onClick={()=>{const v=draft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditing(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
-                    <button onClick={()=>{setDraft(username);setEditing(false);}} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
-                  </div>
-                  :<div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
-                    <button onClick={()=>{setDraft(username);setEditing(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
-                  </div>
-                }
-                <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
-              </div>
-            </div>;
-          })()}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28}}>👤</div>
+            <div style={{flex:1}}>
+              {editingUsername
+                ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input autoFocus value={usernameDraft} onChange={e=>setUsernameDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>
+                  <button onClick={()=>{const v=usernameDraft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditingUsername(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
+                  <button onClick={()=>setEditingUsername(false)} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
+                </div>
+                :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
+                  <button onClick={()=>{setUsernameDraft(username);setEditingUsername(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
+                </div>
+              }
+              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+            </div>
+          </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.28</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.29</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4450,27 +4448,23 @@ function App() {
           </div>
 
           {/* Username */}
-          {(()=>{
-            const [editing,setEditing]=React.useState(false);
-            const [draft,setDraft]=React.useState(username);
-            return <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
-              <div style={{fontSize:28}}>👤</div>
-              <div style={{flex:1}}>
-                {editing
-                  ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>  
-                    <button onClick={()=>{const v=draft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditing(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
-                    <button onClick={()=>{setDraft(username);setEditing(false);}} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
-                  </div>
-                  :<div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
-                    <button onClick={()=>{setDraft(username);setEditing(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
-                  </div>
-                }
-                <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
-              </div>
-            </div>;
-          })()}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{fontSize:28}}>👤</div>
+            <div style={{flex:1}}>
+              {editingUsername
+                ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input autoFocus value={usernameDraft} onChange={e=>setUsernameDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>
+                  <button onClick={()=>{const v=usernameDraft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditingUsername(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
+                  <button onClick={()=>setEditingUsername(false)} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
+                </div>
+                :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
+                  <button onClick={()=>{setUsernameDraft(username);setEditingUsername(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
+                </div>
+              }
+              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+            </div>
+          </div>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
             Void Cards · Series 1 · v1.0
