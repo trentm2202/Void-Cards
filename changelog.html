@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta name="description" content="Void Cards update history and patch notes. See every new feature, bug fix, and improvement."/>
+  <title>Changelog — Void Cards</title>
+  <link rel="canonical" href="https://voidcards.org/changelog.html"/>
+  <meta property="og:title" content="Changelog — Void Cards"/>
+  <meta property="og:description" content="See every update, bug fix, and new feature added to Void Cards."/>
+  <meta property="og:url" content="https://voidcards.org/changelog.html"/>
+  <meta property="og:type" content="website"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #020617;
+      color: white;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: #a855f7; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header {
+      background: linear-gradient(180deg, #0f0a1e, #020617);
+      border-bottom: 1px solid #ffffff08;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 28px; }
+    .site-name { font-size: 18px; font-weight: 900; background: linear-gradient(135deg, #e2e8f0, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .site-sub { color: #475569; font-size: 10px; letter-spacing: 3px; font-weight: 700; }
+    .nav { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav a { color: #64748b; font-size: 13px; font-weight: 600; transition: color .15s; }
+    .nav a:hover { color: #a855f7; text-decoration: none; }
+    .nav a.active { color: #a855f7; }
+
+    .hero {
+      text-align: center;
+      padding: 48px 24px 32px;
+      background: linear-gradient(180deg, #020617, #0a0520 50%, #020617);
+    }
+    .hero-icon { font-size: 52px; margin-bottom: 12px; animation: float 3s ease-in-out infinite; }
+    .hero-label { color: #a855f7; font-size: 10px; letter-spacing: 5px; font-weight: 800; margin-bottom: 6px; }
+    .hero-title { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+    .hero-sub { color: #64748b; font-size: 14px; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+    .content { max-width: 680px; margin: 0 auto; padding: 0 20px 60px; }
+
+    .version-block {
+      margin-bottom: 32px;
+      background: linear-gradient(135deg, #0f172a, #1e0a3c);
+      border: 1px solid #4c1d9533;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .version-block.latest { border-color: #7c3aed88; box-shadow: 0 0 30px #7c3aed18; }
+
+    .version-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid #ffffff08;
+    }
+    .version-left { display: flex; align-items: center; gap: 10px; }
+    .version-num { font-size: 18px; font-weight: 900; color: #a855f7; }
+    .version-badge {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .version-date { color: #475569; font-size: 12px; }
+
+    .version-body { padding: 16px 20px; }
+
+    .category { margin-bottom: 14px; }
+    .category:last-child { margin-bottom: 0; }
+    .category-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cat-fix { color: #22c55e; }
+    .cat-feat { color: #a855f7; }
+    .cat-improve { color: #06b6d4; }
+    .cat-balance { color: #f59e0b; }
+
+    .change-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 7px;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .change-item .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .dot-fix { background: #22c55e; }
+    .dot-feat { background: #a855f7; }
+    .dot-improve { background: #06b6d4; }
+    .dot-balance { background: #f59e0b; }
+
+    .footer {
+      border-top: 1px solid #ffffff08;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-left { color: #1e293b; font-size: 11px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { color: #334155; font-size: 11px; }
+    .footer-links a:hover { color: #a855f7; text-decoration: none; }
+    .footer-links a.bug { color: #a855f7; font-weight: 600; }
+
+    .play-btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      margin-top: 20px;
+      box-shadow: 0 0 20px #a855f744;
+      transition: opacity .15s;
+    }
+    .play-btn:hover { opacity: .85; text-decoration: none; }
+
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🌌</div>
+      <div>
+        <div class="site-name">VOID CARDS</div>
+        <div class="site-sub">GALACTIC CARD BATTLE GAME</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/">Play</a>
+      <a href="/about.html">About</a>
+      <a href="/guide.html">Guide</a>
+      <a href="/changelog.html" class="active">Changelog</a>
+      <a href="/privacy.html">Privacy</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">📋</div>
+    <div class="hero-label">UPDATE HISTORY</div>
+    <h1 class="hero-title">Changelog</h1>
+    <p class="hero-sub">Every update, fix, and improvement — in order. This game is actively developed.</p>
+    <a href="/" class="play-btn">▶ Play Now</a>
+  </div>
+
+  <!-- Changelog entries -->
+  <div class="content">
+
+    <!-- v0.4.35 -->
+    <div class="version-block latest">
+      <div class="version-header">
+        <div class="version-left">
+          <div class="version-num">v0.4.35</div>
+          <div class="version-badge">LATEST</div>
+        </div>
+        <div class="version-date">March 2026</div>
+      </div>
+      <div class="version-body">
+        <div class="category">
+          <div class="category-label cat-feat">✨ NEW</div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Username system — set your name on signup, edit anytime in Profile tab</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Auction House now shows your username on your listings</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Card art support — cards can now display AI-generated artwork</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Feedback button added to home tab and footer</span></div>
+        </div>
+        <div class="category">
+          <div class="category-label cat-fix">🔧 FIXES</div>
+          <div class="change-item"><div class="dot dot-fix"></div><span>Binder tab crash fixed — purple screen on open resolved</span></div>
+          <div class="change-item"><div class="dot dot-fix"></div><span>Profile tab crash fixed — same root cause as Binder, now stable</span></div>
+          <div class="change-item"><div class="dot dot-fix"></div><span>Card detail modal — stats panel no longer covered by enlarged card</span></div>
+          <div class="change-item"><div class="dot dot-fix"></div><span>5v5 Deck Battle — enemy card attack logic now uses correct active card</span></div>
+        </div>
+        <div class="category">
+          <div class="category-label cat-improve">💡 IMPROVEMENTS</div>
+          <div class="change-item"><div class="dot dot-improve"></div><span>UI themes now apply globally across all tabs, not just Binder</span></div>
+          <div class="change-item"><div class="dot dot-improve"></div><span>Cards always show latest data (including new art) even from older saves</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- v0.4.24 -->
+    <div class="version-block">
+      <div class="version-header">
+        <div class="version-left">
+          <div class="version-num">v0.4.24</div>
+        </div>
+        <div class="version-date">March 2026</div>
+      </div>
+      <div class="version-body">
+        <div class="category">
+          <div class="category-label cat-feat">✨ NEW</div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>5v5 Deck Battle mode — build a deck of 5, fight through 5 enemy cards</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Energy system in Deck Battle — manage resources across each turn</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Card abilities system — Berserker, Shield, Thorns, Pierce, Rally Cry, Intimidate and more</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>5 UI themes — Void, Nebula, Matrix, Inferno, Solar</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Battle record tracking — wins, losses, win rate shown in Profile</span></div>
+        </div>
+        <div class="category">
+          <div class="category-label cat-improve">💡 IMPROVEMENTS</div>
+          <div class="change-item"><div class="dot dot-improve"></div><span>Card detail modal enlarged to 1.7x scale in Binder</span></div>
+          <div class="change-item"><div class="dot dot-improve"></div><span>Session persistence — stay logged in across page refreshes</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- v0.4.0 -->
+    <div class="version-block">
+      <div class="version-header">
+        <div class="version-left">
+          <div class="version-num">v0.4.0</div>
+          <div class="version-badge" style="background:linear-gradient(135deg,#064e3b,#10b981)">LAUNCH</div>
+        </div>
+        <div class="version-date">March 2026</div>
+      </div>
+      <div class="version-body">
+        <div class="category">
+          <div class="category-label cat-feat">✨ INITIAL RELEASE</div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>100+ cards across Common, Uncommon, Rare, Epic, Legendary rarities</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>3 pack types — Starter, Nebula, Void — with pity counter system</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>1v1 and 3v3 Team Battle modes</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Auction House — list, bid, cancel, duration picker, snipe protection</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Card Fusion — combine 3 duplicates into a golden Foil card</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Daily quests and gem rewards</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Achievement system</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Cloud save via Supabase — progress synced across all devices</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Shard Collector idle minigame with gem transfers</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Card of the Day widget</span></div>
+          <div class="change-item"><div class="dot dot-feat"></div><span>Series 2 teaser — coming soon</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coming Soon -->
+    <div style="background:linear-gradient(135deg,#0a0014,#0f0828);border:1px solid #7c3aed44;border-radius:16px;padding:24px;text-align:center;margin-top:8px;">
+      <div style="font-size:32px;margin-bottom:8px;">🚀</div>
+      <div style="color:#a855f7;font-size:10px;font-weight:800;letter-spacing:4px;margin-bottom:6px;">COMING NEXT</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:8px;">Series 2 · Card Synergies · Real Player Trading</div>
+      <div style="color:#64748b;font-size:13px;line-height:1.6;max-width:400px;margin:0 auto 16px;">
+        New card types, combo abilities, and real player-vs-player auction trading. Active development continues.
+      </div>
+      <a href="mailto:resinfolk@gmail.com?subject=Void Cards Suggestion" style="display:inline-block;background:#1e293b;color:#a855f7;border:1px solid #4c1d95;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:700;text-decoration:none;">💬 Suggest a Feature</a>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-left">VOID CARDS · © 2026</div>
+    <div class="footer-links">
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="mailto:resinfolk@gmail.com?subject=Void Cards Bug Report" class="bug">🐛 Report a Bug</a>
+    </div>
+  </footer>
+
+</body>
+</html>
