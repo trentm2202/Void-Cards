@@ -3605,7 +3605,7 @@ function App() {
   const rarityOrder=["Legendary","Epic","Rare","Uncommon","Common"];
   const sorted=[...collection].sort((a,b)=>rarityOrder.indexOf(a.rarity)-rarityOrder.indexOf(b.rarity));
   const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
-  const unique=[...new Map(sorted.map(c=>[c.id,c])).values()];
+  const unique=[...new Map(sorted.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id,{...base,...c}];})).values()];
   const groupCards=(key,vals)=>{const g={};vals.forEach(v=>{const k=v[key];if(!g[k])g[k]=[];if(!g[k].find(x=>x.id===v.id))g[k].push(v);});return g;};
 
   const renderGroup=cards=>(
@@ -4171,7 +4171,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.29</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.30</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
