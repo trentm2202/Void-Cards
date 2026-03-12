@@ -2388,9 +2388,10 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
   const [animating,setAnimating]=useState(false);
   const [dmgPop,setDmgPop]=useState(null);
   const [statusEffects,setStatusEffects]=useState({});
-  const [energy,setEnergy]=useState(1);
-  const MAX_ENERGY=5;
-  const ENERGY_COST={attack:1,special:3,defend:0};
+  const [energy,setEnergy]=useState(2);
+  const MAX_ENERGY=6;
+  const ENERGY_COST={attack:1,special:3,defend:0,sub:0};
+  const [subbing5,setSubbing5]=useState(false);
   const logRef=useRef(null);
   useEffect(()=>{if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight;},[log]);
 
@@ -2504,8 +2505,8 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
             }
           }
         }
-        // Grant +1 energy at start of player's new turn
-        setEnergy(e=>Math.min(MAX_ENERGY,e+1));
+        // Grant +2 energy at start of player's new turn
+        setEnergy(e=>Math.min(MAX_ENERGY,e+2));
         setAnimating(false);
       },500);
     },900);
@@ -2685,20 +2686,36 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
             </div>
             <span style={{color:"#f59e0b",fontWeight:800,fontSize:12,flexShrink:0}}>{energy}/{MAX_ENERGY}</span>
           </div>
-          {!animating&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+          {!animating&&!subbing5&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:5}}>
             {[
               {t:"attack", i:"⚔️",l:"Attack",  cost:1, s:`~${Math.round(effP*.9)}-${Math.round(effP*.9+10)}`,c:"linear-gradient(135deg,#991b1b,#dc2626)"},
               {t:"special",i:"✨",l:pc?.special||"Special",cost:3,s:`~${Math.round(effP*(pc?.specialMult||1.5))}`,c:"linear-gradient(135deg,var(--t3),var(--t2))"},
-              {t:"defend", i:"🛡",l:"Defend",  cost:0, s:"+1⚡",c:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
+              {t:"defend", i:"🛡",l:"Defend",  cost:0, s:"+2⚡",c:"linear-gradient(135deg,#1d4ed8,#3b82f6)"},
+              {t:"sub",    i:"🔄",l:"Sub Out", cost:0, s:"swap",c:"linear-gradient(135deg,#047857,#10b981)"},
             ].map(b=>{
               const can=energy>=b.cost;
-              return <button key={b.t} onClick={()=>action(b.t)} style={{background:can?b.c:"#1e293b",color:can?"white":"#475569",border:`1px solid ${can?"transparent":"#334155"}`,borderRadius:9,padding:"9px 4px",fontWeight:700,fontSize:10,cursor:can?"pointer":"not-allowed",position:"relative"}}>
-                <div style={{fontSize:15,marginBottom:1}}>{b.i}</div>
+              const hasSub=b.t==="sub"&&deck.filter((_,i)=>i!==pIdx&&(hps[hpKey(deck[i])]??0)>0).length>0;
+              if(b.t==="sub"&&!hasSub) return null;
+              return <button key={b.t} onClick={()=>b.t==="sub"?setSubbing5(true):action(b.t)} style={{background:can?b.c:"#1e293b",color:can?"white":"#475569",border:`1px solid ${can?"transparent":"#334155"}`,borderRadius:9,padding:"9px 3px",fontWeight:700,fontSize:10,cursor:can?"pointer":"not-allowed",position:"relative"}}>
+                <div style={{fontSize:14,marginBottom:1}}>{b.i}</div>
                 <div style={{fontSize:9,lineHeight:1.2}}>{b.l}</div>
                 <div style={{color:can?"rgba(255,255,255,.5)":"#334155",fontSize:8,marginTop:1}}>{b.s}</div>
-                <div style={{position:"absolute",top:3,right:4,background:can?"#ffffff22":"#334155",borderRadius:3,padding:"1px 3px",fontSize:7,fontWeight:800,color:can?"#fff":"#475569"}}>{b.cost===0?"free":`${b.cost}⚡`}</div>
+                <div style={{position:"absolute",top:3,right:3,background:can?"#ffffff22":"#334155",borderRadius:3,padding:"1px 3px",fontSize:7,fontWeight:800,color:can?"#fff":"#475569"}}>{b.cost===0?"free":`${b.cost}⚡`}</div>
               </button>;
             })}
+          </div>}
+          {!animating&&subbing5&&<div>
+            <div style={{color:"#10b981",fontSize:11,fontWeight:700,marginBottom:8}}>🔄 Choose card to sub in:</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+              {deck.map((c,i)=>{
+                const hp=hps[hpKey(c)]??0;
+                if(i===pIdx||hp<=0) return null;
+                return <button key={i} onClick={()=>{setPIdx(i);addLog(`🔄 Subbed in ${c.name}!`,"system");SFX.play("cardFlip");setSubbing5(false);}} style={{background:"linear-gradient(135deg,#052e16,#14532d)",border:"1px solid #22c55e44",borderRadius:8,padding:"6px 10px",color:"white",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  {c.name} <span style={{color:"#22c55e",fontSize:10}}>{hp}HP</span>
+                </button>;
+              })}
+            </div>
+            <button onClick={()=>setSubbing5(false)} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"5px 12px",fontSize:11,cursor:"pointer"}}>Cancel</button>
           </div>}
           {animating&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:10,color:"#ef4444",fontWeight:700,fontSize:12}}>⚡ Enemy attacking...</div>}
         </>}
@@ -2709,7 +2726,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
           <div style={{color:"#64748b",fontSize:12,marginBottom:12}}>+500 💎 reward!</div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
             <button onClick={()=>{onWin();onClose();}} style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Claim 🏆</button>
-            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(1);setStatusEffects({});setLog([]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Again</button>
+            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(2);setStatusEffects({});setLog([]);setSubbing5(false);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Again</button>
           </div>
         </div>}
         {phase==="lost"&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:12,padding:16}}>
@@ -2717,7 +2734,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
           <div style={{color:"#ef4444",fontWeight:800,fontSize:17,marginBottom:12}}>Deck Defeated!</div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
             <button onClick={()=>{onLose();onClose();}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"11px 18px",fontWeight:700,cursor:"pointer"}}>Retreat</button>
-            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(1);setStatusEffects({});setLog([]);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
+            <button onClick={()=>{setPhase("pick");setDeck([]);setPIdx(0);setEIdx(0);setHps({});setEHps({});setEnergy(2);setStatusEffects({});setLog([]);setSubbing5(false);}} style={{background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:10,padding:"11px 18px",fontWeight:700,cursor:"pointer"}}>⚔️ Again</button>
           </div>
         </div>}
       </div>
@@ -4210,7 +4227,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.39</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.40</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
