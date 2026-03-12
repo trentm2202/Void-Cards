@@ -53,6 +53,7 @@
         <a href="/guide.html" style="color:var(--t2);margin:0 12px;">How to Play</a>
         <a href="/cards.html" style="color:var(--t2);margin:0 12px;">All Cards</a>
         <a href="/privacy.html" style="color:var(--t2);margin:0 12px;">Privacy</a>
+        <a href="/changelog.html" style="color:var(--t2);margin:0 12px;">Changelog</a>
       </div>
     </div>
   </noscript>
@@ -2897,6 +2898,7 @@ function LandingPage({onPlay}){
         <div style={{display:"flex",gap:16,alignItems:"center"}}>
           <a href="/about.html" style={{color:"#475569",textDecoration:"none",fontSize:12,fontWeight:600}}>About</a>
           <a href="/privacy.html" style={{color:"#475569",textDecoration:"none",fontSize:12,fontWeight:600}}>Privacy</a>
+          <a href="/changelog.html" style={{color:"#475569",textDecoration:"none",fontSize:12,fontWeight:600}}>Changelog</a>
           <button onClick={onPlay} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"8px 18px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Play Free →</button>
         </div>
       </nav>
@@ -2948,9 +2950,10 @@ function LandingPage({onPlay}){
       <footer style={{padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,borderTop:"1px solid #ffffff08"}}>
         <div style={{color:"#1e293b",fontSize:11,fontFamily:"'Orbitron',monospace"}}>VOID CARDS · © 2026</div>
         <div style={{display:"flex",gap:20}}>
-          <a href="/about.html" style={{color:"#1e293b",textDecoration:"none",fontSize:11}}>About</a>
-          <a href="/privacy.html" style={{color:"#1e293b",textDecoration:"none",fontSize:11}}>Privacy Policy</a>
-          <a href="mailto:resinfolk@gmail.com" style={{color:"#1e293b",textDecoration:"none",fontSize:11}}>Contact</a>
+          <a href="/about.html" style={{color:"#334155",textDecoration:"none",fontSize:11}}>About</a>
+          <a href="/privacy.html" style={{color:"#334155",textDecoration:"none",fontSize:11}}>Privacy Policy</a>
+          <a href="/changelog.html" style={{color:"#334155",textDecoration:"none",fontSize:11}}>Changelog</a>
+          <a href="mailto:resinfolk@gmail.com" style={{color:"#a855f7",textDecoration:"none",fontSize:11,fontWeight:600}}>🐛 Report a Bug</a>
         </div>
       </footer>
     </div>
@@ -3304,7 +3307,7 @@ function App() {
             SFX.play("achievement");
             return {...a,secsLeft:0,price:newPrice,bids:newBids,settled:true};
           }
-          if(a.seller==="You"&&!a.settled){
+          if(a.isPlayer&&!a.settled){
             // Player's own listing ended — pay them out at FINAL bid price
             setCoins(c=>c+newPrice);
             notify(`💰 ${a.card.name} sold for 💎 ${newPrice}!`,"ok");
@@ -3591,7 +3594,7 @@ function App() {
   const doSell=(card,price,durationSecs=2*60*60)=>{
     setCollection(prev=>{const idx=prev.findIndex(c=>c.id===card.id);if(idx===-1)return prev;const n=[...prev];n.splice(idx,1);return n;});
     // Coins paid out when auction ends, not immediately
-    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:"You",price,secsLeft:durationSecs,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
+    setAuctions(prev=>[...prev,{id:Date.now(),card,seller:username||"You",price,secsLeft:durationSecs,bids:0,isPlayer:true,minBid:Math.round(price*.1)||50,rivalSpeed:20}]);
     setTotalSold(t=>t+1);setSellCard(null);
     updateQuest("sells",1);
     SFX.play("sell");
@@ -3959,6 +3962,29 @@ function App() {
               </div>;
             })}
           </div>}
+
+          {/* Share + Feedback row */}
+          <div style={{marginTop:14,display:"flex",gap:10}}>
+            <button onClick={()=>{
+              SFX.play("click");
+              const msg="Check out Void Cards! Free sci-fi card collecting & battle game 👾 voidcards.org";
+              if(navigator.share){navigator.share({title:"Void Cards",text:msg,url:"https://voidcards.org"}).catch(()=>{});}
+              else{navigator.clipboard.writeText("https://voidcards.org").then(()=>notify("Link copied! Share with friends 🚀","ok")).catch(()=>notify("voidcards.org","ok"));}
+            }} style={{flex:1,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",color:"white"}}>
+              <span style={{fontSize:18}}>🚀</span>
+              <div style={{textAlign:"left"}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#e2e8f0"}}>Share Void Cards</div>
+                <div style={{fontSize:10,color:"#475569"}}>Invite friends to play</div>
+              </div>
+            </button>
+            <a href="mailto:resinfolk@gmail.com?subject=Void Cards Feedback" style={{flex:1,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,textDecoration:"none",color:"white"}}>
+              <span style={{fontSize:18}}>📧</span>
+              <div style={{textAlign:"left"}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#e2e8f0"}}>Send Feedback</div>
+                <div style={{fontSize:10,color:"#475569"}}>We read every message</div>
+              </div>
+            </a>
+          </div>
         </div>}
 
                 {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal} theme={theme}/></div>}
@@ -4115,7 +4141,7 @@ function App() {
               const ending=item.secsLeft>0&&item.secsLeft<300;
               const isWinning=item.playerBid&&item.lastBidder==="You";
               return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`2px solid ${isWinning?"#22c55e":urgent?"#ef4444":rc.color}44`,borderRadius:14,padding:14,opacity:item.secsLeft<=0?0.5:1}}>
-                {item.seller==="You"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                {item.isPlayer&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                   <div style={{color:"#f59e0b",fontSize:10,fontWeight:700}}>📢 YOUR LISTING</div>
                   {item.secsLeft>0&&<button onClick={()=>{
                     SFX.play("click");
@@ -4149,7 +4175,7 @@ function App() {
                     <div style={{color:"#a855f7",fontWeight:900,fontSize:20,lineHeight:1}}>💎 {item.price}</div>
                     <div style={{color:"#334155",fontSize:9}}>min raise: +{item.minBid}</div>
                   </div>
-                  {item.seller!=="You"&&item.secsLeft>0&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  {!item.isPlayer&&item.secsLeft>0&&<div style={{display:"flex",flexDirection:"column",gap:5}}>
                     <button onClick={()=>bid(item,item.minBid)} disabled={coins<item.price+item.minBid} style={{background:coins>=item.price+item.minBid?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:coins>=item.price+item.minBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>
                       Bid +{item.minBid} 💎
                     </button>
@@ -4184,7 +4210,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.33</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.37</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
