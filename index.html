@@ -1877,7 +1877,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       <Modal onClose={onClose} title={`⚔️ vs ${node.name} — Turn ${turn}`}>
         <div style={{maxWidth:500,margin:"0 auto"}}>
           {/* Coin flip result banner - shown briefly */}
-          {coinFlip&&turn===1&&<div style={{background:coinFlip==="heads"?"linear-gradient(135deg,#052e16,#14532d)":"linear-gradient(135deg,#1a0000,#7f1d1d)",border:`1px solid ${coinFlip==="heads"?"#22c55e":"#ef4444"}`,borderRadius:10,padding:"8px 12px",marginBottom:8,textAlign:"center",fontSize:12,fontWeight:700,color:coinFlip==="heads"?"#22c55e":"#ef4444"}}>
+          {coinFlip&&turn<=2&&<div style={{background:coinFlip==="heads"?"linear-gradient(135deg,#052e16,#14532d)":"linear-gradient(135deg,#1a0000,#7f1d1d)",border:`1px solid ${coinFlip==="heads"?"#22c55e":"#ef4444"}`,borderRadius:10,padding:"8px 12px",marginBottom:8,textAlign:"center",fontSize:12,fontWeight:700,color:coinFlip==="heads"?"#22c55e":"#ef4444"}}>
             🪙 {coinFlip==="heads"?"HEADS — You go first!":"TAILS — Enemy goes first!"}
           </div>}
           {/* Player HP + Mana bar */}
@@ -2145,7 +2145,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
   });
 
   return(
-    <div className={theme!=="void"?`theme-${theme}`:undefined}>
+    <div>
       {/* Header stats */}
       <div style={{marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
@@ -3325,6 +3325,7 @@ function App() {
     username,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
+    completedNodes,stamina,lastStaminaRefill,
   });
   useEffect(()=>{
     if(!authed)return;
@@ -3333,6 +3334,7 @@ function App() {
   },[authed,coins,collection,wins,losses]);
   useEffect(()=>{ if(authed) sb.writeSave(getSaveData()); },[coins,wins,collection.length]);
   useEffect(()=>{ if(authed) sb.writeSave(getSaveData()); },[JSON.stringify(questProg)]);
+  useEffect(()=>{ if(authed) sb.writeSave(getSaveData()); },[JSON.stringify(completedNodes)]);
 
   useEffect(()=>{
     const today=new Date().toDateString();
@@ -3646,6 +3648,9 @@ function App() {
       apply("newPlayer",setNewPlayer,save.newPlayer);
       apply("lastLogin",setLastLogin,save.lastLogin);
       apply("dailyGems",setDailyGems,save.dailyGems);
+      apply("completedNodes",setCompletedNodes,save.completedNodes);
+      apply("stamina",setStamina,save.stamina);
+      apply("lastStaminaRefill",setLastStaminaRefill,save.lastStaminaRefill);
     } else {
       // Brand new account — reset all state to defaults
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
@@ -4376,7 +4381,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.52</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.53</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
