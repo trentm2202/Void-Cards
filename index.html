@@ -1603,7 +1603,7 @@ function TeamBattleModal({collection,cardLevels,onClose,onTeamWin,onLose,savedDe
   const ENERGY_COST={attack:1,special:3,defend:0,sub:0};
   const logRef=useRef(null);
   useEffect(()=>{if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight;},[log]);
-  const unique=[...new Map(collection.map(c=>[c.id+(c.foil?"f":""),c])).values()];
+  const unique=[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id+(c.foil?"f":""),{...base,...c}];})).values()];
   const addLog=(text,type="normal")=>setLog(l=>[...l,{text,type}]);
   const showDmg=(who,dmg,sp)=>{setDmgPop({who,dmg,sp});setTimeout(()=>setDmgPop(null),900);};
   const hpKey=c=>c.id+(c.foil?"f":"");
@@ -2090,7 +2090,7 @@ function SellModal({ card, onClose, onSell }) {
 function DeckBuilderModal({ collection, cardLevels, onSave, onClose }) {
   const [selected,setSelected]=useState([]);
   const [deckName,setDeckName]=useState("My Deck");
-  const unique=[...new Map(collection.map(c=>[c.id,c])).values()];
+  const unique=[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id,{...base,...c}];})).values()];
   const toggle=(card)=>{
     SFX.play("click");
     if(selected.find(c=>c.id===card.id)) setSelected(s=>s.filter(c=>c.id!==card.id));
@@ -2394,7 +2394,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
   const logRef=useRef(null);
   useEffect(()=>{if(logRef.current)logRef.current.scrollTop=logRef.current.scrollHeight;},[log]);
 
-  const unique=[...new Map(collection.map(c=>[c.id+(c.foil?"f":""),c])).values()];
+  const unique=[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id+(c.foil?"f":""),{...base,...c}];})).values()];
   const addLog=(text,type="normal")=>setLog(l=>[...l.slice(-30),{text,type}]);
   const showDmg=(who,dmg,sp)=>{setDmgPop({who,dmg,sp});setTimeout(()=>setDmgPop(null),800);};
   const hpKey=c=>c.id+(c.foil?"f":"");
@@ -4210,7 +4210,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.38</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.39</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
