@@ -1938,7 +1938,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                       const acted=actedCards.has(card.uid);
                       return <div style={{display:"flex",gap:3,marginTop:3,justifyContent:"center"}}>
                         <button onClick={()=>!acted&&selectAttacker(i)} style={{background:acted?"#1e293b":"#7f1d1d",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>⚔️1</button>
-                        (()=>{const su=specialUsed.has(card.uid);const dis=acted||su;return <button onClick={()=>!dis&&(setSelectedField(i),setPhase2("special"),enemyField.length>0&&doAttack(i,Math.floor(Math.random()*enemyField.length),true))} style={{background:dis?"#1e293b":"#4c1d95",color:dis?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:dis?"not-allowed":"pointer",opacity:dis?0.4:1}}>{su?"✨✓":"✨3"}</button>;})()
+                        <button onClick={()=>{const su=specialUsed.has(card.uid);if(!acted&&!su&&enemyField.length>0)doAttack(i,Math.floor(Math.random()*enemyField.length),true);}} style={{background:(acted||specialUsed.has(card.uid))?"#1e293b":"#4c1d95",color:(acted||specialUsed.has(card.uid))?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:(acted||specialUsed.has(card.uid))?"not-allowed":"pointer",opacity:(acted||specialUsed.has(card.uid))?0.4:1}}>{specialUsed.has(card.uid)?"✨✓":"✨3"}</button>
                         <button onClick={()=>!acted&&doDefend(i)} style={{background:acted?"#1e293b":"#1e3a5f",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>🛡+1</button>
                       </div>;
                     })()}
@@ -4376,7 +4376,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.51</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.52</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
