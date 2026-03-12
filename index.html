@@ -2459,10 +2459,10 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
     return -1;
   };
 
-  const enemyTurn=(curHps,curEHps,curPIdx,d)=>{
+  const enemyTurn=(curHps,curEHps,curPIdx,d,curEIdx)=>{
     setAnimating(true);
     setTimeout(()=>{
-      const ec=enemyDeck[eIdx],pc=d[curPIdx];
+      const ec=enemyDeck[curEIdx??eIdx],pc=d[curPIdx];
       const pKey=hpKey(pc);
       const lv=1;
       const pDef=getEffD(pc,lv);
@@ -2484,7 +2484,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
       setHps(newHps);showDmg("player",dmg,false);
       addLog(`⚔️ ${ec.name} hits ${pc.name}: ${dmg} dmg`,"attack");SFX.play("hit");
       // Apply DoT
-      const {newHps:h2,newEHps:e2}=applyDoT(newHps,curEHps,statusEffects,curPIdx,eIdx,d);
+      const {newHps:h2,newEHps:e2}=applyDoT(newHps,curEHps,statusEffects,curPIdx,curEIdx??eIdx,d);
       setHps(h2);setEHps(e2);
       setTimeout(()=>{
         if(newH<=0){
@@ -2547,7 +2547,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
           }
           setAnimating(false);
         }
-      }else{enemyTurn(h2,e2,pIdx,deck);}
+      }else{enemyTurn(h2,e2,pIdx,deck,eIdx);}
     },500);
   };
 
@@ -2699,7 +2699,7 @@ function DeckBattleModal({collection, cardLevels, coins, onClose, onWin, onLose,
           </div>}
           {animating&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:10,color:"#ef4444",fontWeight:700,fontSize:12}}>⚡ Enemy attacking...</div>}
         </>}
-        {phase==="battle"&&animating&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:10,color:"#ef4444",fontWeight:700,fontSize:12}}>⚡ Enemy attacking...</div>}
+        {false/*dup*/&&phase==="battle"&&animating&&<div style={{textAlign:"center",background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:10,color:"#ef4444",fontWeight:700,fontSize:12}}>⚡ Enemy attacking...</div>}
         {phase==="won"&&<div style={{textAlign:"center",background:"#001a0d",border:"1px solid #14532d",borderRadius:12,padding:16}}>
           <div style={{fontSize:40,marginBottom:4}}>🏆</div>
           <div style={{color:"#22c55e",fontWeight:800,fontSize:17,marginBottom:2}}>Deck Victory!</div>
@@ -4147,7 +4147,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.25</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.26</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
