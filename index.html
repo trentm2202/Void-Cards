@@ -224,7 +224,7 @@ const S = {
 // ── 50 Cards with full lore descriptions ─────────────────────────────────────
 const ALL_CARDS = [
   // ── LEGENDARY ────────────────────────────────────────────────────────────────
-  { id:1,  name:"Void Reaper",       rarity:"Legendary", type:"Alien", series:"Series 1", power:95, defense:80, hp:120, special:"Soul Drain",     specialMult:2.2, color:"#ff6b35",
+  { id:1,  name:"Void Reaper",       rarity:"Legendary", type:"Alien", series:"Series 1", power:95, defense:80, hp:120, special:"Soul Drain",     specialMult:2.2, color:"#ff6b35", image:"https://trentm2202.github.io/Void-Cards/cards/void-reaper.png",
     description:"Born from the collapse of a dead universe, the Void Reaper exists outside of time. Its scythe doesn't cut flesh — it severs the thread of existence itself. Civilizations have named it. None survived the naming." },
   { id:2,  name:"Nebula Titan",      rarity:"Legendary", type:"Robot", series:"Series 1", power:90, defense:88, hp:130, special:"Nova Crush",      specialMult:2.0, color:"#a855f7",
     description:"Assembled inside a collapsing star over 40,000 years, the Nebula Titan uses the energy of supernovas as fuel. Its fists have cracked moons. Its footsteps register on planetary seismographs across three systems." },
@@ -573,6 +573,8 @@ const getAbility = (card) => ABILITIES[CARD_ABILITIES[card.id]];
 
 
 function CardIllustration({ card, w=140, h=160 }) {
+  if(card.image) return <img src={card.image} width={w} height={h} style={{display:"block",objectFit:"cover",borderRadius:5}} alt={card.name}/>;
+
   const c = card.foil?"#f59e0b":card.color;
   const id = card.id;
   const rr = (n) => ((id*n*1664525+1013904223)&0x7fffffff)/0x7fffffff;
@@ -3176,6 +3178,7 @@ function App() {
   const [showAuth,setShowAuth]     = useState(false);
   const [cloudSave,setCloudSave]   = useState(null); // loaded save from Supabase
   const [newPlayer,setNewPlayer]   = useState(()=>S.get("newPlayer",true));
+  const [username,setUsername]       = useState(()=>S.get("username",""));
   const [coins,setCoins]           = useState(()=>S.get("coins",500));
   const [collection,setCollection] = useState(()=>S.get("collection",[]));
   const [playerXp,setPlayerXp]     = useState(()=>S.get("playerXp",0));
@@ -3349,7 +3352,7 @@ function App() {
 
   // ── Cloud save sync — writes to Supabase every 30s and on key changes ───────
   const getSaveData=()=>({
-    coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
+    username,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
   });
@@ -3631,6 +3634,7 @@ function App() {
     if(save){
       // Load cloud save into state AND into localStorage
       const apply=(key,setter,val)=>{ if(val!=null){setter(val);S.set(key,val);} };
+      apply("username",setUsername,save.username);
       apply("coins",setCoins,save.coins);
       apply("collection",setCollection,save.collection);
       apply("playerXp",setPlayerXp,save.playerXp);
@@ -4146,8 +4150,30 @@ function App() {
 
         {/* PROFILE */}
         {tab==="profile"&&<div>
+          {/* Username */}
+          {(()=>{
+            const [editing,setEditing]=React.useState(false);
+            const [draft,setDraft]=React.useState(username);
+            return <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{fontSize:28}}>👤</div>
+              <div style={{flex:1}}>
+                {editing
+                  ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>  
+                    <button onClick={()=>{const v=draft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditing(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
+                    <button onClick={()=>{setDraft(username);setEditing(false);}} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
+                  </div>
+                  :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
+                    <button onClick={()=>{setDraft(username);setEditing(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
+                  </div>
+                }
+                <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+              </div>
+            </div>;
+          })()}
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.27</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.28</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4372,7 +4398,7 @@ function App() {
 
       {/* Modals */}
       {detail&&<Modal onClose={()=>setDetail(null)} title={detail.name}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:300,alignItems:"flex-start",paddingTop:20}}>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:430,alignItems:"flex-start",paddingTop:20}}>
           <div style={{transform:"scale(1.7)",transformOrigin:"top center"}}>
             <Card card={detail} level={1}/>
           </div>
@@ -4423,6 +4449,28 @@ function App() {
             </div>
           </div>
 
+          {/* Username */}
+          {(()=>{
+            const [editing,setEditing]=React.useState(false);
+            const [draft,setDraft]=React.useState(username);
+            return <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{fontSize:28}}>👤</div>
+              <div style={{flex:1}}>
+                {editing
+                  ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} maxLength={20} placeholder="Enter username..." style={{flex:1,background:"#1e293b",border:"1px solid #7c3aed",borderRadius:8,padding:"6px 10px",color:"white",fontSize:14,fontWeight:700}}/>  
+                    <button onClick={()=>{const v=draft.trim().slice(0,20);setUsername(v);S.set("username",v);setEditing(false);SFX.play("coin");}} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontWeight:700,fontSize:12,cursor:"pointer"}}>Save</button>
+                    <button onClick={()=>{setDraft(username);setEditing(false);}} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"6px 10px",fontWeight:700,fontSize:12,cursor:"pointer"}}>✕</button>
+                  </div>
+                  :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{color:"white",fontWeight:800,fontSize:16}}>{username||<span style={{color:"#475569",fontStyle:"italic",fontSize:13}}>No username set</span>}</span>
+                    <button onClick={()=>{setDraft(username);setEditing(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
+                  </div>
+                }
+                <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+              </div>
+            </div>;
+          })()}
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
             Void Cards · Series 1 · v1.0
