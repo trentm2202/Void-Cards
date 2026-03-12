@@ -232,7 +232,7 @@ const ALL_CARDS = [
     description:"The Sovereign doesn't conquer systems with armies — it conquers them with presence. When it enters a star system, the local sun dims in reverence. Entire fleets have surrendered simply from seeing its silhouette." },
   { id:4,  name:"Omega Construct",   rarity:"Legendary", type:"Robot", series:"Series 1", power:88, defense:92, hp:135, special:"System Override", specialMult:2.0, color:"#06b6d4",
     description:"The final creation of the Architects before their extinction, the Omega Construct carries the collective knowledge of a dead civilization. It has been trying to find its creators for 2 million years. It hasn't given up." },
-  { id:5,  name:"The Devourer",      rarity:"Legendary", type:"Alien", series:"Series 1", power:98, defense:75, hp:115, special:"Consume All",     specialMult:2.3, color:"#ef4444",
+  { id:5,  name:"The Devourer",      rarity:"Legendary", type:"Alien", series:"Series 1", power:98, defense:75, hp:115, special:"Consume All",     specialMult:2.3, color:"#ef4444", image:"https://trentm2202.github.io/Void-Cards/cards/the-devourer.png",
     description:"It does not hate. It does not fear. The Devourer simply feeds. Stars, planets, fleets, hope itself — everything is nutrition. Scientists who studied it noted one terrifying detail: it is still hungry." },
   { id:6,  name:"Quantum Arbiter",   rarity:"Legendary", type:"Robot", series:"Series 1", power:85, defense:90, hp:128, special:"Reality Cut",     specialMult:2.1, color:"#8b5cf6",
     description:"Stationed at the intersection of eleven dimensions, the Quantum Arbiter enforces laws that predate matter. Its blade doesn't slice through space — it edits it. What it removes never existed in any timeline." },
@@ -3071,17 +3071,19 @@ function AuthScreen({onAuth}){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [agreed,setAgreed]=useState(false);
+  const [signupUsername,setSignupUsername]=useState("");
 
   const submit=async()=>{
     if(!email||!password){setError("Please enter email and password.");return;}
     if(password.length<6){setError("Password must be at least 6 characters.");return;}
     if(mode==="signup"&&!agreed){setError("Please agree to the Privacy Policy to continue.");return;}
+    if(mode==="signup"&&!signupUsername.trim()){setError("Please choose a username.");return;}
     setLoading(true); setError("");
     try{
       const d=mode==="signup"?await sb.signUp(email,password):await sb.signIn(email,password);
       if(d.access_token){
         const save=await sb.loadSave();
-        onAuth(save);
+        onAuth(save, mode==="signup"?signupUsername.trim().slice(0,20):null);
       } else {
         setError(d.error_description||d.msg||d.message||d.error||"Incorrect email or password. Please try again.");
       }
@@ -3124,6 +3126,15 @@ function AuthScreen({onAuth}){
               style={{width:"100%",background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"11px 14px",color:"white",fontSize:13,boxSizing:"border-box"}}
               onKeyDown={e=>e.key==="Enter"&&submit()}/>
           </div>
+
+          {/* Username - signup only */}
+          {mode==="signup"&&<div style={{marginBottom:12}}>
+            <div style={{color:"#64748b",fontSize:11,fontWeight:600,marginBottom:5}}>USERNAME</div>
+            <input value={signupUsername} onChange={e=>setSignupUsername(e.target.value)} type="text" placeholder="Choose a username..." maxLength={20}
+              style={{width:"100%",background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"11px 14px",color:"white",fontSize:13,boxSizing:"border-box"}}
+              onKeyDown={e=>e.key==="Enter"&&submit()}/>
+            <div style={{color:"#334155",fontSize:10,marginTop:4}}>Max 20 characters · shown in Auction House</div>
+          </div>}
 
           {/* Error */}
           {error&&<div style={{background:"#1a0000",border:"1px solid #ef444455",borderRadius:8,padding:"10px 12px",color:"#ef4444",fontSize:12,marginBottom:14}}>{error}</div>}
@@ -3630,13 +3641,14 @@ function App() {
   const winW=useWindowWidth();
   const isDesktop=winW>=860;
 
-  const onAuth=(save)=>{
+  const onAuth=(save, newUsername=null)=>{
     // Always clear localStorage first so different accounts don't bleed into each other
     Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));
     if(save){
       // Load cloud save into state AND into localStorage
       const apply=(key,setter,val)=>{ if(val!=null){setter(val);S.set(key,val);} };
       apply("username",setUsername,save.username);
+      if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
       apply("coins",setCoins,save.coins);
       apply("collection",setCollection,save.collection);
       apply("playerXp",setPlayerXp,save.playerXp);
@@ -3660,6 +3672,7 @@ function App() {
       apply("dailyGems",setDailyGems,save.dailyGems);
     } else {
       // Brand new account — reset all state to defaults
+      if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
       setCoins(500); setCollection([]); setPlayerXp(0); setPlayerLevel(1);
       setWins(0); setLosses(0); setTotalPacks(0); setTotalSold(0);
       setStreak(0); setDecks([]); setQuests(null); setQuestProg({});
@@ -4171,7 +4184,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.30</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.32</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
