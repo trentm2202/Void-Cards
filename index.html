@@ -1906,7 +1906,7 @@ function DupesModal({collection,onClose,onSellOne,onSellAll}){
   );
 }
 
-function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal}){
+function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal,theme="void"}){
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
   const [typeFilter,setTypeFilter]=useState("All");
@@ -3942,7 +3942,7 @@ function App() {
           </div>}
         </div>}
 
-                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal}/></div>}
+                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal} theme={theme}/></div>}
 
         {/* SHOP */}
         {/* BATTLE */}
@@ -4147,7 +4147,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.26</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.27</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
