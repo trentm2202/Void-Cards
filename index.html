@@ -2295,7 +2295,6 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
     if(sortBy==="rarity") return (rarityOrder[a.rarity]??5)-(rarityOrder[b.rarity]??5);
     if(sortBy==="power") return b.power-a.power;
     if(sortBy==="name") return a.name.localeCompare(b.name);
-    if(sortBy==="level") return (1)-(1);
     return 0;
   });
 
@@ -2773,34 +2772,16 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
 
         {/* PURCHASES TAB */}
         {shopTab==="purchases"&&<>
-          {/* Watch Ad */}
-          <div style={{background:"linear-gradient(135deg,#0a1628,#0f2040)",border:"1px solid #3b82f644",borderRadius:14,padding:18,marginBottom:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-              <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>📺</div>
-              <div>
-                <div style={{color:"white",fontWeight:800,fontSize:15,marginBottom:2}}>Watch an Ad</div>
-                <div style={{color:"#64748b",fontSize:12}}>Support the game · earn gems free</div>
+          {/* Watch Ad — coming soon */}
+          <div style={{background:"linear-gradient(135deg,#0a1628,#0f2040)",border:"1px solid #1e293b",borderRadius:14,padding:18,marginBottom:12,opacity:0.6}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:48,height:48,borderRadius:12,background:"#1e293b",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>📺</div>
+              <div style={{flex:1}}>
+                <div style={{color:"#94a3b8",fontWeight:800,fontSize:15,marginBottom:2}}>Rewarded Ads</div>
+                <div style={{color:"#475569",fontSize:12}}>Watch an ad to earn free gems — coming soon</div>
               </div>
-              <div style={{marginLeft:"auto",textAlign:"right"}}>
-                <div style={{color:"#f59e0b",fontWeight:900,fontSize:18}}>+💎 150</div>
-                <div style={{color:"#475569",fontSize:10}}>per watch</div>
-              </div>
+              <div style={{background:"#1e293b",borderRadius:6,padding:"3px 10px",fontSize:10,color:"#475569",fontWeight:700,flexShrink:0}}>SOON</div>
             </div>
-            {adWatching
-              ?<div style={{textAlign:"center",background:"#0f172a",borderRadius:10,padding:16}}>
-                <div style={{color:"#64748b",fontSize:11,marginBottom:4}}>Ad playing...</div>
-                <div style={{color:"#3b82f6",fontWeight:900,fontSize:32}}>{adCountdown}</div>
-                <div style={{color:"#334155",fontSize:10,marginTop:4}}>please wait</div>
-              </div>
-              :canWatchAd
-                ?<button onClick={startAd} style={{width:"100%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:10,padding:"13px",fontWeight:800,fontSize:14,cursor:"pointer",boxShadow:"0 0 20px #3b82f633"}}>
-                  ▶ Watch Ad → +💎 150
-                </button>
-                :<div style={{textAlign:"center",background:"#0f172a",borderRadius:10,padding:12}}>
-                  <div style={{color:"#334155",fontSize:11,marginBottom:4}}>Next ad available in</div>
-                  <div style={{color:"#3b82f6",fontWeight:700,fontSize:18}}>{fmtAdCooldown(adDisplay||adCooldownLeft)}</div>
-                </div>
-            }
           </div>
 
           {/* Gem bundles — coming soon */}
@@ -4333,260 +4314,37 @@ function App() {
         {/* AUCTION */}
         {tab==="auction"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
 
-          {/* Won auction popup */}
-          {wonAuction&&<div style={{background:"linear-gradient(135deg,#052e16,#14532d)",border:"1px solid #22c55e",borderRadius:14,padding:16,marginBottom:14,textAlign:"center",animation:"fadeIn .4s"}}>
-            <div style={{fontSize:32,marginBottom:4}}>🏆</div>
-            <div style={{color:"#22c55e",fontWeight:800,fontSize:16,marginBottom:2}}>Auction Won!</div>
-            <div style={{color:"white",fontSize:13,marginBottom:10}}>{wonAuction.name} added to your collection</div>
-            <button onClick={()=>setWonAuction(null)} style={{background:"#22c55e",color:"#000",border:"none",borderRadius:8,padding:"8px 20px",fontWeight:700,cursor:"pointer"}}>Awesome!</button>
-          </div>}
-
-          {/* Header */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:16,fontWeight:700}}>⚖️ Auction House</div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end"}}>
-              <div style={{color:"#a855f7",fontWeight:800,fontSize:13}}>💎 {coins.toLocaleString()}</div>
-              {reservedGems>0&&<div style={{color:"#f59e0b",fontSize:9,fontWeight:600}}>💎{reservedGems} reserved</div>}
+          {/* Auction House — Coming Soon */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"48px 24px",textAlign:"center"}}>
+            <div style={{fontSize:64,marginBottom:16,filter:"drop-shadow(0 0 24px #06b6d455)"}}>⚖️</div>
+            <div style={{color:"#06b6d4",fontSize:10,letterSpacing:4,fontWeight:800,marginBottom:8}}>COMING SOON</div>
+            <div style={{color:"white",fontWeight:900,fontSize:22,marginBottom:10}}>Auction House</div>
+            <div style={{color:"#475569",fontSize:13,lineHeight:1.8,maxWidth:280,marginBottom:32}}>
+              Trade cards with other commanders in real time. List your duplicates, bid on cards you need, and build the ultimate collection.
             </div>
-          </div>
-
-          {/* 4 tabs */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:4,marginBottom:14}}>
-            {[
-              {id:"market",    l:"Market",      i:"🏪"},
-              {id:"mybids",    l:"My Bids",     i:"🤝"},
-              {id:"mylistings",l:"Listings",    i:"📢"},
-              {id:"sell",      l:"Sell",        i:"💰"},
-            ].map(t=>(
-              <button key={t.id} onClick={()=>{SFX.play("click");setAuctionTab(t.id);}}
-                style={{background:auctionTab===t.id?"linear-gradient(135deg,var(--t1),var(--t2))":"#0f172a",
-                  color:auctionTab===t.id?"white":"#475569",border:`1px solid ${auctionTab===t.id?"transparent":"#1e293b"}`,
-                  borderRadius:8,padding:"8px 4px",fontWeight:700,fontSize:10,cursor:"pointer",textAlign:"center"}}>
-                <div style={{fontSize:14,marginBottom:2}}>{t.i}</div>
-                <div>{t.l}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* MARKET TAB */}
-          {auctionTab==="market"&&<>
-            <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"6px 12px",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span style={{color:"#475569",fontSize:11}}>🤖 Simulated — real trading coming soon</span>
-              <span style={{color:"#64748b",fontSize:11}}>{auctions.filter(a=>a.secsLeft>0&&!a.isPlayer).length} live</span>
-            </div>
-            {/* Market prices */}
-            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-              {[["Common","#94a3b8",20],["Uncommon","#22c55e",60],["Rare","#3b82f6",150],["Epic","#a855f7",400],["Legendary","#f59e0b",1200]].map(([r,c,p])=>(
-                <div key={r} style={{background:"#1e293b",borderRadius:6,padding:"3px 8px",display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{color:c,fontSize:9,fontWeight:700}}>{r}</span>
-                  <span style={{color:"#f59e0b",fontSize:9}}>💎{p}</span>
+            <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:280,marginBottom:32}}>
+              {[
+                {i:"🏪",t:"Live marketplace",s:"Browse cards listed by real players"},
+                {i:"🤝",t:"Real-time bidding",s:"Compete for rare cards in auctions"},
+                {i:"💰",t:"Sell your extras",s:"Turn duplicates into gems"},
+              ].map((f,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:"#ffffff06",border:"1px solid #1e293b",borderRadius:12,padding:"12px 14px",textAlign:"left"}}>
+                  <span style={{fontSize:20,flexShrink:0}}>{f.i}</span>
+                  <div>
+                    <div style={{color:"white",fontWeight:700,fontSize:13}}>{f.t}</div>
+                    <div style={{color:"#475569",fontSize:11,marginTop:1}}>{f.s}</div>
+                  </div>
                 </div>
               ))}
             </div>
-            {/* Live bid feed */}
-            {auctionLog.length>0&&<div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"8px 12px",marginBottom:12,maxHeight:80,overflowY:"auto"}}>
-              <div style={{color:"#475569",fontSize:9,fontWeight:700,letterSpacing:2,marginBottom:4}}>LIVE BIDS</div>
-              {auctionLog.map((l,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2,opacity:Math.max(0.3,1-i*.1)}}>
-                  <span style={{color:l.isPlayer?"#22c55e":"#ef4444",fontSize:9,fontWeight:700,flexShrink:0}}>{l.isPlayer?"YOU":"RIVAL"}</span>
-                  <span style={{color:"#94a3b8",fontSize:9,flex:1}}>{l.rival} bid 💎{l.amount} on {l.cardName}</span>
-                </div>
-              ))}
-            </div>}
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {auctions.filter(a=>!a.isPlayer).map(item=>{
-                const rc=RC[item.card.rarity];
-                const mins=Math.floor(item.secsLeft/60), secs=item.secsLeft%60;
-                const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
-                const urgent=item.secsLeft>0&&item.secsLeft<60;
-                const ending=item.secsLeft>0&&item.secsLeft<300;
-                const isWinning=item.playerBid&&item.lastBidder==="You";
-                const minBid=item.price+item.minBid;
-                const bidVal=bidInputs[item.id]!==undefined?bidInputs[item.id]:String(minBid);
-                const bidNum=parseInt(bidVal)||0;
-                const canBid=item.secsLeft>0&&bidNum>=minBid&&bidNum<=(coins-reservedGems+(item.playerBid?(item.playerBidAmount||0):0));
-                return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`2px solid ${isWinning?"#22c55e":urgent?"#ef4444":rc.color}44`,borderRadius:14,padding:14,opacity:item.secsLeft<=0?0.5:1}}>
-                  {isWinning&&<div style={{color:"#22c55e",fontSize:10,fontWeight:700,marginBottom:6,animation:"pulse 1.5s infinite"}}>✅ YOU'RE WINNING — 💎{item.playerBidAmount} reserved</div>}
-                  {item.secsLeft<=0&&<div style={{color:"#475569",fontSize:10,fontWeight:700,marginBottom:6}}>🔒 AUCTION ENDED</div>}
-                  <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
-                    <div style={{flexShrink:0}} onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:700,marginBottom:1}}>{item.card.name}</div>
-                      <div style={{color:rc.color,fontSize:11,fontWeight:600,marginBottom:3}}>{item.card.rarity} · {item.card.type}</div>
-                      <div style={{color:"#64748b",fontSize:10,marginBottom:4}}>by <span style={{color:"#94a3b8"}}>{item.seller}</span> · {item.bids} bid{item.bids!==1?"s":""}</div>
-                      <div style={{background:urgent?"#7f1d1d":ending?"#78350f":"#1e293b",border:`1px solid ${urgent?"#ef4444":ending?"#f59e0b":"#334155"}`,borderRadius:6,padding:"2px 8px",display:"inline-block"}}>
-                        <span style={{color:urgent?"#ef4444":ending?"#f59e0b":"#94a3b8",fontSize:11,fontWeight:800}}>⏱ {timeStr}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{borderTop:"1px solid #1e293b",paddingTop:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div>
-                        <div style={{color:"#475569",fontSize:9,letterSpacing:1}}>CURRENT BID</div>
-                        <div style={{color:"#a855f7",fontWeight:900,fontSize:20,lineHeight:1}}>💎 {item.price}</div>
-                        <div style={{color:"#334155",fontSize:9}}>min raise: +{item.minBid}</div>
-                      </div>
-                      <div style={{color:"#475569",fontSize:9,textAlign:"right"}}>
-                        <div>Available</div>
-                        <div style={{color:"#22c55e",fontWeight:700,fontSize:12}}>💎 {(coins-reservedGems+(item.playerBid?(item.playerBidAmount||0):0)).toLocaleString()}</div>
-                      </div>
-                    </div>
-                    {item.secsLeft>0&&<div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <input
-                        type="number"
-                        value={bidVal}
-                        min={minBid}
-                        max={coins}
-                        onChange={e=>setBidInputs(prev=>({...prev,[item.id]:e.target.value}))}
-                        style={{flex:1,background:"#1e293b",border:`1px solid ${canBid?"#7c3aed44":"#334155"}`,borderRadius:8,padding:"8px 10px",color:"white",fontSize:13,fontWeight:700,minWidth:0}}
-                      />
-                      <button onClick={()=>bid(item,parseInt(bidVal))} disabled={!canBid}
-                        style={{background:canBid?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:canBid?"white":"#475569",border:"none",borderRadius:8,padding:"8px 14px",fontWeight:700,fontSize:12,cursor:canBid?"pointer":"not-allowed",whiteSpace:"nowrap",flexShrink:0}}>
-                        Bid 💎
-                      </button>
-                    </div>}
-                    {item.secsLeft>0&&<div style={{color:"#334155",fontSize:9,marginTop:4}}>Gems reserved until auction ends · you only pay if you win</div>}
-                  </div>
-                </div>;
-              })}
+            <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:"14px 20px",color:"#64748b",fontSize:12,maxWidth:280}}>
+              🚧 In development — follow along for updates
             </div>
-          </>}
-
-          {/* MY BIDS TAB */}
-          {auctionTab==="mybids"&&<>
-            {auctions.filter(a=>a.playerBid&&!a.isPlayer).length===0
-              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
-                <div style={{fontSize:40,marginBottom:12}}>🤝</div>
-                <div>No active bids yet</div>
-                <div style={{fontSize:12,marginTop:6,color:"#1e293b"}}>Go to Market to bid on cards</div>
-              </div>
-              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {auctions.filter(a=>a.playerBid&&!a.isPlayer).map(item=>{
-                  const rc=RC[item.card.rarity];
-                  const mins=Math.floor(item.secsLeft/60),secs=item.secsLeft%60;
-                  const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
-                  const isWinning=item.lastBidder==="You";
-                  return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${isWinning?"#22c55e44":item.secsLeft<=0?"#33415544":"#7c3aed33"}`,borderRadius:12,padding:12}}>
-                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                      <div onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{item.card.name}</div>
-                        <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{item.card.rarity}</div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                          <div>
-                            <div style={{color:"#475569",fontSize:9}}>YOUR BID</div>
-                            <div style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {item.playerBidAmount||item.price}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{color:isWinning?"#22c55e":"#ef4444",fontSize:10,fontWeight:700}}>{isWinning?"✅ WINNING":"😤 OUTBID"}</div>
-                            <div style={{color:"#475569",fontSize:10}}>⏱ {timeStr}</div>
-                          </div>
-                        </div>
-                        {item.secsLeft<=0&&isWinning&&<div style={{color:"#22c55e",fontSize:10,marginTop:4,fontWeight:600}}>🏆 Won! Card added to collection</div>}
-                        {item.secsLeft<=0&&!isWinning&&<div style={{color:"#475569",fontSize:10,marginTop:4}}>Auction ended — gems released</div>}
-                      </div>
-                    </div>
-                  </div>;
-                })}
-              </div>
-            }
-          </>}
-
-          {/* MY LISTINGS TAB */}
-          {auctionTab==="mylistings"&&<>
-            {auctions.filter(a=>a.isPlayer).length===0
-              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
-                <div style={{fontSize:40,marginBottom:12}}>📢</div>
-                <div>No active listings</div>
-                <div style={{fontSize:12,marginTop:6,color:"#1e293b"}}>Go to Sell tab to list a card</div>
-              </div>
-              :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {auctions.filter(a=>a.isPlayer).map(item=>{
-                  const rc=RC[item.card.rarity];
-                  const mins=Math.floor(item.secsLeft/60),secs=item.secsLeft%60;
-                  const timeStr=item.secsLeft<=0?"ENDED":item.secsLeft<60?`${secs}s`:`${mins}m ${secs}s`;
-                  return <div key={item.id} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #f59e0b33",borderRadius:12,padding:12}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                      <div style={{color:"#f59e0b",fontSize:10,fontWeight:700}}>📢 YOUR LISTING</div>
-                      {item.secsLeft>0&&<button onClick={()=>{SFX.play("click");setCollection(prev=>[...prev,item.card]);setAuctions(prev=>prev.filter(a=>a.id!==item.id));notify(`${item.card.name} cancelled — card returned`);}}
-                        style={{background:"#1e293b",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:700,cursor:"pointer"}}>✕ Cancel</button>}
-                    </div>
-                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                      <div onClick={()=>setDetail(item.card)}><Card card={item.card} mini/></div>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{item.card.name}</div>
-                        <div style={{color:rc.color,fontSize:11,marginBottom:4}}>{item.card.rarity}</div>
-                        <div style={{display:"flex",justifyContent:"space-between"}}>
-                          <div>
-                            <div style={{color:"#475569",fontSize:9}}>CURRENT BID</div>
-                            <div style={{color:"#22c55e",fontWeight:800,fontSize:15}}>💎 {item.price}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{color:"#64748b",fontSize:10}}>{item.bids} bid{item.bids!==1?"s":""}</div>
-                            <div style={{color:"#475569",fontSize:10}}>⏱ {timeStr}</div>
-                          </div>
-                        </div>
-                        {item.secsLeft<=0&&<div style={{color:"#22c55e",fontSize:10,marginTop:4,fontWeight:600}}>✅ Sold! Gems paid out</div>}
-                      </div>
-                    </div>
-                  </div>;
-                })}
-              </div>
-            }
-          </>}
-
-          {/* SELL TAB */}
-          {auctionTab==="sell"&&<>
-            <div style={{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"8px 12px",marginBottom:12,color:"#475569",fontSize:11}}>
-              💡 List any card for auction. Card is held until sold or cancelled.
-            </div>
-            {collection.length===0
-              ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
-                <div style={{fontSize:40,marginBottom:12}}>💰</div>
-                <div>No cards to sell yet</div>
-              </div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id+(c.foil?"f":""),{...base,...c}];})).values()].map((card,i)=>{
-                  const rc=RC[card.rarity];
-                  const suggested={Common:20,Uncommon:60,Rare:150,Epic:400,Legendary:1200}[card.rarity]||50;
-                  const sellKey=`sell_${card.id}${card.foil?"f":""}`;
-                  const priceVal=bidInputs[sellKey]!==undefined?bidInputs[sellKey]:String(suggested);
-                  const priceNum=parseInt(priceVal)||0;
-                  const alreadyListed=auctions.some(a=>a.isPlayer&&a.card.id===card.id&&a.secsLeft>0);
-                  return <div key={i} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${rc.color}33`,borderRadius:12,padding:12,opacity:alreadyListed?0.5:1}}>
-                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                      <div onClick={()=>setDetail(card)}><Card card={card} mini/></div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,fontSize:13,marginBottom:1}}>{card.name}{card.foil?" ⭐":""}</div>
-                        <div style={{color:rc.color,fontSize:11,marginBottom:6}}>{card.rarity} · {card.type}</div>
-                        {alreadyListed
-                          ?<div style={{color:"#f59e0b",fontSize:11,fontWeight:600}}>📢 Already listed</div>
-                          :<div style={{display:"flex",gap:6,alignItems:"center"}}>
-                            <input
-                              type="number"
-                              value={priceVal}
-                              min={1}
-                              onChange={e=>setBidInputs(prev=>({...prev,[sellKey]:e.target.value}))}
-                              style={{width:80,background:"#1e293b",border:"1px solid #334155",borderRadius:7,padding:"6px 8px",color:"white",fontSize:12,fontWeight:700}}
-                            />
-                            <span style={{color:"#475569",fontSize:11}}>💎</span>
-                            <button onClick={()=>{if(priceNum<1){notify("Enter a valid price","err");return;}doSell(card,priceNum);SFX.play("sell");setBidInputs(prev=>({...prev,[sellKey]:""}));}}
-                              style={{background:"linear-gradient(135deg,#059669,#10b981)",color:"white",border:"none",borderRadius:8,padding:"7px 12px",fontWeight:700,fontSize:11,cursor:"pointer",flexShrink:0}}>
-                              List
-                            </button>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  </div>;
-                })}
-              </div>
-            }
-          </>}
+          </div>
 
         </div>}
 
-        {/* PROFILE */}
+        {/* PROFILE */}}
         {tab==="profile"&&<div>
           {/* Username */}
           <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
