@@ -1478,6 +1478,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [rewardCard,setRewardCard]=useState(null);
   const [playerHp,setPlayerHp]=useState(0); // set in startBattle based on level
   const [playerMaxHp,setPlayerMaxHp]=useState(0);
+  const [enemyHp,setEnemyHp]=useState(0);
+  const [enemyMaxHp,setEnemyMaxHp]=useState(0);
   const [actedCards,setActedCards]=useState(new Set()); // uids of cards that acted this turn
   const [specialUsed,setSpecialUsed]=useState(new Set()); // uids that used special this battle
   const [coinFlip,setCoinFlip]=useState(null); // null|"heads"|"tails"
@@ -1508,6 +1510,10 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     const maxHp=5+Math.floor((plLevel||1)/5);
     setPlayerHp(maxHp);
     setPlayerMaxHp(maxHp);
+    // Enemy HP scales with node difficulty: easy nodes have less HP
+    const eHp=Math.round(3+(node.diff*10));
+    setEnemyHp(eHp);
+    setEnemyMaxHp(eHp);
     // Enemy also starts with hand of 4, 0 on field
     const enemyStartHand=enemyDeckFull.slice(0,4);
     const enemyLeft=enemyDeckFull.slice(4);
@@ -1662,10 +1668,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   // Check win/loss
   useEffect(()=>{
     if(phase!=="battle")return;
-    const allEnemyDead=enemyField.length===0&&enemyHand.length===0;
-    const allPlayerDead=playerField.length===0&&playerHand.length===0&&playerDeckLeft.length===0;
+    const allEnemyDead=enemyHp<=0;
+    const allPlayerDead=playerHp<=0||(playerField.length===0&&playerHand.length===0&&playerDeckLeft.length===0);
     if(allEnemyDead){
-      // Build reward card if any
       if(node.card){
         const pool=ALL_CARDS.filter(c=>c.rarity===node.card);
         if(pool.length) setRewardCard(pool[Math.floor(Math.random()*pool.length)]);
@@ -1684,8 +1689,30 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     addLog(`🤖 ${node.name}'s turn...`,"system");
 
     setTimeout(()=>{
+      // Direct damage to enemy if their field is empty
       setEnemyField(ef=>{
-        if(ef.length===0){setAnimating(false);return ef;}
+        if(ef.length===0){
+          setEnemyHand(eh=>{
+            if(eh.length===0){
+              // No cards anywhere — take direct damage from player field
+              setPlayerField(pf=>{
+                const dmg=pf.length;
+                if(dmg>0){
+                  setEnemyHp(hp=>{
+                    const newHp=hp-dmg;
+                    addLog(`💥 ${node.name} has no cards! You deal ${dmg} direct damage! (${Math.max(0,newHp)} HP left)`,"good");
+                    return Math.max(0,newHp);
+                  });
+                  SFX.play("achievement");
+                }
+                return pf;
+              });
+            }
+            return eh;
+          });
+          setAnimating(false);
+          return ef;
+        }
         setPlayerField(pf=>{
           if(pf.length===0){setAnimating(false);return pf;}
           let newPf=[...pf];
@@ -1899,7 +1926,15 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
           {/* Enemy field */}
           <div style={{marginBottom:8}}>
-            <div style={{color:"#ef4444",fontSize:10,fontWeight:700,letterSpacing:1,marginBottom:4}}>⚔️ {node.name.toUpperCase()} FIELD ({enemyField.length}/4) · {enemyHand.length} in reserve</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{color:"#ef4444",fontSize:10,fontWeight:700,letterSpacing:1}}>⚔️ {node.name.toUpperCase()} · {enemyField.length}/4 field · {enemyHand.length} reserve</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{color:"#ef4444",fontWeight:800,fontSize:11}}>❤️ {enemyHp}/{enemyMaxHp}</span>
+                <div style={{width:60,background:"#1e293b",borderRadius:999,height:5}}>
+                  <div style={{width:`${enemyMaxHp>0?enemyHp/enemyMaxHp*100:0}%`,height:"100%",background:"linear-gradient(90deg,#dc2626,#ef4444)",borderRadius:999,transition:"width .3s"}}/>
+                </div>
+              </div>
+            </div>
             {enemyField.length===0
               ?<div style={{background:"#1a0000",borderRadius:10,padding:"20px",textAlign:"center",color:"#475569",fontSize:12}}>No cards on field</div>
               :<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -2115,9 +2150,10 @@ function DupesModal({collection,onClose,onSellOne,onSellAll}){
   );
 }
 
-function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal}){
+function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal,decks=[],onDeleteDeck}){
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
+  const [binderSection,setBinderSection]=useState("cards"); // cards|decks
   const [typeFilter,setTypeFilter]=useState("All");
   const [sortBy,setSortBy]=useState("rarity");
   const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
@@ -2162,6 +2198,55 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
         </div>
       </div>
 
+      {/* Section tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:14}}>
+        {[{k:"cards",l:"🃏 Cards"},{k:"decks",l:`📋 Decks (${decks.length})`}].map(t=>(
+          <button key={t.k} onClick={()=>setBinderSection(t.k)}
+            style={{flex:1,background:binderSection===t.k?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:binderSection===t.k?"white":"#64748b",border:"none",borderRadius:10,padding:"10px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+
+      {/* Decks section */}
+      {binderSection==="decks"&&<div>
+        <button onClick={()=>{SFX.play("click");setDeckBuilder(true);}}
+          style={{width:"100%",background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"12px",fontWeight:700,fontSize:14,cursor:"pointer",marginBottom:14}}>
+          + Build New Deck
+        </button>
+        {decks.length===0
+          ?<div style={{textAlign:"center",color:"#334155",padding:"40px 0"}}>
+            <div style={{fontSize:48,marginBottom:12}}>📋</div>
+            <div>No saved decks yet — build one above!</div>
+          </div>
+          :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {decks.map((d,i)=>{
+              const COST={Common:1,Uncommon:1,Rare:2,Epic:3,Legendary:4};
+              const avg=(d.cards.reduce((s,c)=>s+(COST[c.rarity]||1),0)/d.cards.length).toFixed(1);
+              const rarityCount={};d.cards.forEach(c=>{rarityCount[c.rarity]=(rarityCount[c.rarity]||0)+1;});
+              return <div key={i} style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                  <div>
+                    <div style={{color:"white",fontWeight:800,fontSize:14}}>{d.name}</div>
+                    <div style={{color:"#475569",fontSize:11,marginTop:2}}>
+                      {d.cards.length} cards · avg cost {avg} · {Object.entries(rarityCount).map(([r,n])=>`${n} ${r}`).join(", ")}
+                    </div>
+                  </div>
+                  <button onClick={()=>onDeleteDeck&&onDeleteDeck(i)}
+                    style={{background:"#1a0000",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    🗑 Delete
+                  </button>
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {d.cards.map((c,j)=><Card key={j} card={c} mini level={1}/>)}
+                </div>
+              </div>;
+            })}
+          </div>
+        }
+      </div>}
+
+      {binderSection==="cards"&&<div>
       {/* Quick actions */}
       <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
         <button onClick={()=>{SFX.play("click");setShowDupesModal?.(true);}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>♻️ Manage Dupes</button>
@@ -2245,6 +2330,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
           <span style={{color:"#c084fc",fontSize:11,fontWeight:700}}>🚀 Arriving in the next update — stay tuned!</span>
         </div>
       </div>
+      </div>}
     </div>
   );
 }
@@ -2516,7 +2602,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
                 <div style={{fontSize:34,flexShrink:0,animation:"float 3s ease-in-out infinite"}}>{p.icon}</div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:700,marginBottom:1}}>{p.name}</div>
-                  <div style={{color:"#64748b",fontSize:10}}>{p.rarities.length} cards · {p.guaranteed}</div>
+                  <div style={{color:"#64748b",fontSize:10}}>{p.count} cards · {p.guaranteed}</div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                   <span style={{color:"#a855f7",fontWeight:800,fontSize:15}}>💎 {p.price}</span>
@@ -3965,7 +4051,7 @@ function App() {
           </div>
         </div>}
 
-                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal} theme={theme}/></div>}
+                {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal} decks={decks} onDeleteDeck={(i)=>setDecks(d=>d.filter((_,j)=>j!==i))}/></div>}
 
         {/* SHOP */}
         {/* BATTLE */}
@@ -4381,7 +4467,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.53</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.56</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
