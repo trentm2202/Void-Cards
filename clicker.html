@@ -227,10 +227,10 @@ body{background:var(--void);color:var(--text);font-family:'Exo 2',sans-serif;min
   <div class="rewards-panel">
     <div class="rewards-title">⚔️ VOID CARDS REWARDS</div>
     <div class="rewards-row"><span class="rewards-label">💎 Gems available</span><span class="rewards-value" id="rGems">0</span></div>
-    <div class="rewards-row"><span class="rewards-label">🃏 Cards available</span><span class="rewards-value" id="rCards">0</span></div>
     <div class="rewards-row"><span class="rewards-label">Next gem at</span><span class="rewards-value" id="rNextGem">—</span></div>
-    <div class="rewards-row"><span class="rewards-label">Next card at</span><span class="rewards-value" id="rNextCard">—</span></div>
-    <div class="rewards-note">Claim in <a class="rewards-link" href="/index.html">Void Cards → Profile Tab</a></div>
+    <div class="rewards-row"><span class="rewards-label">🃏 Cards</span><span class="rewards-value" id="rCards">—</span></div>
+    <div class="rewards-row"><span class="rewards-label">Next card</span><span class="rewards-value" id="rNextCard">Coming soon</span></div>
+    <div class="rewards-note">500 gems/day max · Claim in <a class="rewards-link" href="/index.html">Void Cards → Profile Tab</a></div>
   </div>
 
   <div id="newsTicker">🌌 Welcome to Void Cards Shard Collector...</div>
@@ -287,40 +287,40 @@ const BUILDINGS=[
 //      {b:'buildingId', n:X} = visible once you own X of that building
 // ══════════════════════════════════════════════════════
 const UPGRADES=[
-  // ── TAP ──
-  {id:'t1', icon:'✨', name:'Stardust Touch',   cat:'tap',    cost:50,       req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
-  {id:'t2', icon:'💎', name:'Void Crystal',     cat:'tap',    cost:600,      req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
-  {id:'t3', icon:'⚡', name:'Plasma Surge',     cat:'tap',    cost:7000,     req:null,              desc:'Taps produce ×3 shards.',         apply:g=>{g.clickMult*=3;}},
-  {id:'t4', icon:'🌟', name:'Star Punch',       cat:'tap',    cost:80000,    req:null,              desc:'Taps produce ×5 shards.',         apply:g=>{g.clickMult*=5;}},
-  {id:'t5', icon:'💥', name:'Supernova Strike', cat:'tap',    cost:800000,   req:null,              desc:'Taps produce ×10 shards.',        apply:g=>{g.clickMult*=10;}},
-  {id:'t6', icon:'☄️', name:'Void Fist',        cat:'tap',    cost:8000000,  req:null,              desc:'Taps produce ×20 shards.',        apply:g=>{g.clickMult*=20;}},
-  // ── CURSOR (idle only) ──
-  {id:'c1', icon:'👆', name:'Nimble Cursors',   cat:'idle',   cost:100,      req:'cursor',          desc:'Cursors collect ×2 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*2;}},
-  {id:'c2', icon:'🖐️', name:'Void Grasp',       cat:'idle',   cost:900,      req:{b:'cursor',n:5},  desc:'Cursors collect ×3 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*3;}},
-  {id:'c3', icon:'🤲', name:'Cosmic Reach',     cat:'idle',   cost:9000,     req:{b:'cursor',n:10}, desc:'Cursors collect ×4 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*4;}},
-  {id:'c4', icon:'🌐', name:'Void Network',     cat:'idle',   cost:90000,    req:{b:'cursor',n:25}, desc:'Cursors collect ×5 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*5;}},
+  // ── TAP — steep curve, late ones take serious time ──
+  {id:'t1', icon:'✨', name:'Stardust Touch',   cat:'tap',    cost:100,        req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
+  {id:'t2', icon:'💎', name:'Void Crystal',     cat:'tap',    cost:5000,       req:null,              desc:'Taps produce ×2 shards.',         apply:g=>{g.clickMult*=2;}},
+  {id:'t3', icon:'⚡', name:'Plasma Surge',     cat:'tap',    cost:50000,      req:null,              desc:'Taps produce ×3 shards.',         apply:g=>{g.clickMult*=3;}},
+  {id:'t4', icon:'🌟', name:'Star Punch',       cat:'tap',    cost:1000000,    req:null,              desc:'Taps produce ×5 shards.',         apply:g=>{g.clickMult*=5;}},
+  {id:'t5', icon:'💥', name:'Supernova Strike', cat:'tap',    cost:25000000,   req:null,              desc:'Taps produce ×10 shards.',        apply:g=>{g.clickMult*=10;}},
+  {id:'t6', icon:'☄️', name:'Void Fist',        cat:'tap',    cost:500000000,  req:null,              desc:'Taps produce ×20 shards.',        apply:g=>{g.clickMult*=20;}},
+  // ── CURSOR ──
+  {id:'c1', icon:'👆', name:'Nimble Cursors',   cat:'idle',   cost:200,        req:'cursor',          desc:'Cursors collect ×2 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*2;}},
+  {id:'c2', icon:'🖐️', name:'Void Grasp',       cat:'idle',   cost:5000,       req:{b:'cursor',n:5},  desc:'Cursors collect ×3 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*3;}},
+  {id:'c3', icon:'🤲', name:'Cosmic Reach',     cat:'idle',   cost:100000,     req:{b:'cursor',n:10}, desc:'Cursors collect ×4 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*4;}},
+  {id:'c4', icon:'🌐', name:'Void Network',     cat:'idle',   cost:5000000,    req:{b:'cursor',n:25}, desc:'Cursors collect ×5 faster.',      apply:g=>{g.cursorMult=(g.cursorMult||1)*5;}},
   // ── BUILDING IDLE ──
-  {id:'b1', icon:'🕯️', name:'Sacred Flame',     cat:'idle',   cost:300,      req:'shrine',          desc:'Shrines ×2 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*2;}},
-  {id:'b2', icon:'🔥', name:'Eternal Pyre',     cat:'idle',   cost:3000,     req:{b:'shrine',n:10}, desc:'Shrines ×3 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*3;}},
-  {id:'b3', icon:'🌫️', name:'Nebula Focus',     cat:'idle',   cost:2000,     req:'nebula',          desc:'Nebula Taps ×2 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*2;}},
-  {id:'b4', icon:'🌪️', name:'Nebula Storm',     cat:'idle',   cost:20000,    req:{b:'nebula',n:10}, desc:'Nebula Taps ×3 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*3;}},
-  {id:'b5', icon:'🛸', name:'Drone Swarm',      cat:'idle',   cost:10000,    req:'satellite',       desc:'Drones ×3 shards/sec.',           apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*3;}},
-  {id:'b6', icon:'🤖', name:'AI Collective',    cat:'idle',   cost:100000,   req:{b:'satellite',n:10},desc:'Drones ×4 shards/sec.',         apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*4;}},
-  {id:'b7', icon:'🌀', name:'Rift Stabilizer',  cat:'idle',   cost:50000,    req:'portal',          desc:'Portals ×2 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*2;}},
-  {id:'b8', icon:'🌌', name:'Rift Cascade',     cat:'idle',   cost:500000,   req:{b:'portal',n:10}, desc:'Portals ×3 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*3;}},
-  {id:'b9', icon:'⭐', name:'Pulsar Sync',      cat:'idle',   cost:200000,   req:'pulsar',          desc:'Pulsars ×3 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*3;}},
-  {id:'b10',icon:'💫', name:'Pulsar Array',     cat:'idle',   cost:2000000,  req:{b:'pulsar',n:10}, desc:'Pulsars ×4 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*4;}},
-  {id:'b11',icon:'🕳️', name:'Singularity Core', cat:'idle',  cost:700000,   req:'blackhole',       desc:'Black Holes ×2 shards/sec.',      apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*2;}},
-  {id:'b12',icon:'♾️', name:'Event Horizon',    cat:'idle',   cost:7000000,  req:{b:'blackhole',n:10},desc:'Black Holes ×3 shards/sec.',    apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*3;}},
-  {id:'b13',icon:'🌌', name:'Galaxy Engine',    cat:'idle',   cost:3000000,  req:'galaxy',          desc:'Galaxy Forges ×2 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*2;}},
-  {id:'b14',icon:'💠', name:'Cosmic Lattice',   cat:'idle',   cost:30000000, req:{b:'galaxy',n:10}, desc:'Galaxy Forges ×3 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*3;}},
-  // ── GLOBAL ──
-  {id:'g1', icon:'🎴', name:'Void Card Synergy',cat:'global', cost:3000,     req:null,              desc:'All generators ×1.5 output.',     apply:g=>{g.globalMult*=1.5;}},
-  {id:'g2', icon:'🔯', name:'Dark Matter',       cat:'global', cost:30000,    req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
-  {id:'g3', icon:'💫', name:'Cosmic Alignment',  cat:'global', cost:300000,   req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
-  {id:'g4', icon:'🔮', name:'Void Resonance',    cat:'global', cost:3000000,  req:null,              desc:'All generators ×3 output.',       apply:g=>{g.globalMult*=3;}},
-  {id:'g5', icon:'🌠', name:'Stellar Collapse',  cat:'global', cost:30000000, req:null,              desc:'All generators ×5 output.',       apply:g=>{g.globalMult*=5;}},
-  {id:'g6', icon:'♾️', name:'Dimensional Rift',  cat:'global', cost:300000000,req:null,              desc:'All generators ×10 output.',      apply:g=>{g.globalMult*=10;}},
+  {id:'b1', icon:'🕯️', name:'Sacred Flame',     cat:'idle',   cost:1000,       req:'shrine',          desc:'Shrines ×2 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*2;}},
+  {id:'b2', icon:'🔥', name:'Eternal Pyre',     cat:'idle',   cost:50000,      req:{b:'shrine',n:10}, desc:'Shrines ×3 shards/sec.',          apply:g=>{g.bMult.shrine=(g.bMult.shrine||1)*3;}},
+  {id:'b3', icon:'🌫️', name:'Nebula Focus',     cat:'idle',   cost:10000,      req:'nebula',          desc:'Nebula Taps ×2 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*2;}},
+  {id:'b4', icon:'🌪️', name:'Nebula Storm',     cat:'idle',   cost:300000,     req:{b:'nebula',n:10}, desc:'Nebula Taps ×3 shards/sec.',      apply:g=>{g.bMult.nebula=(g.bMult.nebula||1)*3;}},
+  {id:'b5', icon:'🛸', name:'Drone Swarm',      cat:'idle',   cost:50000,      req:'satellite',       desc:'Drones ×3 shards/sec.',           apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*3;}},
+  {id:'b6', icon:'🤖', name:'AI Collective',    cat:'idle',   cost:2000000,    req:{b:'satellite',n:10},desc:'Drones ×4 shards/sec.',         apply:g=>{g.bMult.satellite=(g.bMult.satellite||1)*4;}},
+  {id:'b7', icon:'🌀', name:'Rift Stabilizer',  cat:'idle',   cost:300000,     req:'portal',          desc:'Portals ×2 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*2;}},
+  {id:'b8', icon:'🌌', name:'Rift Cascade',     cat:'idle',   cost:10000000,   req:{b:'portal',n:10}, desc:'Portals ×3 shards/sec.',          apply:g=>{g.bMult.portal=(g.bMult.portal||1)*3;}},
+  {id:'b9', icon:'⭐', name:'Pulsar Sync',      cat:'idle',   cost:2000000,    req:'pulsar',          desc:'Pulsars ×3 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*3;}},
+  {id:'b10',icon:'💫', name:'Pulsar Array',     cat:'idle',   cost:50000000,   req:{b:'pulsar',n:10}, desc:'Pulsars ×4 shards/sec.',          apply:g=>{g.bMult.pulsar=(g.bMult.pulsar||1)*4;}},
+  {id:'b11',icon:'🕳️', name:'Singularity Core', cat:'idle',  cost:10000000,   req:'blackhole',       desc:'Black Holes ×2 shards/sec.',      apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*2;}},
+  {id:'b12',icon:'♾️', name:'Event Horizon',    cat:'idle',   cost:200000000,  req:{b:'blackhole',n:10},desc:'Black Holes ×3 shards/sec.',    apply:g=>{g.bMult.blackhole=(g.bMult.blackhole||1)*3;}},
+  {id:'b13',icon:'🌌', name:'Galaxy Engine',    cat:'idle',   cost:50000000,   req:'galaxy',          desc:'Galaxy Forges ×2 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*2;}},
+  {id:'b14',icon:'💠', name:'Cosmic Lattice',   cat:'idle',   cost:1000000000, req:{b:'galaxy',n:10}, desc:'Galaxy Forges ×3 shards/sec.',    apply:g=>{g.bMult.galaxy=(g.bMult.galaxy||1)*3;}},
+  // ── GLOBAL — very expensive, game-changers ──
+  {id:'g1', icon:'🎴', name:'Void Card Synergy',cat:'global', cost:10000,      req:null,              desc:'All generators ×1.5 output.',     apply:g=>{g.globalMult*=1.5;}},
+  {id:'g2', icon:'🔯', name:'Dark Matter',       cat:'global', cost:500000,     req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
+  {id:'g3', icon:'💫', name:'Cosmic Alignment',  cat:'global', cost:10000000,   req:null,              desc:'All generators ×2 output.',       apply:g=>{g.globalMult*=2;}},
+  {id:'g4', icon:'🔮', name:'Void Resonance',    cat:'global', cost:250000000,  req:null,              desc:'All generators ×3 output.',       apply:g=>{g.globalMult*=3;}},
+  {id:'g5', icon:'🌠', name:'Stellar Collapse',  cat:'global', cost:5000000000, req:null,              desc:'All generators ×5 output.',       apply:g=>{g.globalMult*=5;}},
+  {id:'g6', icon:'♾️', name:'Dimensional Rift',  cat:'global', cost:100000000000,req:null,             desc:'All generators ×10 output.',      apply:g=>{g.globalMult*=10;}},
 ];
 
 // ══════════════════════════════════════════════════════
@@ -606,19 +606,21 @@ function prestigeThresh(){return 10000000*Math.pow(5,G.prestiges);}
 
 function renderRewards(){
   try{
-    const GEM_THRESH=500000, GEM_AMT=50, CARD_EVERY=3;
+    const GEM_THRESH=50000000, GEM_AMT=50, DAILY_CAP=500;
     const ex=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
     const gemBlocks=Math.floor(G.totalEarned/GEM_THRESH);
-    const gemsAvail=Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT;
-    const cardsAvail=Math.max(0,Math.floor(G.prestiges/CARD_EVERY)-(ex.cardBlocksClaimed||0));
+    // Daily cap — reset if last earn was a different day
+    const today=new Date().toDateString();
+    const dailyEarned=(ex.dailyDate===today)?(ex.dailyEarned||0):0;
+    const rawAvail=Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT;
+    const gemsAvail=Math.min(rawAvail, Math.max(0, DAILY_CAP-dailyEarned));
     document.getElementById('rGems').textContent=gemsAvail>0?'+💎 '+gemsAvail:'0';
     document.getElementById('rGems').style.color=gemsAvail>0?'var(--gold)':'var(--dim)';
-    document.getElementById('rCards').textContent=cardsAvail>0?cardsAvail+' card'+(cardsAvail>1?'s':''):'0';
-    document.getElementById('rCards').style.color=cardsAvail>0?'var(--purple)':'var(--dim)';
+    document.getElementById('rCards').textContent='—';
+    document.getElementById('rCards').style.color='var(--dim)';
     const nextGem=(Math.floor(G.totalEarned/GEM_THRESH)+1)*GEM_THRESH;
-    const nextCard=(Math.floor(G.prestiges/CARD_EVERY)+1)*CARD_EVERY;
     document.getElementById('rNextGem').textContent=G.totalEarned>=nextGem?'Ready!':fmt(nextGem-G.totalEarned)+' more shards';
-    document.getElementById('rNextCard').textContent=G.prestiges>=nextCard?'Ready!':'Ascension #'+nextCard;
+    document.getElementById('rNextCard').textContent='Coming soon';
   }catch(e){}
 }
 
@@ -941,16 +943,22 @@ function saveGame(){
 }
 
 function writeRewards(){
-  const GEM_THRESH=500000,GEM_AMT=50,CARD_EVERY=3;
+  const GEM_THRESH=50000000,GEM_AMT=50,DAILY_CAP=500;
   const ex=JSON.parse(localStorage.getItem('vc_shard_rewards')||'{}');
   const gemBlocks=Math.floor(G.totalEarned/GEM_THRESH);
+  const today=new Date().toDateString();
+  const dailyEarned=(ex.dailyDate===today)?(ex.dailyEarned||0):0;
+  const rawAvail=Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT;
+  const gemsAvailable=Math.min(rawAvail, Math.max(0, DAILY_CAP-dailyEarned));
   const rewards={
     ...ex,
     totalShards:Math.floor(G.totalEarned),
     totalAscensions:G.prestiges,
     gemBlocks,
-    gemsAvailable:Math.max(0,gemBlocks-(ex.gemBlocksClaimed||0))*GEM_AMT,
-    cardsAvailable:Math.max(0,Math.floor(G.prestiges/CARD_EVERY)-(ex.cardBlocksClaimed||0)),
+    gemsAvailable,
+    cardsAvailable:0,
+    dailyDate:today,
+    dailyEarned:dailyEarned,
     lastUpdated:Date.now(),
   };
   localStorage.setItem('vc_shard_rewards',JSON.stringify(rewards));
