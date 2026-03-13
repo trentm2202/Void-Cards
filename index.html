@@ -2162,6 +2162,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
   const [binderSection,setBinderSection]=useState("cards"); // cards|decks
+  const [flippedCards,setFlippedCards]=useState(new Set()); // card ids currently showing back
   const [typeFilter,setTypeFilter]=useState("All");
   const [sortBy,setSortBy]=useState("rarity");
   const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
@@ -2314,8 +2315,25 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
             return (
               <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}}>
                 {isNew&&<div style={{position:"absolute",top:-4,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",fontSize:7,fontWeight:800,borderRadius:4,padding:"2px 6px",letterSpacing:1,zIndex:10,whiteSpace:"nowrap",boxShadow:"0 0 8px #22c55e88",animation:"pulse 1.5s ease-in-out infinite"}}>✨ NEW</div>}
-                <Card card={c} mini onClick={(card)=>{setDetail(card);if(newCardIds.has(card.id)){const s=new Set(newCardIds);s.delete(card.id);setNewCardIds(s);}}} count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
-
+                <div style={{perspective:600,cursor:"pointer"}} onClick={(e)=>{
+                  const uid=c.id+(c.foil?"f":"");
+                  if(flippedCards.has(uid)){
+                    const s=new Set(flippedCards);s.delete(uid);setFlippedCards(s);
+                    if(newCardIds.has(c.id)){const s2=new Set(newCardIds);s2.delete(c.id);setNewCardIds(s2);}
+                    setTimeout(()=>setDetail(c),180);
+                  } else {
+                    const s=new Set(flippedCards);s.add(uid);setFlippedCards(s);
+                  }
+                }}>
+                  <div style={{transition:"transform .35s cubic-bezier(.4,0,.2,1)",transformStyle:"preserve-3d",transform:flippedCards.has(c.id+(c.foil?"f":""))?"rotateY(180deg)":"rotateY(0deg)"}}>
+                    <div style={{backfaceVisibility:"hidden"}}>
+                      <Card card={c} mini count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
+                    </div>
+                    <div style={{position:"absolute",top:0,left:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)"}}>
+                      <Card card={c} mini showBack={true}/>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -4475,7 +4493,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.58</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.59</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
