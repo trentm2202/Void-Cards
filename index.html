@@ -1000,11 +1000,6 @@ function CardIllustration({ card, w=140, h=160 }) {
 
 // ── Holographic Frame ─────────────────────────────────────────────────────────
 function HoloFrame({ card, w, h, hov }) {
-  if(showBack) return (
-    <div style={{width:mini?60:120,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"1px solid #4c1d95"}}>
-      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
-    </div>
-  );
   const c=RC[card.rarity].color, isLeg=card.rarity==="Legendary", isEpic=card.rarity==="Epic", isRare=card.rarity==="Rare";
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{position:"absolute",top:0,left:0,pointerEvents:"none",borderRadius:14}}>
@@ -1046,6 +1041,11 @@ function HoloFrame({ card, w, h, hov }) {
 // ── Card Component ────────────────────────────────────────────────────────────
 function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, showBack=false }) {
   const [hov,setHov]=useState(false);
+  if(showBack) return (
+    <div style={{width:mini?60:112,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"1px solid #4c1d95",cursor:onClick?"pointer":"default"}} onClick={onClick}>
+      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+    </div>
+  );
   const isFoil=card.foil;
   const rc=isFoil?{color:"#f59e0b",bg:"#1c1008",stars:5}:RC[card.rarity];
   const w=mini?112:162, h=mini?168:248;
@@ -4475,7 +4475,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.57</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.58</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
