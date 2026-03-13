@@ -1483,6 +1483,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [dmgPops,setDmgPops]=useState([]);             // [{id,text,color,fieldIdx,isEnemy}]
   const [selectedField,setSelectedField]=useState(null); // index of player field card selected to attack with
   const [phase2,setPhase2]=useState("free");           // free|attacking|targeting
+  const [pendingSpecial,setPendingSpecial]=useState(false); // true when targeting for special
   const [rewardCard,setRewardCard]=useState(null);
   const [playerHp,setPlayerHp]=useState(0); // set in startBattle based on level
   const [playerMaxHp,setPlayerMaxHp]=useState(0);
@@ -1561,12 +1562,13 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   };
 
   // Select a field card to attack with
-  const selectAttacker=(idx)=>{
+  const selectAttacker=(idx,isSpecial=false)=>{
     if(!playerTurn||animating)return;
     if(enemyField.length===0){addLog("No enemy cards to attack!","err");return;}
     setSelectedField(idx);
+    setPendingSpecial(isSpecial);
     setPhase2("targeting");
-    addLog(`Select an enemy card to attack with ${playerField[idx].name}...`,"info");
+    addLog(`Select an enemy card to ${isSpecial?"use special on":"attack with"} ${playerField[idx].name}...`,"info");
   };
 
   // Execute attack
@@ -1578,6 +1580,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setMana(m=>m-cost);
     setPhase2("free");
     setSelectedField(null);
+    setPendingSpecial(false);
     // Mark this card as having acted this turn
     setActedCards(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
     if(isSpecial) setSpecialUsed(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
@@ -1818,6 +1821,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setPlayerTurn(false);
     setPhase2("free");
     setSelectedField(null);
+    setPendingSpecial(false);
     doEnemyTurn();
   };
 
@@ -1948,7 +1952,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
               :<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {enemyField.map((card,i)=>(
                   <div key={card.uid} style={{position:"relative",cursor:phase2==="targeting"?"pointer":"default",opacity:animating?0.7:1}}
-                    onClick={()=>{if(phase2==="targeting"&&selectedField!==null)doAttack(selectedField,i,false);}}>
+                    onClick={()=>{if(phase2==="targeting"&&selectedField!==null)doAttack(selectedField,i,pendingSpecial);}}>
                     <Card card={card} mini showHp currentHp={card.hp}/>
                     {card.defending&&<div style={{position:"absolute",bottom:24,left:0,right:0,textAlign:"center",fontSize:8,color:"#3b82f6",fontWeight:800}}>🛡DEF</div>}
                     {phase2==="targeting"&&<div style={{position:"absolute",inset:0,border:"2px solid #ef4444",borderRadius:14,animation:"pulse 1s infinite"}}/>}
@@ -1981,7 +1985,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                       const acted=actedCards.has(card.uid);
                       return <div style={{display:"flex",gap:3,marginTop:3,justifyContent:"center"}}>
                         <button onClick={()=>!acted&&selectAttacker(i)} style={{background:acted?"#1e293b":"#7f1d1d",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>⚔️1</button>
-                        <button onClick={()=>{const su=specialUsed.has(card.uid);if(!acted&&!su&&enemyField.length>0)doAttack(i,Math.floor(Math.random()*enemyField.length),true);}} style={{background:(acted||specialUsed.has(card.uid))?"#1e293b":"#4c1d95",color:(acted||specialUsed.has(card.uid))?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:(acted||specialUsed.has(card.uid))?"not-allowed":"pointer",opacity:(acted||specialUsed.has(card.uid))?0.4:1}}>{specialUsed.has(card.uid)?"✨✓":"✨3"}</button>
+                        <button onClick={()=>{const su=specialUsed.has(card.uid);if(!acted&&!su)selectAttacker(i,true);}} style={{background:(acted||specialUsed.has(card.uid))?"#1e293b":"#4c1d95",color:(acted||specialUsed.has(card.uid))?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:(acted||specialUsed.has(card.uid))?"not-allowed":"pointer",opacity:(acted||specialUsed.has(card.uid))?0.4:1}}>{specialUsed.has(card.uid)?"✨✓":"✨3"}</button>
                         <button onClick={()=>!acted&&doDefend(i)} style={{background:acted?"#1e293b":"#1e3a5f",color:acted?"#334155":"white",border:"none",borderRadius:5,padding:"3px 6px",fontSize:8,fontWeight:700,cursor:acted?"not-allowed":"pointer",opacity:acted?0.4:1}}>🛡+1</button>
                       </div>;
                     })()}
@@ -2162,7 +2166,6 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
   const [binderSection,setBinderSection]=useState("cards"); // cards|decks
-  const [flippedCards,setFlippedCards]=useState(new Set()); // card ids currently showing back
   const [typeFilter,setTypeFilter]=useState("All");
   const [sortBy,setSortBy]=useState("rarity");
   const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
@@ -2315,25 +2318,8 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
             return (
               <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}}>
                 {isNew&&<div style={{position:"absolute",top:-4,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",fontSize:7,fontWeight:800,borderRadius:4,padding:"2px 6px",letterSpacing:1,zIndex:10,whiteSpace:"nowrap",boxShadow:"0 0 8px #22c55e88",animation:"pulse 1.5s ease-in-out infinite"}}>✨ NEW</div>}
-                <div style={{perspective:600,cursor:"pointer"}} onClick={(e)=>{
-                  const uid=c.id+(c.foil?"f":"");
-                  if(flippedCards.has(uid)){
-                    const s=new Set(flippedCards);s.delete(uid);setFlippedCards(s);
-                    if(newCardIds.has(c.id)){const s2=new Set(newCardIds);s2.delete(c.id);setNewCardIds(s2);}
-                    setTimeout(()=>setDetail(c),180);
-                  } else {
-                    const s=new Set(flippedCards);s.add(uid);setFlippedCards(s);
-                  }
-                }}>
-                  <div style={{transition:"transform .35s cubic-bezier(.4,0,.2,1)",transformStyle:"preserve-3d",transform:flippedCards.has(c.id+(c.foil?"f":""))?"rotateY(180deg)":"rotateY(0deg)"}}>
-                    <div style={{backfaceVisibility:"hidden"}}>
-                      <Card card={c} mini count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
-                    </div>
-                    <div style={{position:"absolute",top:0,left:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)"}}>
-                      <Card card={c} mini showBack={true}/>
-                    </div>
-                  </div>
-                </div>
+                <Card card={c} mini onClick={(card)=>{setDetail(card);if(newCardIds.has(card.id)){const s=new Set(newCardIds);s.delete(card.id);setNewCardIds(s);}}} count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
+
               </div>
             );
           })}
@@ -3254,6 +3240,7 @@ function App() {
   const [bidInputs,setBidInputs]   = useState({}); // {auctionId: bidAmount string}
   const [toast,setToast]           = useState(null);
   const [detail,setDetail]         = useState(null);
+  const [detailFlipped,setDetailFlipped]=useState(false);
   const [battleCard,setBattleCard] = useState(null);
   const [openingPack,setOpeningPack]=useState(null);
   const [sellCard,setSellCard]     = useState(null);
@@ -4493,7 +4480,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.59</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.61</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
@@ -4708,12 +4695,20 @@ function App() {
       </div>
 
       {/* Modals */}
-      {detail&&<Modal onClose={()=>setDetail(null)} title={detail.name}>
+      {detail&&<Modal onClose={()=>{setDetail(null);setDetailFlipped(false);}} title={detail.name}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:430,alignItems:"flex-start",paddingTop:20}}>
-          <div style={{transform:"scale(1.7)",transformOrigin:"top center"}}>
-            <Card card={detail} level={1}/>
+          <div style={{transform:"scale(1.7)",transformOrigin:"top center",perspective:800,cursor:"pointer"}} onClick={()=>{SFX.play("click");setDetailFlipped(f=>!f);}}>
+            <div style={{transition:"transform .45s cubic-bezier(.4,0,.2,1)",transformStyle:"preserve-3d",transform:detailFlipped?"rotateY(180deg)":"rotateY(0deg)",position:"relative",width:162,height:248}}>
+              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden"}}>
+                <Card card={detail} level={1}/>
+              </div>
+              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:14,overflow:"hidden",border:"1px solid "+( detail.rarity==="Legendary"?"#f59e0b":detail.rarity==="Epic"?"#a855f7":detail.rarity==="Rare"?"#3b82f6":"#4c1d95")}}>
+                <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+              </div>
+            </div>
           </div>
         </div>
+        <div style={{textAlign:"center",color:"#475569",fontSize:10,marginTop:-10,marginBottom:8}}>👆 Tap card to flip</div>
         <div style={{maxWidth:320,margin:"0 auto",background:"#1e293b",borderRadius:12,padding:16}}>
           <div style={{color:"#94a3b8",fontSize:12,marginBottom:14,lineHeight:1.7,textAlign:"center",fontStyle:"italic"}}>"{detail.description}"</div>
           <div style={{display:"flex",justifyContent:"space-around",marginBottom:12}}>
