@@ -1692,7 +1692,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       setPhase("lost");
       SFX.play("click");
     }
-  },[enemyField.length,enemyHand.length,playerField.length,playerHand.length,playerDeckLeft.length,phase]);
+  },[enemyHp,playerHp,enemyField.length,enemyHand.length,playerField.length,playerHand.length,playerDeckLeft.length,phase]);
 
   // Enemy AI turn
   const doEnemyTurn=useCallback(()=>{
@@ -1764,16 +1764,39 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
         return ef;
       });
 
-      // Enemy plays cards from hand to field (1-2 per turn, max field 4)
+      // Enemy plays cards from hand to field (respects mana — turn number = mana, max 10)
       setEnemyHand(eh=>{
         setEnemyField(ef=>{
-          const slots=Math.min(4-ef.length, Math.min(2, eh.length)); // play up to 2 per turn
-          if(slots<=0) return ef;
-          const toPlay=eh.slice(0,slots).map(c=>({...c,defending:false,hp:c.hp,maxHp:c.hp}));
+          if(ef.length>=4||eh.length===0) return ef;
+          const enemyMana=Math.min(10,turn); // mirror player mana: turn number = mana
+          let manaLeft=enemyMana;
+          const toPlay=[];
+          const remaining=[...eh];
+          for(let i=0;i<remaining.length&&toPlay.length<2&&ef.length+toPlay.length<4;i++){
+            const c=remaining[i];
+            const cost=MANA_COST[c.rarity]||1;
+            if(cost<=manaLeft){
+              toPlay.push({...c,defending:false,hp:c.hp,maxHp:c.hp});
+              manaLeft-=cost;
+            }
+          }
           if(toPlay.length>0) addLog(`🤖 ${node.name} plays ${toPlay.map(c=>c.name).join(", ")} to field`,"info");
           return [...ef,...toPlay];
         });
-        return eh.slice(Math.min(2,eh.length));
+        // Remove played cards from hand
+        setEnemyField(ef=>{
+          const onField=new Set(ef.map(c=>c.uid));
+          return ef; // field already updated above; just reference to get played count
+        });
+        // Recalculate which cards were played by mana logic to trim hand correctly
+        const enemyMana2=Math.min(10,turn);
+        let manaLeft2=enemyMana2;
+        let played=0;
+        for(let i=0;i<eh.length&&played<2;i++){
+          const cost=MANA_COST[eh[i].rarity]||1;
+          if(cost<=manaLeft2){manaLeft2-=cost;played++;}
+        }
+        return eh.slice(played);
       });
 
       // Start next player turn
@@ -1829,6 +1852,21 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   if(phase==="deckpick"){
     // All unique cards player has
     const allUnique=[...new Map(collection.map(c=>{const base=ALL_CARDS.find(x=>x.id===c.id)||{};return [c.id+(c.foil?"f":""),{...base,...c}];})).values()];
+
+    // Gate: require a saved deck before entering battle
+    if(savedDecks.length===0){
+      return(
+        <Modal onClose={onClose} title={`⚔️ ${node.name} — ${node.title}`}>
+          <div style={{maxWidth:480,margin:"0 auto",textAlign:"center",padding:"40px 20px"}}>
+            <div style={{fontSize:52,marginBottom:16}}>📋</div>
+            <div style={{color:"white",fontWeight:800,fontSize:18,marginBottom:10}}>No Saved Deck</div>
+            <div style={{color:"#94a3b8",fontSize:14,lineHeight:1.6,marginBottom:24}}>You need a saved deck to enter battle.<br/>Head to the <span style={{color:"#a855f7",fontWeight:700}}>Deck Builder</span> to build and save one first.</div>
+            <button onClick={onClose} style={{background:"linear-gradient(135deg,var(--t1),var(--t2))",color:"white",border:"none",borderRadius:12,padding:"13px 32px",fontWeight:800,fontSize:15,cursor:"pointer"}}>← Go Build a Deck</button>
+          </div>
+        </Modal>
+      );
+    }
+
     return(
       <Modal onClose={onClose} title={`⚔️ ${node.name} — ${node.title}`}>
         <div style={{maxWidth:480,margin:"0 auto"}}>
@@ -2883,7 +2921,7 @@ function CardOfTheDay({setDetail, setBattleCard, setTab}) {
             "{featCard.description.substring(0,80)}{featCard.description.length>80?"...":""}"
           </div>
           <div style={{color:"#334155",fontSize:9,marginTop:4,marginBottom:4}}>Tap card to view details</div>
-          <button onClick={()=>{if(setTab){setTab("battle");}}} style={{marginTop:2,background:`linear-gradient(135deg,${rc.bg},${rc.color}44)`,border:`1px solid ${rc.color}66`,borderRadius:8,padding:"6px 12px",color:rc.color,fontWeight:700,fontSize:10,cursor:"pointer",width:"100%"}}>⚔️ Go to Battle</button>
+          <button onClick={()=>{if(setDetail){setDetail(featCard);}}} style={{marginTop:2,background:`linear-gradient(135deg,${rc.bg},${rc.color}44)`,border:`1px solid ${rc.color}66`,borderRadius:8,padding:"6px 12px",color:rc.color,fontWeight:700,fontSize:10,cursor:"pointer",width:"100%"}}>🔍 View Card</button>
         </div>
       </div>
     </div>
@@ -3251,8 +3289,21 @@ function App() {
   const [deckBattle,setDeckBattle] =useState(false);
   const [galaxyBattle,setGalaxyBattle]=useState(null); // node object or null
   const [completedNodes,setCompletedNodes]=useState(()=>S.get("completedNodes",[]));
-  const [stamina,setStamina]=useState(()=>S.get("stamina",5));
-  const [lastStaminaRefill,setLastStaminaRefill]=useState(()=>S.get("lastStaminaRefill",Date.now()));
+  const [stamina,setStamina]=useState(()=>{
+    const saved=S.get("stamina",5);
+    const lastRefill=S.get("lastStaminaRefill",Date.now());
+    const playerLvl=S.get("playerLevel",1);
+    const maxStam=5+Math.floor(playerLvl/3);
+    const elapsed=Date.now()-lastRefill;
+    const offlineRefills=Math.floor(elapsed/(30*60*1000));
+    return offlineRefills>0?Math.min(maxStam,saved+offlineRefills):saved;
+  });
+  const [lastStaminaRefill,setLastStaminaRefill]=useState(()=>{
+    const lastRefill=S.get("lastStaminaRefill",Date.now());
+    const elapsed=Date.now()-lastRefill;
+    const offlineRefills=Math.floor(elapsed/(30*60*1000));
+    return offlineRefills>0?lastRefill+(offlineRefills*30*60*1000):lastRefill;
+  });
   const [dailyShop,setDailyShop]   =useState(false);
   const [legFlash,setLegFlash]     =useState(false);
   const [showSettings,setShowSettings]=useState(false);
@@ -4614,21 +4665,12 @@ function App() {
           <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:14,marginBottom:14}}>
             <div style={{color:"white",fontWeight:700,marginBottom:12}}>⚔️ Battle Record</div>
             <div style={{display:"flex",gap:10}}>
-              <div style={{flex:1,background:"#052e16",border:"1px solid #14532d",borderRadius:10,padding:"10px",textAlign:"center"}}>
-                <div style={{color:"#22c55e",fontSize:22,fontWeight:900}}>{wins}</div>
-                <div style={{color:"#64748b",fontSize:11}}>Wins</div>
-              </div>
-              <div style={{flex:1,background:"#1a0000",border:"1px solid #7f1d1d",borderRadius:10,padding:"10px",textAlign:"center"}}>
-                <div style={{color:"#ef4444",fontSize:22,fontWeight:900}}>{losses}</div>
-                <div style={{color:"#64748b",fontSize:11}}>Losses</div>
-              </div>
-              <div style={{flex:1,background:"#1e293b",border:"1px solid #334155",borderRadius:10,padding:"10px",textAlign:"center"}}>
-                <div style={{color:"#f59e0b",fontSize:22,fontWeight:900}}>{wins+losses>0?Math.round(wins/(wins+losses)*100):0}%</div>
-                <div style={{color:"#64748b",fontSize:11}}>Win Rate</div>
-              </div>
               <div style={{flex:1,background:"#1e0a3c",border:"1px solid var(--t1b)",borderRadius:10,padding:"10px",textAlign:"center"}}>
                 <div style={{color:"var(--t2)",fontSize:22,fontWeight:900}}>{teamWins}</div>
                 <div style={{color:"#64748b",fontSize:11}}>Team Wins</div>
+              </div>
+              <div style={{flex:1,background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"10px",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                <div style={{color:"#475569",fontSize:11}}>PvP stats coming soon</div>
               </div>
             </div>
           </div>
