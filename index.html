@@ -16,6 +16,9 @@
   <meta property="og:description" content="Free browser-based sci-fi card collecting and battle game. Collect 100+ unique cards, battle enemies, fuse cards, and dominate the auction house. No download required."/>
   <meta property="og:url" content="https://voidcards.org/"/>
   <meta property="og:type" content="website"/>
+  <meta property="og:image" content="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <link rel="icon" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg" type="image/jpeg"/>
+  <link rel="apple-touch-icon" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
   <meta name="keywords" content="card game, browser game, free card game, sci-fi card game, card collecting, battle game, void cards"/>
   <meta name="robots" content="index, follow"/>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Void Cards","url":"https://voidcards.org","description":"Free browser-based sci-fi card collecting and battle game with 100+ unique cards.","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
@@ -997,6 +1000,11 @@ function CardIllustration({ card, w=140, h=160 }) {
 
 // ── Holographic Frame ─────────────────────────────────────────────────────────
 function HoloFrame({ card, w, h, hov }) {
+  if(showBack) return (
+    <div style={{width:mini?60:120,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"1px solid #4c1d95"}}>
+      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+    </div>
+  );
   const c=RC[card.rarity].color, isLeg=card.rarity==="Legendary", isEpic=card.rarity==="Epic", isRare=card.rarity==="Rare";
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{position:"absolute",top:0,left:0,pointerEvents:"none",borderRadius:14}}>
@@ -1036,7 +1044,7 @@ function HoloFrame({ card, w, h, hov }) {
 }
 
 // ── Card Component ────────────────────────────────────────────────────────────
-function Card({ card, onClick, mini, selected, showHp, currentHp, count, level }) {
+function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, showBack=false }) {
   const [hov,setHov]=useState(false);
   const isFoil=card.foil;
   const rc=isFoil?{color:"#f59e0b",bg:"#1c1008",stars:5}:RC[card.rarity];
@@ -1228,9 +1236,9 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
               const cg     = RARITY_GLOW[card.rarity];
               return (
                 <div key={i} style={{position:"relative",transition:"transform .3s",transform:isSpot?"scale(1.12)":"scale(1)"}}>
-                  {/* Waiting slot */}
-                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #ffffff0a",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <div style={{fontSize:32,opacity:.3}}>?</div>
+                  {/* Waiting slot — card back */}
+                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:"1px solid #4c1d95",boxShadow:"0 0 8px #7c3aed44"}}>
+                    <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
                   </div>}
                   {/* Spotlight glowing back */}
                   {isSpot&&<div style={{width:162,height:248,borderRadius:14,background:`linear-gradient(135deg,${cg}22,${cg}08)`,border:`2px solid ${cg}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 40px ${cg}66, inset 0 0 30px ${cg}22`,animation:"pulse .4s infinite"}}>
@@ -4467,7 +4475,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.56</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.57</div>
           {/* Player Level Card */}
           {(()=>{
             const xpIntoLevel=playerXp%(500);
