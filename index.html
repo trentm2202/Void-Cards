@@ -1357,28 +1357,128 @@ function typeLabel(atkType, defType){
 }
 
 // ── GALAXY MAP DATA ───────────────────────────────────────────────────────────
+// 5 planets, 19 star nodes between each, boss on node 20/40/60/80/100
+// planet: {id, name (planet), boss:true, diff, gems, card}
+// star:   {id, name (enemy), title, dialogue, diff, gems, card}
+
+const PLANETS = [
+  {id:1, name:"Vireth",            lore:"The outer rim — where collectors begin their journey.",      color:"#06b6d4", bossNode:20},
+  {id:2, name:"Kael Prime",        lore:"A fractured world of mercenaries and wandering fleets.",     color:"#a855f7", bossNode:40},
+  {id:3, name:"Nox Station",       lore:"A colossal space station carved into a dying star.",         color:"#f97316", bossNode:60},
+  {id:4, name:"The Devourer's Wake",lore:"A graveyard of consumed worlds. Nothing grows here.",      color:"#ef4444", bossNode:80},
+  {id:5, name:"Void Nexus",        lore:"The edge of known space. Beyond this — only the void.",     color:"#8b5cf6", bossNode:100},
+];
+
 const GALAXY_NODES = [
-  // Node: {id, name, title, dialogue, difficulty, rewardGems, rewardCard(rarity or null), bossEvery5}
-  {id:1,  name:"Zyx-7",        title:"Void Scout",         dialogue:"Your journey ends here, collector.",                           diff:0.4,  gems:80,   card:null},
-  {id:2,  name:"Kael",         title:"Drifter",             dialogue:"I've never lost. Until now, maybe.",                          diff:0.45, gems:90,   card:null},
-  {id:3,  name:"Sorn",         title:"Salvager",            dialogue:"That card collection won't save you.",                        diff:0.5,  gems:100,  card:null},
-  {id:4,  name:"Vex",          title:"Marauder",            dialogue:"The void doesn't care about your deck.",                      diff:0.55, gems:110,  card:null},
-  {id:5,  name:"Commander Rael",title:"Void Fleet",         dialogue:"I command the outer sectors. You're trespassing.",            diff:0.65, gems:250,  card:"Rare",    boss:true},
-  {id:6,  name:"Nyra",         title:"Corsair",             dialogue:"Fast hands, faster cards. Let's see yours.",                  diff:0.6,  gems:120,  card:null},
-  {id:7,  name:"Dusk",         title:"Phantom",             dialogue:"I strike from the shadows. You won't see it coming.",         diff:0.65, gems:130,  card:null},
-  {id:8,  name:"Mira-9",       title:"Combat AI",           dialogue:"Calculating your defeat... probability: 94.7%.",              diff:0.7,  gems:140,  card:null},
-  {id:9,  name:"Thax",         title:"Warlord",             dialogue:"A thousand battles. A thousand victories. Today makes 1001.", diff:0.72, gems:150,  card:null},
-  {id:10, name:"The Sentinel", title:"Station Guardian",    dialogue:"None shall pass the outer ring. None.",                       diff:0.8,  gems:400,  card:"Epic",    boss:true},
-  {id:11, name:"Lorn",         title:"Exile",               dialogue:"Cast out from the fleet. I have nothing to lose.",            diff:0.75, gems:160,  card:null},
-  {id:12, name:"Zara",         title:"Bounty Hunter",       dialogue:"Your collection has a price. I'm here to collect.",           diff:0.78, gems:170,  card:null},
-  {id:13, name:"Koss",         title:"Void Cultist",        dialogue:"The void hungers. Your cards will feed it.",                  diff:0.8,  gems:180,  card:null},
-  {id:14, name:"Ixen",         title:"Rogue Admiral",       dialogue:"I defected for a reason. You're about to find out why.",      diff:0.82, gems:190,  card:null},
-  {id:15, name:"The Devourer", title:"Ancient Horror",      dialogue:"I have consumed galaxies. You are nothing.",                   diff:0.9,  gems:600,  card:"Epic",    boss:true},
-  {id:16, name:"Sera",         title:"Void Witch",          dialogue:"Your future is already written. I've read it.",               diff:0.85, gems:200,  card:null},
-  {id:17, name:"Krenn",        title:"Titan Pilot",         dialogue:"My mech has never been beaten. Today is no different.",       diff:0.87, gems:220,  card:null},
-  {id:18, name:"The Oracle",   title:"Quantum Prophet",     dialogue:"I see all possible outcomes. In none of them do you win.",    diff:0.89, gems:240,  card:null},
-  {id:19, name:"Void Paladin", title:"Dark Champion",       dialogue:"I have fought for the void for a thousand years.",            diff:0.91, gems:260,  card:null},
-  {id:20, name:"Void Reaper",  title:"Final Guardian",      dialogue:"You have come far. It ends here. The void reclaims all.",     diff:1.0,  gems:1000, card:"Legendary",boss:true},
+  // ── PLANET 1: VIRETH (nodes 1-20) ────────────────────────────────────────
+  {id:1,  name:"Zyx-7",         title:"Void Scout",        dialogue:"Your journey ends here, collector.",                           diff:0.30, gems:60,   card:null,    planet:1},
+  {id:2,  name:"Kael",          title:"Drifter",           dialogue:"I've never lost. Until now, maybe.",                          diff:0.33, gems:65,   card:null,    planet:1},
+  {id:3,  name:"Sorn",          title:"Salvager",          dialogue:"That card collection won't save you.",                        diff:0.36, gems:70,   card:null,    planet:1},
+  {id:4,  name:"Vex",           title:"Marauder",          dialogue:"The void doesn't care about your deck.",                      diff:0.38, gems:75,   card:null,    planet:1},
+  {id:5,  name:"Pyx",           title:"Scavenger",         dialogue:"I salvaged my entire deck from corpses. Yours will be next.", diff:0.40, gems:80,   card:null,    planet:1},
+  {id:6,  name:"Dran",          title:"Outpost Guard",     dialogue:"Nobody gets past this outpost. Nobody.",                      diff:0.42, gems:85,   card:null,    planet:1},
+  {id:7,  name:"Tess-3",        title:"Combat Drone",      dialogue:"Threat assessment: minimal. Engaging anyway.",                diff:0.44, gems:90,   card:null,    planet:1},
+  {id:8,  name:"Lurk",          title:"Void Stalker",      dialogue:"I've been watching you since node one.",                      diff:0.46, gems:95,   card:null,    planet:1},
+  {id:9,  name:"Brixx",         title:"Arms Dealer",       dialogue:"I sell weapons. I also use them. Guess which today.",         diff:0.48, gems:100,  card:null,    planet:1},
+  {id:10, name:"Nyra",          title:"Corsair",           dialogue:"Fast hands, faster cards. Let's see yours.",                  diff:0.50, gems:110,  card:"Common", planet:1},
+  {id:11, name:"Sable",         title:"Phantom",           dialogue:"I strike from the shadows. You won't see it coming.",         diff:0.52, gems:115,  card:null,    planet:1},
+  {id:12, name:"Oryx",          title:"Pit Fighter",       dialogue:"I've won 300 fights. You'll be 301.",                        diff:0.54, gems:120,  card:null,    planet:1},
+  {id:13, name:"Cass",          title:"Rogue Pilot",       dialogue:"I fly, fight, and win. Usually in that order.",               diff:0.56, gems:125,  card:null,    planet:1},
+  {id:14, name:"Fenx",          title:"Mercenary",         dialogue:"This isn't personal. You're just a contract.",                diff:0.58, gems:130,  card:null,    planet:1},
+  {id:15, name:"Rho",           title:"Smuggler",          dialogue:"I've outrun fleets. You're just one person.",                 diff:0.60, gems:135,  card:null,    planet:1},
+  {id:16, name:"Dusk",          title:"Exile",             dialogue:"Cast out. Nothing to lose. Everything to prove.",             diff:0.61, gems:140,  card:null,    planet:1},
+  {id:17, name:"Mira-9",        title:"Combat AI",         dialogue:"Calculating your defeat... probability: 94.7%.",              diff:0.62, gems:145,  card:null,    planet:1},
+  {id:18, name:"Thax",          title:"Warlord",           dialogue:"A thousand battles. A thousand victories.",                   diff:0.63, gems:150,  card:null,    planet:1},
+  {id:19, name:"Vireth Prime",  title:"Planetary Guard",   dialogue:"You want through Vireth? You go through me first.",           diff:0.64, gems:160,  card:null,    planet:1},
+  {id:20, name:"Commander Rael",title:"Void Fleet",        dialogue:"I command the outer sectors. You're trespassing.",            diff:0.65, gems:300,  card:"Rare",   planet:1, boss:true},
+
+  // ── PLANET 2: KAEL PRIME (nodes 21-40) ───────────────────────────────────
+  {id:21, name:"Grix",          title:"Mercenary Vet",     dialogue:"Vireth? That's training grounds. This is the real war.",      diff:0.66, gems:170,  card:null,    planet:2},
+  {id:22, name:"Syla",          title:"Bounty Hunter",     dialogue:"Your collection has a price. I'm here to collect.",           diff:0.67, gems:175,  card:null,    planet:2},
+  {id:23, name:"Koss",          title:"Void Cultist",      dialogue:"The void hungers. Your cards will feed it.",                  diff:0.68, gems:180,  card:null,    planet:2},
+  {id:24, name:"Ixen",          title:"Rogue Admiral",     dialogue:"I defected for a reason. You're about to find out why.",      diff:0.69, gems:185,  card:null,    planet:2},
+  {id:25, name:"Sera",          title:"Void Witch",        dialogue:"Your future is already written. I've read it.",               diff:0.70, gems:190,  card:null,    planet:2},
+  {id:26, name:"Krenn",         title:"Titan Pilot",       dialogue:"My mech has never been beaten. Today is no different.",       diff:0.71, gems:195,  card:null,    planet:2},
+  {id:27, name:"Vael",          title:"Psi-Blade",         dialogue:"I don't read minds. I read decks. Yours is weak.",            diff:0.72, gems:200,  card:null,    planet:2},
+  {id:28, name:"Torx",          title:"Gunslinger",        dialogue:"Draw first, think second. It's worked so far.",               diff:0.73, gems:205,  card:null,    planet:2},
+  {id:29, name:"Lira",          title:"Fleet Captain",     dialogue:"I've blockaded seventeen systems. You're a speed bump.",      diff:0.74, gems:210,  card:null,    planet:2},
+  {id:30, name:"Drex",          title:"Void Broker",       dialogue:"I've bought and sold better commanders than you.",            diff:0.75, gems:220,  card:"Uncommon",planet:2},
+  {id:31, name:"Xara",          title:"Assassin",          dialogue:"I was paid to end you quickly. I prefer slowly.",             diff:0.75, gems:225,  card:null,    planet:2},
+  {id:32, name:"Bane",          title:"Chaos Agent",       dialogue:"Order is a lie. I prove it every battle.",                    diff:0.76, gems:230,  card:null,    planet:2},
+  {id:33, name:"Zola",          title:"Psi-Weaver",        dialogue:"Your deck has a weakness. I found it three turns ago.",       diff:0.76, gems:235,  card:null,    planet:2},
+  {id:34, name:"Rynn",          title:"Ghost Operative",   dialogue:"You can't hit what you can't see. Try.",                      diff:0.77, gems:240,  card:null,    planet:2},
+  {id:35, name:"Corvin",        title:"Dark Strategist",   dialogue:"I've mapped every counter to every deck. Including yours.",   diff:0.77, gems:245,  card:null,    planet:2},
+  {id:36, name:"Ash",           title:"Void Enforcer",     dialogue:"The Prime Council sent me. That tells you everything.",       diff:0.78, gems:250,  card:null,    planet:2},
+  {id:37, name:"Nex",           title:"Data Thief",        dialogue:"I already downloaded your strategy. Updating counter now.",   diff:0.78, gems:255,  card:null,    planet:2},
+  {id:38, name:"Kael's Hand",   title:"Elite Guard",       dialogue:"The Prime serves none. His guard serves only him.",           diff:0.79, gems:260,  card:null,    planet:2},
+  {id:39, name:"Kael's Shadow", title:"Void Phantom",      dialogue:"I am his shadow. You cannot fight what casts no light.",      diff:0.79, gems:270,  card:null,    planet:2},
+  {id:40, name:"Kael the Prime",title:"Warlord of Kael",   dialogue:"This planet bears my name. Nothing leaves without my blessing.",diff:0.82,gems:450, card:"Rare",   planet:2, boss:true},
+
+  // ── PLANET 3: NOX STATION (nodes 41-60) ──────────────────────────────────
+  {id:41, name:"Station-7",     title:"Security Unit",     dialogue:"Unauthorized entry detected. Initiating removal protocol.",   diff:0.82, gems:280,  card:null,    planet:3},
+  {id:42, name:"Flux",          title:"Reactor Tech",      dialogue:"I've worked with unstable energy my whole life. You qualify.", diff:0.83, gems:285,  card:null,    planet:3},
+  {id:43, name:"Drax",          title:"Station Bruiser",   dialogue:"The station has three rules. I enforce all of them.",         diff:0.83, gems:290,  card:null,    planet:3},
+  {id:44, name:"Nox-Prime",     title:"Station AI",        dialogue:"I have processed 4 million battles. You are pattern 4000001.", diff:0.84, gems:295, card:null,    planet:3},
+  {id:45, name:"Scorch",        title:"Plasma Engineer",   dialogue:"I work with plasma. I fight with plasma. See the theme?",     diff:0.84, gems:300,  card:null,    planet:3},
+  {id:46, name:"Wraif",         title:"Void Harvester",    dialogue:"Nox Station runs on void energy. So do I.",                   diff:0.85, gems:305,  card:null,    planet:3},
+  {id:47, name:"Crimp",         title:"Black Market King", dialogue:"Everything on Nox has a price. Your soul included.",          diff:0.85, gems:310,  card:null,    planet:3},
+  {id:48, name:"Thorn",         title:"Station Warden",    dialogue:"I've locked up better commanders than you.",                  diff:0.86, gems:315,  card:null,    planet:3},
+  {id:49, name:"Hex",           title:"Saboteur",          dialogue:"I don't win battles. I end them before they start.",          diff:0.86, gems:320,  card:null,    planet:3},
+  {id:50, name:"The Oracle",    title:"Quantum Prophet",   dialogue:"I see all possible outcomes. In none do you win.",            diff:0.87, gems:360,  card:"Rare",   planet:3},
+  {id:51, name:"Null",          title:"Void Entity",       dialogue:"I have no name. I have no past. I have only your defeat.",    diff:0.87, gems:330,  card:null,    planet:3},
+  {id:52, name:"Specter",       title:"Phase Walker",      dialogue:"I exist between dimensions. Your attacks find nothing.",      diff:0.88, gems:335,  card:null,    planet:3},
+  {id:53, name:"Lynx",          title:"Nano-Surgeon",      dialogue:"I've dissected better decks than yours under a microscope.",  diff:0.88, gems:340,  card:null,    planet:3},
+  {id:54, name:"Core-9",        title:"Station Core",      dialogue:"I am the heart of Nox Station. Strike me and the station falls.", diff:0.89, gems:345, card:null, planet:3},
+  {id:55, name:"Vox",           title:"Signal Jammer",     dialogue:"Your strategy relies on communication. I've cut the signal.", diff:0.89, gems:350,  card:null,    planet:3},
+  {id:56, name:"Rift",          title:"Dimensional Blade", dialogue:"I cut through space. Your cards are just matter.",            diff:0.90, gems:355,  card:null,    planet:3},
+  {id:57, name:"Apex",          title:"Station Champion",  dialogue:"I am the best fighter Nox Station has ever produced.",        diff:0.90, gems:360,  card:null,    planet:3},
+  {id:58, name:"Nox Elite",     title:"Final Guard",       dialogue:"The Director doesn't face challengers. I do.",               diff:0.91, gems:370,  card:null,    planet:3},
+  {id:59, name:"Station Director",title:"Nox Command",     dialogue:"I built this station. I will not lose it to a collector.",   diff:0.91, gems:380,  card:null,    planet:3},
+  {id:60, name:"The Sentinel",  title:"Station Guardian",  dialogue:"None shall pass the outer ring. None.",                      diff:0.93, gems:600,  card:"Epic",   planet:3, boss:true},
+
+  // ── PLANET 4: THE DEVOURER'S WAKE (nodes 61-80) ───────────────────────────
+  {id:61, name:"Consumed",      title:"Void Remnant",      dialogue:"I was like you once. The Wake changed me.",                  diff:0.93, gems:400,  card:null,    planet:4},
+  {id:62, name:"Grave-1",       title:"Dead Fleet Ghost",  dialogue:"My fleet was consumed here. I am all that remains.",         diff:0.93, gems:405,  card:null,    planet:4},
+  {id:63, name:"Hollow",        title:"Void Husked",       dialogue:"The Devourer took everything. Left only hunger.",            diff:0.94, gems:410,  card:null,    planet:4},
+  {id:64, name:"Wail",          title:"Echo Wraith",       dialogue:"I am the scream of every world the Devourer consumed.",      diff:0.94, gems:415,  card:null,    planet:4},
+  {id:65, name:"Ruin",          title:"Collapse Entity",   dialogue:"Everything collapses. Everything ends. Starting with you.",  diff:0.94, gems:420,  card:null,    planet:4},
+  {id:66, name:"Ash-Kin",       title:"Burned Survivor",   dialogue:"I survived the consumption. There is no surviving me.",      diff:0.95, gems:425,  card:null,    planet:4},
+  {id:67, name:"Cinder",        title:"Void Ember",        dialogue:"What the Devourer leaves behind still burns.",               diff:0.95, gems:430,  card:null,    planet:4},
+  {id:68, name:"Fracture",      title:"Reality Crack",     dialogue:"The Wake fractured space here. And your strategy.",          diff:0.95, gems:435,  card:null,    planet:4},
+  {id:69, name:"Abyss-Walker",  title:"Void Strider",      dialogue:"I walk the space between worlds. You barely walk one.",      diff:0.96, gems:440,  card:null,    planet:4},
+  {id:70, name:"Scar",          title:"Wake Champion",     dialogue:"Every scar I have came from someone better than you.",       diff:0.96, gems:460,  card:"Rare",   planet:4},
+  {id:71, name:"Void-Born",     title:"Consumed Reborn",   dialogue:"I died in the Wake. What you face now is worse.",            diff:0.96, gems:450,  card:null,    planet:4},
+  {id:72, name:"Eclipse",       title:"Star Killer",       dialogue:"I've watched stars die. You are a candle.",                  diff:0.97, gems:455,  card:null,    planet:4},
+  {id:73, name:"Terminus",      title:"End Bringer",       dialogue:"Every path through the Wake leads to an ending.",            diff:0.97, gems:460,  card:null,    planet:4},
+  {id:74, name:"Null-Storm",    title:"Void Tempest",      dialogue:"The Wake generates storms of pure void energy. I am one.",   diff:0.97, gems:465,  card:null,    planet:4},
+  {id:75, name:"The Hungering", title:"Devourer's Fragment",dialogue:"I am a piece of it. A fraction of its appetite.",           diff:0.98, gems:470,  card:null,    planet:4},
+  {id:76, name:"Wake-Lord",     title:"Domain Ruler",      dialogue:"The Devourer left me to rule its Wake. None trespass.",      diff:0.98, gems:475,  card:null,    planet:4},
+  {id:77, name:"Obliteron",     title:"Mass Destroyer",    dialogue:"I have unmade thirty fleets. Your deck is a footnote.",      diff:0.98, gems:480,  card:null,    planet:4},
+  {id:78, name:"Void Paladin",  title:"Dark Champion",     dialogue:"I have fought for the void for a thousand years.",           diff:0.99, gems:490,  card:null,    planet:4},
+  {id:79, name:"The Last Guard", title:"Wake Sentinel",    dialogue:"Beyond me is the Devourer itself. You will not pass.",       diff:0.99, gems:500,  card:null,    planet:4},
+  {id:80, name:"The Devourer",  title:"Ancient Horror",    dialogue:"I have consumed galaxies. You are nothing.",                 diff:1.0,  gems:800,  card:"Epic",   planet:4, boss:true},
+
+  // ── PLANET 5: VOID NEXUS (nodes 81-100) ───────────────────────────────────
+  {id:81, name:"Nexus-Guard",   title:"Void Sentinel",     dialogue:"The Nexus does not accept visitors. Leave.",                 diff:1.0,  gems:520,  card:null,    planet:5},
+  {id:82, name:"Axiom",         title:"Reality Bender",    dialogue:"At the Nexus, reality is suggestion. I ignore it.",          diff:1.0,  gems:525,  card:null,    planet:5},
+  {id:83, name:"Paradox",       title:"Time Fracture",     dialogue:"I exist in all timelines simultaneously. In none do you win.", diff:1.01, gems:530, card:null,    planet:5},
+  {id:84, name:"Singularity",   title:"Collapse Point",    dialogue:"Everything in the universe is falling toward me.",           diff:1.01, gems:535,  card:null,    planet:5},
+  {id:85, name:"The Architect", title:"Nexus Builder",     dialogue:"I built the Nexus. I designed the void. I designed your defeat.", diff:1.02, gems:540, card:null, planet:5},
+  {id:86, name:"Oblivion",      title:"End State",         dialogue:"The void is not empty. It is full of the things I've taken.", diff:1.02, gems:545, card:null,    planet:5},
+  {id:87, name:"Resonance",     title:"Void Frequency",    dialogue:"The Nexus hums at a frequency that unmakes matter. Listen.", diff:1.02, gems:550,  card:null,    planet:5},
+  {id:88, name:"Eternal",       title:"Undying",           dialogue:"I have died at this Nexus fourteen times. I keep coming back.", diff:1.03, gems:555, card:null,  planet:5},
+  {id:89, name:"The Hollow King",title:"Nexus Sovereign",  dialogue:"I rule a kingdom of nothing. That makes me unstoppable.",   diff:1.03, gems:560,  card:null,    planet:5},
+  {id:90, name:"Apex-Prime",    title:"Nexus Champion",    dialogue:"Every commander reaches the Nexus eventually. None leave.",  diff:1.04, gems:580,  card:"Epic",   planet:5},
+  {id:91, name:"Fractured God", title:"Broken Deity",      dialogue:"The void shattered me across dimensions. I reassembled wrong.", diff:1.04, gems:570, card:null,  planet:5},
+  {id:92, name:"Nexus Storm",   title:"Void Tempest",      dialogue:"The Nexus generates its own weather. Currently: you dying.", diff:1.04, gems:575,  card:null,    planet:5},
+  {id:93, name:"The Unseeing",  title:"Blind Oracle",      dialogue:"I cannot see. I have never needed to.",                      diff:1.05, gems:580,  card:null,    planet:5},
+  {id:94, name:"Void-Emperor",  title:"Nexus Ruler",       dialogue:"I have ruled the Nexus since before your species existed.",  diff:1.05, gems:585,  card:null,    planet:5},
+  {id:95, name:"Null-Prime",    title:"Absolute Zero",     dialogue:"At the Nexus, everything becomes nothing. Starting now.",   diff:1.06, gems:590,  card:null,    planet:5},
+  {id:96, name:"The Consume",   title:"Devourer's Will",   dialogue:"The Devourer's will flows through the Nexus. Through me.",  diff:1.06, gems:595,  card:null,    planet:5},
+  {id:97, name:"Void Arbiter",  title:"Final Judge",       dialogue:"I judge all who reach the Nexus. Your judgment is death.",   diff:1.07, gems:600,  card:null,    planet:5},
+  {id:98, name:"The Last",      title:"End of All",        dialogue:"I am what waits at the end of every story. Including yours.", diff:1.07, gems:620,  card:null,    planet:5},
+  {id:99, name:"Nexus Prime",   title:"Void Incarnate",    dialogue:"I am not a person. I am the Nexus itself. And you are here.", diff:1.08, gems:650, card:null,    planet:5},
+  {id:100,name:"Void Reaper",   title:"Final Guardian",    dialogue:"You have come far. It ends here. The void reclaims all.",    diff:1.1,  gems:1500, card:"Legendary",planet:5, boss:true},
 ];
 
 // Build enemy deck for a node based on difficulty
@@ -1662,7 +1762,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
     setActedCards(prev=>{const next=new Set(prev);next.add(card.uid);return next;});
-    setMana(m=>m+1); // gain 1 mana for defending
+    setMana(m=>Math.min(maxMana,m+1)); // gain 1 mana for defending, capped at maxMana
     addLog(`🛡 ${card.name} takes a defensive stance. +1 mana!`,"player");
     SFX.play("click");
   };
@@ -3339,6 +3439,7 @@ function App() {
   const [deckBattle,setDeckBattle] =useState(false);
   const [galaxyBattle,setGalaxyBattle]=useState(null); // node object or null
   const [completedNodes,setCompletedNodes]=useState(()=>S.get("completedNodes",[]));
+  const [nodeClears,setNodeClears]=useState(()=>S.get("nodeClears",{})); // {nodeId: clearCount}
   const [stamina,setStamina]=useState(()=>{
     const saved=S.get("stamina",5);
     const lastRefill=S.get("lastStaminaRefill",Date.now());
@@ -3476,6 +3577,7 @@ function App() {
 
   useEffect(()=>S.set("auctions",auctions),[auctions]);
   useEffect(()=>S.set("completedNodes",completedNodes),[completedNodes]);
+  useEffect(()=>S.set("nodeClears",nodeClears),[nodeClears]);
   useEffect(()=>S.set("stamina",stamina),[stamina]);
   useEffect(()=>S.set("lastStaminaRefill",lastStaminaRefill),[lastStaminaRefill]);
   useEffect(()=>S.set("lastAdWatch",lastAdWatch),[lastAdWatch]);
@@ -3525,7 +3627,7 @@ function App() {
     username,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
-    completedNodes,stamina,lastStaminaRefill,
+    completedNodes,stamina,lastStaminaRefill,nodeClears,
   });
   useEffect(()=>{
     if(!authed)return;
@@ -3715,7 +3817,8 @@ function App() {
   const canClaimFreePack=dailyFreePack!==todayStr();
   const today=new Date().toISOString().slice(0,10);
   // Handle old boolean format (true) AND new date string format ("2026-03-08")
-  const canClaimDailyGems=dailyGems!==today && dailyGems!==true;
+  const todayStr=new Date().toDateString();
+  const canClaimDailyGems=dailyGems!==todayStr && dailyGems!==today && dailyGems!==true;
   const freePackCountdown=()=>{
     const now=new Date();
     const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
@@ -3849,6 +3952,7 @@ function App() {
       apply("lastLogin",setLastLogin,save.lastLogin);
       apply("dailyGems",setDailyGems,save.dailyGems);
       apply("completedNodes",setCompletedNodes,save.completedNodes);
+      apply("nodeClears",setNodeClears,save.nodeClears);
       apply("stamina",setStamina,save.stamina);
       apply("lastStaminaRefill",setLastStaminaRefill,save.lastStaminaRefill);
     } else {
@@ -4211,49 +4315,170 @@ function App() {
           })()}
 
           {/* Galaxy Map header */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
             <div style={{fontSize:16,fontWeight:700}}>🌌 Galaxy Campaign</div>
             <div style={{color:"#475569",fontSize:11}}>{completedNodes.length}/{GALAXY_NODES.length} nodes</div>
           </div>
-          <div style={{color:"#64748b",fontSize:12,marginBottom:14}}>Defeat enemies to earn gems and cards · Boss every 5 nodes</div>
+          <div style={{color:"#64748b",fontSize:12,marginBottom:12}}>Scroll to explore · Defeat enemies · Conquer planets</div>
 
           {collection.length===0
             ?<div style={{textAlign:"center",color:"#334155",paddingTop:40}}>
               <div style={{fontSize:48}}>⚔️</div>
               <div style={{marginTop:12}}>Get cards from the Shop first!</div>
             </div>
-            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {GALAXY_NODES.map((node,i)=>{
-                const done=completedNodes.includes(node.id);
-                const locked=i>0&&!completedNodes.includes(GALAXY_NODES[i-1].id);
-                const rc=node.boss?{color:"#f59e0b"}:{color:"#a855f7"};
-                return <div key={node.id} style={{background:done?"linear-gradient(135deg,#052e16,#14532d)":locked?"#0a0a0a":"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${done?"#14532d":locked?"#1e293b":node.boss?"#f59e0b44":"#4c1d9544"}`,borderRadius:12,padding:12,opacity:locked?0.4:1,position:"relative",overflow:"hidden"}}>
-                  {node.boss&&!done&&!locked&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite"}}/>}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                        <span style={{color:"#334155",fontSize:10,fontWeight:700,minWidth:22}}>#{node.id}</span>
-                        <span style={{color:done?"#22c55e":node.boss?"#f59e0b":"#a855f7",fontWeight:800,fontSize:13}}>
-                          {done?"✅":locked?"🔒":node.boss?"👑":"⚔️"} {node.name}
-                        </span>
-                        {node.boss&&<span style={{background:"#78350f",color:"#f59e0b",fontSize:9,fontWeight:700,borderRadius:5,padding:"1px 6px"}}>BOSS</span>}
+            :<div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:12}}>
+              {/* Scrollable horizontal map */}
+              <div style={{display:"flex",alignItems:"center",gap:0,minWidth:"max-content",padding:"20px 16px"}}>
+                {PLANETS.map((planet,pi)=>{
+                  const planetNodes=GALAXY_NODES.filter(n=>n.planet===planet.id&&!n.boss);
+                  const bossNode=GALAXY_NODES.find(n=>n.planet===planet.id&&n.boss);
+                  const planetDone=bossNode&&completedNodes.includes(bossNode.id);
+                  const planetUnlocked=planet.id===1||PLANETS[pi-1]&&completedNodes.includes(GALAXY_NODES.find(n=>n.planet===planet.id-1&&n.boss)?.id);
+                  return(
+                    <React.Fragment key={planet.id}>
+                      {/* Path connector from previous planet */}
+                      {pi>0&&<div style={{display:"flex",alignItems:"center",width:40,flexShrink:0}}>
+                        <div style={{width:"100%",height:2,background:planetUnlocked?"linear-gradient(90deg,#a855f733,#a855f7)":"#1e293b",borderRadius:1}}/>
+                      </div>}
+
+                      {/* Planet section */}
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:0,flexShrink:0}}>
+
+                        {/* Planet header */}
+                        <div style={{textAlign:"center",marginBottom:12,opacity:planetUnlocked?1:0.35}}>
+                          <div style={{fontSize:10,fontWeight:800,letterSpacing:3,color:planet.color,marginBottom:2}}>{planet.name.toUpperCase()}</div>
+                          <div style={{fontSize:9,color:"#334155",maxWidth:120}}>{planet.lore}</div>
+                        </div>
+
+                        {/* Star nodes row */}
+                        <div style={{display:"flex",alignItems:"center",gap:0}}>
+                          {planetNodes.map((node,ni)=>{
+                            const globalIdx=GALAXY_NODES.findIndex(n=>n.id===node.id);
+                            const done=completedNodes.includes(node.id);
+                            const locked=!planetUnlocked||(globalIdx>0&&!completedNodes.includes(GALAXY_NODES[globalIdx-1].id));
+                            const clears=nodeClears[node.id]||0;
+                            // glow state
+                            const glowColor=clears>=3?"#f59e0b":clears>=2?"#3b82f6":done?"#22c55e":"#a855f7";
+                            const glowShadow=clears>=3?"0 0 12px #f59e0b88":clears>=2?"0 0 10px #3b82f688":done?"0 0 8px #22c55e66":"none";
+                            const nodeIcon=locked?"🔒":clears>=3?"⭐":clears>=2?"✓✓":done?"✓":"⚔️";
+                            return(
+                              <React.Fragment key={node.id}>
+                                {ni>0&&<div style={{width:18,height:2,background:locked?"#1e293b":done?"#22c55e33":"#a855f722",flexShrink:0}}/>}
+                                <div
+                                  onClick={()=>{if(!locked){SFX.play("click");setGalaxyBattle(node);}}}
+                                  title={locked?"Locked":node.name}
+                                  style={{
+                                    width:32,height:32,borderRadius:"50%",flexShrink:0,
+                                    background:locked?"#0f172a":clears>=3?"linear-gradient(135deg,#78350f,#f59e0b)":clears>=2?"linear-gradient(135deg,#1e3a5f,#3b82f6)":done?"linear-gradient(135deg,#052e16,#22c55e)":"linear-gradient(135deg,#1e0a3c,#7c3aed)",
+                                    border:`2px solid ${locked?"#1e293b":glowColor}`,
+                                    boxShadow:locked?"none":glowShadow,
+                                    display:"flex",alignItems:"center",justifyContent:"center",
+                                    fontSize:11,cursor:locked?"default":"pointer",
+                                    transition:"transform .15s,box-shadow .15s",
+                                    opacity:locked?0.3:1,
+                                  }}
+                                  onMouseEnter={e=>{if(!locked)e.currentTarget.style.transform="scale(1.2)";}}
+                                  onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
+                                >
+                                  {nodeIcon}
+                                </div>
+                              </React.Fragment>
+                            );
+                          })}
+
+                          {/* Connector to boss */}
+                          {bossNode&&<div style={{width:24,height:2,background:planetUnlocked&&completedNodes.includes(GALAXY_NODES[GALAXY_NODES.findIndex(n=>n.id===bossNode.id)-1]?.id)?"linear-gradient(90deg,#a855f7,#f59e0b)":"#1e293b",flexShrink:0}}/>}
+
+                          {/* Boss planet node */}
+                          {bossNode&&(()=>{
+                            const bossDone=completedNodes.includes(bossNode.id);
+                            const bossGlobalIdx=GALAXY_NODES.findIndex(n=>n.id===bossNode.id);
+                            const bossLocked=!planetUnlocked||(bossGlobalIdx>0&&!completedNodes.includes(GALAXY_NODES[bossGlobalIdx-1].id));
+                            const bossClears=nodeClears[bossNode.id]||0;
+                            return(
+                              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                                <div
+                                  onClick={()=>{if(!bossLocked){SFX.play("click");setGalaxyBattle(bossNode);}}}
+                                  style={{
+                                    width:52,height:52,borderRadius:"50%",flexShrink:0,
+                                    background:bossLocked?"#0a0a0a":bossDone?"linear-gradient(135deg,#78350f,#d97706)":"linear-gradient(135deg,#450a0a,#ef4444)",
+                                    border:`3px solid ${bossLocked?"#1e293b":bossDone?"#f59e0b":"#ef4444"}`,
+                                    boxShadow:bossLocked?"none":bossDone?"0 0 20px #f59e0b66":"0 0 16px #ef444466,0 0 32px #ef444422",
+                                    display:"flex",alignItems:"center",justifyContent:"center",
+                                    fontSize:22,cursor:bossLocked?"default":"pointer",
+                                    opacity:bossLocked?0.25:1,
+                                    animation:!bossLocked&&!bossDone?"nebulaPulse 2s ease-in-out infinite":undefined,
+                                    transition:"transform .15s",
+                                  }}
+                                  onMouseEnter={e=>{if(!bossLocked)e.currentTarget.style.transform="scale(1.1)";}}
+                                  onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
+                                >
+                                  {bossDone?"🏆":"👑"}
+                                </div>
+                                <div style={{textAlign:"center",opacity:bossLocked?0.3:1}}>
+                                  <div style={{color:"#f59e0b",fontSize:9,fontWeight:800,letterSpacing:1}}>{planet.name}</div>
+                                  <div style={{color:"#ef4444",fontSize:8,fontWeight:700}}>BOSS</div>
+                                  {!bossLocked&&!bossDone&&<div style={{color:"#f59e0b",fontSize:8}}>💎{bossNode.gems}</div>}
+                                  {bossDone&&bossClears>=3&&<div style={{color:"#f59e0b",fontSize:8}}>⭐ Mastered</div>}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Gem reward info row under nodes */}
+                        <div style={{display:"flex",gap:0,marginTop:6,opacity:planetUnlocked?1:0.2}}>
+                          {planetNodes.map((node,ni)=>(
+                            <React.Fragment key={node.id}>
+                              {ni>0&&<div style={{width:18}}/>}
+                              <div style={{width:32,textAlign:"center"}}>
+                                <div style={{color:"#475569",fontSize:7}}>💎{node.gems}</div>
+                              </div>
+                            </React.Fragment>
+                          ))}
+                          <div style={{width:24}}/>
+                          {bossNode&&<div style={{width:52,textAlign:"center"}}/>}
+                        </div>
+
                       </div>
-                      <div style={{color:"#475569",fontSize:11,marginBottom:4}}>{node.title}</div>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                        <span style={{color:"#f59e0b",fontSize:10}}>💎 {node.gems}</span>
-                        {node.card&&<span style={{color:RC[node.card]?.color||"#94a3b8",fontSize:10}}>🃏 {node.card}</span>}
-                        <span style={{color:"#475569",fontSize:10}}>⚡ 1 stamina</span>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {/* Selected node detail panel */}
+              {(()=>{
+                // Find next available node
+                const nextNode=GALAXY_NODES.find((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
+                if(!nextNode)return null;
+                const clears=nodeClears[nextNode.id]||0;
+                const planet=PLANETS.find(p=>p.id===nextNode.planet);
+                return(
+                  <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${nextNode.boss?"#f59e0b44":"#4c1d9544"}`,borderRadius:14,padding:14,marginTop:4}}>
+                    {nextNode.boss&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite",borderRadius:"14px 14px 0 0"}}/>}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                          <span style={{color:nextNode.boss?"#f59e0b":"#a855f7",fontWeight:900,fontSize:14}}>{nextNode.boss?"👑":"⚔️"} {nextNode.name}</span>
+                          {nextNode.boss&&<span style={{background:"#78350f",color:"#f59e0b",fontSize:9,fontWeight:700,borderRadius:5,padding:"1px 6px"}}>BOSS</span>}
+                        </div>
+                        <div style={{color:"#64748b",fontSize:11}}>{nextNode.title} · {planet?.name}</div>
+                        <div style={{color:"#475569",fontSize:11,fontStyle:"italic",marginTop:4}}>"{nextNode.dialogue}"</div>
                       </div>
+                      <button onClick={()=>{SFX.play("click");setGalaxyBattle(nextNode);}}
+                        style={{background:nextNode.boss?"linear-gradient(135deg,#92400e,#f59e0b)":"linear-gradient(135deg,var(--t1),var(--t2))",color:nextNode.boss?"#000":"white",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0,marginLeft:12}}>
+                        Battle →
+                      </button>
                     </div>
-                    {!locked&&!done&&<button onClick={()=>{SFX.play("click");setGalaxyBattle(node);}}
-                      style={{background:node.boss?"linear-gradient(135deg,#92400e,#f59e0b)":"linear-gradient(135deg,var(--t1),var(--t2))",color:node.boss?"#000":"white",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0,marginLeft:10}}>
-                      Battle →
-                    </button>}
-                    {done&&<div style={{color:"#22c55e",fontSize:20,marginLeft:10}}>✓</div>}
-                    {locked&&<div style={{color:"#334155",fontSize:18,marginLeft:10}}>🔒</div>}
+                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                      <span style={{color:"#f59e0b",fontSize:11}}>💎 {clears===0?nextNode.gems:clears>=2?`${Math.round(nextNode.gems*0.5)} (3rd clear)`:"XP only"}</span>
+                      {nextNode.card&&clears===0&&<span style={{color:RC[nextNode.card]?.color||"#94a3b8",fontSize:11}}>🃏 {nextNode.card} card</span>}
+                      <span style={{color:"#475569",fontSize:11}}>⚡ 1 stamina</span>
+                      {clears>0&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}{clears===2?" → bonus gems!":""}</span>}
+                    </div>
                   </div>
-                </div>;
-              })}
+                );
+              })()}
             </div>
           }
         </div>}
@@ -4701,15 +4926,31 @@ function App() {
         onWin={(gems,card)=>{
           const nw=wins+1;
           setWins(nw);
-          setCoins(c=>c+gems);
-          givePlayerXp(100+galaxyBattle.gems);
-          setCompletedNodes(prev=>[...new Set([...prev,galaxyBattle.id])]);
-          if(card) setCollection(prev=>[...prev,card]);
+          const nodeId=galaxyBattle.id;
+          const firstClear=!completedNodes.includes(nodeId);
+          const prevClears=nodeClears[nodeId]||0;
+          const newClears=prevClears+1;
+          setNodeClears(prev=>({...prev,[nodeId]:newClears}));
+          setCompletedNodes(prev=>[...new Set([...prev,nodeId])]);
+          // Gem reward logic: first clear = full gems, 2nd = XP only, 3rd = bonus gems, 4+ = XP only
+          let gemReward=0;
+          let bonusMsg="";
+          if(firstClear){
+            gemReward=gems;
+            bonusMsg=`+💎${gems}`;
+          } else if(newClears===3){
+            gemReward=Math.round(gems*0.5);
+            bonusMsg=`+💎${gemReward} (3rd clear bonus!)`;
+          }
+          if(gemReward>0) setCoins(c=>c+gemReward);
+          givePlayerXp(firstClear?100+galaxyBattle.gems:40);
+          if(card&&firstClear) setCollection(prev=>[...prev,card]);
           SFX.play("achievement");
-          notify(`🏆 ${galaxyBattle.name} defeated! +💎${gems}${card?` + ${card.name}`:""}`, "ach");
+          const cardMsg=card&&firstClear?` + ${card.name}`:"";
+          notify(`🏆 ${galaxyBattle.name} defeated! ${bonusMsg}${cardMsg}`,"ach");
           updateQuest("wins",1);
           updateQuest("battle",1);
-          checkAch({collection,wins:nw,coins:coins+gems,streak,cardLevels,decks,totalSold,teamWins});
+          checkAch({collection,wins:nw,coins:coins+gemReward,streak,cardLevels,decks,totalSold,teamWins});
           setBattleStreak(b=>b+1);
         }}
         onLose={()=>{
