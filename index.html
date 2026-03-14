@@ -3492,13 +3492,13 @@ function App() {
   // ── Stamina regen (1 per 30 min, max = 5 + playerLevel/3) ─────────────────
   const lastRefillRef = useRef(lastStaminaRefill);
   useEffect(()=>{ lastRefillRef.current = lastStaminaRefill; },[lastStaminaRefill]);
-  useEffect(()=>{\
+  useEffect(()=>{
     const maxStam=5+Math.floor(playerLevel/3);
-    const t=setInterval(()=>{\
+    const t=setInterval(()=>{
       const now=Date.now();
       const elapsed=now-lastRefillRef.current;
       const refills=Math.floor(elapsed/(30*60*1000));
-      if(refills>0){\
+      if(refills>0){
         const newRefillTime=lastRefillRef.current+(refills*30*60*1000);
         lastRefillRef.current=newRefillTime;
         setLastStaminaRefill(newRefillTime);
