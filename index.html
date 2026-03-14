@@ -509,6 +509,28 @@ const PACK_ODDS = {
   void:      {Common:25,Uncommon:30,Rare:25,Epic:17,Legendary:3},
   legendary: {Common:0,Uncommon:10,Rare:30,Epic:40,Legendary:20},
 };
+
+// ── Avatar system ─────────────────────────────────────────────────────────────
+const AVATARS = [
+  {id:"astronaut", icon:"🧑‍🚀", name:"Astronaut",    unlock:null,              desc:"Default avatar"},
+  {id:"alien",     icon:"👽",   name:"Alien",         unlock:{type:"level",v:5},  desc:"Reach Level 5"},
+  {id:"robot",     icon:"🤖",   name:"Robot",         unlock:{type:"level",v:10}, desc:"Reach Level 10"},
+  {id:"mage",      icon:"🧙",   name:"Mage",          unlock:{type:"rarity",v:"Epic"},   desc:"Own an Epic card"},
+  {id:"dragon",    icon:"🐉",   name:"Dragon",        unlock:{type:"rarity",v:"Legendary"},desc:"Own a Legendary card"},
+  {id:"skull",     icon:"💀",   name:"Void Skull",    unlock:{type:"nodes",v:50}, desc:"Complete 50 nodes"},
+  {id:"crown",     icon:"👑",   name:"Crown",         unlock:{type:"level",v:25}, desc:"Reach Level 25"},
+  {id:"star",      icon:"⭐",   name:"Cosmic",        unlock:{type:"nodes",v:100},desc:"Complete all 100 nodes"},
+];
+
+const avatarUnlocked=(av,{playerLevel,collection,completedNodes})=>{
+  if(!av.unlock) return true;
+  const u=av.unlock;
+  if(u.type==="level") return playerLevel>=u.v;
+  if(u.type==="rarity") return collection.some(c=>c.rarity===u.v);
+  if(u.type==="nodes") return completedNodes.length>=u.v;
+  return false;
+};
+
 const PACKS = [
   { id:1, name:"Starter Pack",   price:100,  icon:"🌌", count:3, oddsKey:"starter",   guaranteed:"Chance at Rare",    guaranteedRarity:"Uncommon" },
   { id:2, name:"Nebula Pack",    price:250,  icon:"🪐", count:5, oddsKey:"nebula",    guaranteed:"Chance at Epic",     guaranteedRarity:"Rare" },
@@ -635,7 +657,7 @@ const getAbility = (card) => ABILITIES[CARD_ABILITIES[card.id]];
 function CardIllustration({ card, w=140, h=160 }) {
   if(card.image) return <img src={card.image} width={w} height={h} style={{display:"block",objectFit:"cover",borderRadius:5}} alt={card.name}/>;
 
-  const c = card.foil?"#f59e0b":card.color;
+  const c = card.foil ? card.color : card.color;
   const id = card.id;
   const rr = (n) => ((id*n*1664525+1013904223)&0x7fffffff)/0x7fffffff;
   const isRobot  = card.type==="Robot";
@@ -991,7 +1013,7 @@ function CardIllustration({ card, w=140, h=160 }) {
         </g>}
 
         {/* Rarity border glow */}
-        {isLeg  && <rect width={w} height={h} fill="none" stroke={card.foil?"#f59e0b":RC.Legendary.color} strokeWidth="1.5" rx={5} opacity=".45"/>}
+        {isLeg  && <rect width={w} height={h} fill="none" stroke={RC[card.rarity]?.color||RC.Legendary.color} strokeWidth="1.5" rx={5} opacity=".45"/>}
         {isEpic && <rect width={w} height={h} fill="none" stroke={RC.Epic.color} strokeWidth="1" rx={5} opacity=".3"/>}
       </g>
     </svg>
@@ -1047,7 +1069,7 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
     </div>
   );
   const isFoil=card.foil;
-  const rc=isFoil?{color:"#f59e0b",bg:"#1c1008",stars:5}:RC[card.rarity];
+  const rc=isFoil?{...RC[card.rarity],stars:(RC[card.rarity]?.stars||1)+1}:RC[card.rarity]||RC.Common;
   const w=mini?112:162, h=mini?168:248;
   const imgW=mini?100:150, imgH=mini?88:128;
   const isHov=hov||selected;
@@ -1067,22 +1089,23 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
       style={{width:w,flexShrink:0,cursor:onClick?"pointer":"default",position:"relative",
         transition:"transform .2s,box-shadow .2s",
         transform:isHov?"translateY(-7px) scale(1.04)":"none",
-        boxShadow:isHov?`0 18px 48px ${rc.color}66,0 0 30px ${rc.color}44`:`0 4px 14px #00000077${isFoil?",0 0 18px #f59e0b33":""}`,
+        boxShadow:isHov?`0 18px 48px ${rc.color}66,0 0 30px ${rc.color}44`:`0 4px 14px #00000077${isFoil?`,0 0 18px ${rc.color}55`:""}`,
         borderRadius:14,WebkitTapHighlightColor:"transparent",
         animation:breatheAnim}}>
-      <div style={{width:w,height:h,background:isFoil?`linear-gradient(160deg,#1c0a00,#2d1a00,#1c0a00)`:`linear-gradient(160deg,#0f172a,${rc.bg},#000)`,borderRadius:14,padding:"5px 5px 7px",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+      <div style={{width:w,height:h,background:`linear-gradient(160deg,#0f172a,${rc.bg},#000)`,borderRadius:14,padding:"5px 5px 7px",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,borderRadius:14,background:`radial-gradient(ellipse at 50% 28%, ${rc.color}${isFoil?"28":"14"},transparent 65%)`,pointerEvents:"none"}}/>
         {/* Legendary golden flare sweep */}
         {isLeg&&!isFoil&&<div style={{position:"absolute",top:0,left:0,right:0,bottom:0,overflow:"hidden",borderRadius:14,pointerEvents:"none",zIndex:2}}>
           <div style={{position:"absolute",top:0,bottom:0,width:"40%",background:"linear-gradient(90deg,transparent,rgba(251,191,36,.22),transparent)",animation:"goldFlare 3.5s ease-in-out infinite",animationDelay:`${(card.id%5)*0.4}s`}}/>
         </div>}
-        {/* Foil rainbow shimmer */}
-        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(105deg,transparent 30%,rgba(255,255,255,.12) 50%,transparent 70%)",backgroundSize:"200% 100%",animation:"foilSweep 2s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
+        {/* Foil prismatic shimmer — keeps rarity color, adds rainbow sheen */}
+        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(105deg,transparent 20%,rgba(255,255,255,.15) 40%,rgba(255,200,255,.1) 50%,rgba(200,255,255,.1) 60%,transparent 80%)",backgroundSize:"200% 100%",animation:"foilSweep 2.5s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
+        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,border:`2px solid ${rc.color}`,boxShadow:`inset 0 0 20px ${rc.color}33`,pointerEvents:"none",zIndex:2}}/>}
         {/* Epic glow pulse */}
-        {isEpic&&<div style={{position:"absolute",inset:0,borderRadius:14,boxShadow:`inset 0 0 18px ${rc.color}22`,animation:"epicGlow 2.5s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
+        {isEpic&&!isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,boxShadow:`inset 0 0 18px ${rc.color}22`,animation:"epicGlow 2.5s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
         {/* Header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3,position:"relative",zIndex:3}}>
-          <span style={{color:rc.color,fontSize:mini?6:7,fontWeight:800,letterSpacing:1}}>{isFoil?"✨ FOIL":card.rarity.toUpperCase()}</span>
+          <span style={{color:rc.color,fontSize:mini?6:7,fontWeight:800,letterSpacing:1}}>{isFoil?`✨ ${card.rarity.toUpperCase()} FOIL`:card.rarity.toUpperCase()}</span>
           {lv>1
 }
           <span style={{color:"#334155",fontSize:mini?6:7,letterSpacing:.5}}>{card.type}</span>
@@ -1923,6 +1946,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
         setActedCards(new Set());
         setPlayerTurn(true);
         setAnimating(false);
+        // Clear defending status — defend only lasts through opponent's turn
+        setPlayerField(f=>f.map(c=>({...c,defending:false})));
       },800);
     },1200);
   },[enemyField,playerField,node]);
@@ -3384,6 +3409,7 @@ function App() {
   const [cloudSave,setCloudSave]   = useState(null); // loaded save from Supabase
   const [newPlayer,setNewPlayer]   = useState(()=>S.get("newPlayer",true));
   const [username,setUsername]       = useState(()=>S.get("username",""));
+  const [avatar,setAvatar]           = useState(()=>S.get("avatar","astronaut"));
   const [editingUsername,setEditingUsername] = useState(false);
   const [usernameDraft,setUsernameDraft]     = useState("");
   const [coins,setCoins]           = useState(()=>S.get("coins",500));
@@ -3478,6 +3504,7 @@ function App() {
   useEffect(()=>S.set("collection",collection),[collection]);
   useEffect(()=>S.set("playerXp",playerXp),[playerXp]);
   useEffect(()=>S.set("playerLevel",playerLevel),[playerLevel]);
+  useEffect(()=>S.set("avatar",avatar),[avatar]);
   useEffect(()=>S.set("wins",wins),[wins]);
   useEffect(()=>S.set("losses",losses),[losses]);
   useEffect(()=>S.set("totalPacks",totalPacks),[totalPacks]);
@@ -3617,7 +3644,7 @@ function App() {
 
   // ── Cloud save sync — writes to Supabase every 30s and on key changes ───────
   const getSaveData=()=>({
-    username,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
+    username,avatar,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
@@ -3701,16 +3728,21 @@ function App() {
   ];
 
   // ── Player XP helper ──────────────────────────────────────────────────────
-  const XP_PER_LEVEL=500;
+  // XP needed to reach next level scales: 800 * level^1.4
+  const xpForLevel=(lv)=>Math.round(800*Math.pow(lv,1.4));
+  const xpTotalForLevel=(lv)=>{ let t=0; for(let i=1;i<lv;i++) t+=xpForLevel(i); return t; };
   const givePlayerXp=(amount)=>{
     setPlayerXp(prev=>{
       const newXp=prev+amount;
       const curLv=playerLevel;
-      const newLv=Math.floor(newXp/XP_PER_LEVEL)+1;
+      // Calculate new level from total XP
+      let newLv=1;
+      let accumulated=0;
+      while(accumulated+xpForLevel(newLv)<=newXp){ accumulated+=xpForLevel(newLv); newLv++; }
       if(newLv>curLv){
         setPlayerLevel(newLv);
         SFX.play("levelUp");
-        notify("⬆️ Player Level "+newLv+"! You're growing stronger, Commander!","ach");
+        notify("⬆️ Level "+newLv+"! "+( newLv%3===0?"Max stamina increased!":"You're growing stronger, Commander!"),"ach");
       }
       return newXp;
     });
@@ -3922,6 +3954,7 @@ function App() {
       // Load cloud save into state AND into localStorage
       const apply=(key,setter,val)=>{ if(val!=null){setter(val);S.set(key,val);} };
       apply("username",setUsername,save.username);
+      apply("avatar",setAvatar,save.avatar);
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
       apply("coins",setCoins,save.coins);
       apply("collection",setCollection,save.collection);
@@ -4137,13 +4170,19 @@ function App() {
           {(()=>{
             const titles=["Rookie","Scout","Cadet","Soldier","Veteran","Elite","Commander","Warlord","Champion","Legend","Void Master"];
             const title=titles[Math.min(Math.floor(playerLevel/3),titles.length-1)];
-            const xpIntoLevel=playerXp%500;
-            const pct=Math.round(xpIntoLevel/500*100);
+            const xpForLv=(lv)=>Math.round(800*Math.pow(lv,1.4));
+            let accumulated=0;
+            for(let i=1;i<playerLevel;i++) accumulated+=xpForLv(i);
+            const xpIntoLevel=playerXp-accumulated;
+            const xpNeeded=xpForLv(playerLevel);
+            const pct=Math.min(100,Math.round(xpIntoLevel/xpNeeded*100));
             return(
               <div style={{background:"linear-gradient(135deg,#0f0a1e,#1e0a3c)",border:"1px solid #4c1d9533",borderRadius:16,padding:"14px 16px",marginBottom:14,position:"relative",overflow:"hidden"}}>
                 <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.04,pointerEvents:"none"}}>🌌</div>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                  <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"white",boxShadow:"0 0 16px #3b82f644",flexShrink:0}}>{playerLevel}</div>
+                  <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:"0 0 16px #3b82f644",flexShrink:0,cursor:"pointer"}} onClick={()=>setShowSettings(true)}>
+                  {(AVATARS.find(a=>a.id===avatar)||AVATARS[0]).icon}
+                </div>
                   <div style={{flex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                       <span style={{color:"white",fontWeight:900,fontSize:16}}>{username||"Commander"}</span>
@@ -4614,9 +4653,13 @@ function App() {
           <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.62</div>
           {/* Player Level Card */}
           {(()=>{
-            const xpIntoLevel=playerXp%(500);
-            const pct=Math.round(xpIntoLevel/500*100);
-            const xpToNext=500-xpIntoLevel;
+            const xpForLv=(lv)=>Math.round(800*Math.pow(lv,1.4));
+            let accumulated=0;
+            for(let i=1;i<playerLevel;i++) accumulated+=xpForLv(i);
+            const xpIntoLevel=playerXp-accumulated;
+            const xpNeeded=xpForLv(playerLevel);
+            const pct=Math.min(100,Math.round(xpIntoLevel/xpNeeded*100));
+            const xpToNext=xpNeeded-xpIntoLevel;
             return <div style={{background:"linear-gradient(135deg,#0f1e3c,#1e3a5f)",border:"1px solid #3b82f655",borderRadius:16,padding:20,marginBottom:16,position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.05,pointerEvents:"none"}}>⭐</div>
               <div style={{color:"#60a5fa",fontSize:9,letterSpacing:4,fontWeight:800,marginBottom:6}}>COMMANDER RANK</div>
@@ -4843,7 +4886,7 @@ function App() {
             <span style={{color:"#64748b",fontSize:10}}> · {Math.round(detail.power*detail.specialMult)}–{Math.round(detail.power*detail.specialMult+12)} dmg</span>
           </div>
           <CardAbilityBadge card={detail}/>
-          <div style={{textAlign:"center",color:"#475569",fontSize:10}}>{detail.series} · {detail.type}</div>
+          <div style={{textAlign:"center",color:"#475569",fontSize:10}}>{detail.series} · {detail.type} · <span style={{color:RC[detail.rarity]?.color,fontWeight:700}}>{detail.foil?`✨ ${detail.rarity} Foil`:detail.rarity}</span></div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:14,maxWidth:320,margin:"14px auto 0"}}>
           <button onClick={()=>{SFX.play("click");setDetail(null);setBattleCard(detail);setTab("battle");}} style={{flex:1,background:"linear-gradient(135deg,#991b1b,#dc2626)",color:"white",border:"none",borderRadius:9,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer"}}>⚔️ Battle</button>
@@ -4895,11 +4938,59 @@ function App() {
               <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
             </div>
           </div>
+          {/* Avatar selector */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
+            <div style={{color:"#a855f7",fontWeight:700,marginBottom:12}}>🎭 Avatar</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+              {AVATARS.map(av=>{
+                const unlocked=avatarUnlocked(av,{playerLevel,collection,completedNodes});
+                const selected=avatar===av.id;
+                return(
+                  <div key={av.id} onClick={()=>{if(unlocked){setAvatar(av.id);S.set("avatar",av.id);SFX.play("click");}}}
+                    style={{background:selected?"linear-gradient(135deg,#4c1d95,#7c3aed)":"#0f172a",border:`1px solid ${selected?"#a855f7":unlocked?"#2e1065":"#1e293b"}`,borderRadius:10,padding:"10px 6px",textAlign:"center",cursor:unlocked?"pointer":"not-allowed",opacity:unlocked?1:0.4,transition:"all .2s"}}>
+                    <div style={{fontSize:24,marginBottom:4}}>{unlocked?av.icon:"🔒"}</div>
+                    <div style={{color:selected?"white":"#475569",fontSize:9,fontWeight:700}}>{av.name}</div>
+                    {!unlocked&&<div style={{color:"#334155",fontSize:8,marginTop:2}}>{av.desc}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Feedback form */}
+          {(()=>{
+            const [fbText,setFbText]=React.useState("");
+            const [fbSent,setFbSent]=React.useState(false);
+            const sendFeedback=async()=>{
+              if(!fbText.trim())return;
+              try{
+                await sb.writeSave({...getSaveData(),_feedback:{msg:fbText,date:new Date().toISOString(),username}});
+                setFbSent(true);
+                setFbText("");
+                setTimeout(()=>setFbSent(false),3000);
+              }catch(e){}
+            };
+            return(
+              <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
+                <div style={{color:"#a855f7",fontWeight:700,marginBottom:10}}>💬 Suggestions & Feedback</div>
+                {fbSent
+                  ?<div style={{textAlign:"center",color:"#22c55e",padding:"16px 0",fontWeight:700}}>✅ Thanks for the feedback!</div>
+                  :<>
+                    <textarea value={fbText} onChange={e=>setFbText(e.target.value)} placeholder="Tell us what you'd like to see in Void Cards..." maxLength={500}
+                      style={{width:"100%",background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"10px",color:"white",fontSize:12,lineHeight:1.6,resize:"vertical",minHeight:80,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}/>
+                    <button onClick={sendFeedback} disabled={!fbText.trim()}
+                      style={{width:"100%",background:fbText.trim()?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:fbText.trim()?"white":"#475569",border:"none",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,cursor:fbText.trim()?"pointer":"not-allowed"}}>
+                      Send Feedback
+                    </button>
+                  </>
+                }
+              </div>
+            );
+          })()}
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v1.0
-          </div>
-          {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
+            Void Cards · Series 1 · v0.4.63
+          </div> style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
           </button>}
           {authed&&<DeleteAccountButton onDeleted={()=>{Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}}/>}
