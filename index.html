@@ -1749,6 +1749,10 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     }
 
     if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}${tl?` (${tl.text})`:""}`,"player");
+    SFX.play(isSpecial?"specialHit":"hit");
+    setTimeout(()=>setAnimating(false),400);
+  };
+
   // Defend a card — pure defensive stance, no mana reward
   const doDefend=(fieldIdx)=>{
     if(!playerTurn||animating)return;
