@@ -1580,10 +1580,12 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [playerTurn,setPlayerTurn]=useState(true);
   const [log,setLog]=useState([]);
   const [animating,setAnimating]=useState(false);
-  const [dmgPops,setDmgPops]=useState([]);             // [{id,text,color,fieldIdx,isEnemy}]
-  const [selectedField,setSelectedField]=useState(null); // index of player field card selected to attack with
-  const [phase2,setPhase2]=useState("free");           // free|attacking|targeting
-  const [pendingSpecial,setPendingSpecial]=useState(false); // true when targeting for special
+  const [attackingCard,setAttackingCard]=useState(null); // player fieldIdx mid-lunge
+  const [hitCard,setHitCard]=useState(null);             // enemy fieldIdx being hit
+  const [dmgPops,setDmgPops]=useState([]);
+  const [selectedField,setSelectedField]=useState(null);
+  const [phase2,setPhase2]=useState("free");
+  const [pendingSpecial,setPendingSpecial]=useState(false);
   const [rewardCard,setRewardCard]=useState(null);
   const [playerHp,setPlayerHp]=useState(0); // set in startBattle based on level
   const [playerMaxHp,setPlayerMaxHp]=useState(0);
@@ -1681,9 +1683,12 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setPhase2("free");
     setSelectedField(null);
     setPendingSpecial(false);
-    // Mark this card as having acted this turn
     setActedCards(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
     if(isSpecial) setSpecialUsed(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
+
+    // Trigger lunge animation on attacker
+    setAttackingCard(attackerIdx);
+    setTimeout(()=>setAttackingCard(null),500);
 
     const atk=playerField[attackerIdx];
     const def=enemyField[targetIdx];
@@ -1692,21 +1697,21 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     const rawDmg=isSpecial?Math.round(atk.power*(atk.specialMult||1.5)):atk.power;
     let dmg=Math.round(rawDmg*mult);
 
-    // Defense check
     let reflectDmg=0;
     if(def.defending){
-      if(def.defense>=dmg){
-        reflectDmg=def.defense-dmg;
-        dmg=0;
-      } else {
-        dmg=dmg-def.defense;
-      }
+      if(def.defense>=dmg){ reflectDmg=def.defense-dmg; dmg=0; }
+      else { dmg=dmg-def.defense; }
     }
 
     if(tl) addLog(`${tl.text} (×${mult})!`,mult>1?"good":"err");
     if(def.defending&&def.defense>0) addLog(`🛡 ${def.name} defended! (DEF ${def.defense})`,"info");
 
-    // Apply damage to enemy
+    // Trigger hit flash on enemy target after lunge peak
+    setTimeout(()=>{
+      setHitCard(targetIdx);
+      setTimeout(()=>setHitCard(null),400);
+    },220);
+
     setEnemyField(prev=>{
       const next=[...prev];
       const newHp=Math.max(0,next[targetIdx].hp-dmg);
@@ -1715,11 +1720,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       if(newHp<=0){
         addLog(`💀 ${def.name} destroyed!`,"good");
         SFX.play("achievement");
-        // Remove dead card after short delay
         setTimeout(()=>{
           setEnemyField(f=>{
             const updated=f.filter((_,i)=>i!==targetIdx);
-            // Draw new enemy card if available
             setEnemyHand(eh=>{
               if(eh.length>0){
                 const [next,...rest]=eh;
@@ -1735,9 +1738,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
 
-    // Reflect damage to attacker if any
     if(reflectDmg>0){
       addLog(`⚡ Reflected ${reflectDmg} damage to ${atk.name}!`,"good");
+      addDmg(`-${reflectDmg}`,"#f59e0b",attackerIdx,false);
       setPlayerField(prev=>{
         const next=[...prev];
         next[attackerIdx]={...next[attackerIdx],hp:Math.max(0,next[attackerIdx].hp-reflectDmg)};
@@ -1745,13 +1748,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       });
     }
 
-    if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}${tl?` (${tl.text})`:""}`,isSpecial?"good":"player");
-
-    SFX.play(isSpecial?"epicFlip":"click");
-    setTimeout(()=>setAnimating(false),350);
-  };
-
-  // Defend a card
+    if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}${tl?` (${tl.text})`:""}`,"player");
+  // Defend a card — pure defensive stance, no mana reward
   const doDefend=(fieldIdx)=>{
     if(!playerTurn||animating)return;
     const card=playerField[fieldIdx];
@@ -1762,8 +1760,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
     setActedCards(prev=>{const next=new Set(prev);next.add(card.uid);return next;});
-    setMana(m=>Math.min(maxMana,m+1)); // gain 1 mana for defending, capped at maxMana
-    addLog(`🛡 ${card.name} takes a defensive stance. +1 mana!`,"player");
+    addLog(`🛡 ${card.name} braces for impact. High DEF = counterattack!`,"player");
     SFX.play("click");
   };
 
@@ -2104,11 +2101,10 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                       onClick={()=>{if(card&&phase2==="targeting"&&selectedField!==null)doAttack(selectedField,i,pendingSpecial);}}>
                       {card?(
                         <div style={{position:"relative",width:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}>
-                          {/* Red tint overlay for enemy cards */}
-                          <div style={{position:"relative"}}>
+                          <div style={{position:"relative",animation:hitCard===i?"hitFlash 0.4s ease-out":"none"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             <div style={{position:"absolute",inset:0,borderRadius:12,background:"rgba(220,38,38,0.18)",pointerEvents:"none"}}/>
-                            {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,animation:"shieldAppear .3s ease-out"}}>🛡</div>}
+                            {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
                             {phase2==="targeting"&&<div style={{position:"absolute",inset:0,border:"2px solid #ef4444",borderRadius:12,animation:"pulse 0.8s infinite",boxShadow:"0 0 12px #ef444466"}}/>}
                           </div>
                           {dmgPops.filter(p=>p.isEnemy&&p.fieldIdx===i).map(p=>(
@@ -2143,13 +2139,14 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                   const card=playerField[i];
                   const acted=card&&actedCards.has(card.uid);
                   const su=card&&specialUsed.has(card.uid);
+                  const isLunging=attackingCard===i;
                   return(
                     <div key={i} style={{position:"relative",minHeight:90,borderRadius:12,border:card?(selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s"}}>
                       {card?(
                         <>
-                          <div style={{position:"relative",animation:selectedField===i&&phase2==="targeting"?"attackLunge 0.5s ease-in-out":"none"}}>
+                          <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none")}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
-                            {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,animation:"shieldAppear .3s ease-out"}}>🛡</div>}
+                            {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
                             {selectedField===i&&<div style={{position:"absolute",inset:0,border:"2px solid #a855f7",borderRadius:12,boxShadow:"0 0 14px #a855f766"}}/>}
                             {acted&&<div style={{position:"absolute",inset:0,background:"#00000055",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#475569",fontSize:10,fontWeight:800}}>ACTED</span></div>}
                           </div>
@@ -2160,7 +2157,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                             <div style={{display:"flex",gap:3,marginTop:4,justifyContent:"center",width:"100%",paddingBottom:2}}>
                               <button onClick={()=>selectAttacker(i)} style={{flex:1,background:"#7f1d1d",color:"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>⚔️</button>
                               <button onClick={()=>{if(!su)selectAttacker(i,true);}} style={{flex:1,background:su?"#1e293b":"#4c1d95",color:su?"#334155":"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:su?"not-allowed":"pointer"}}>✨</button>
-                              <button onClick={()=>doDefend(i)} style={{flex:1,background:"#1e3a5f",color:"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:"pointer"}}>🛡</button>
+                              <button onClick={()=>{if(!card.defending)doDefend(i);}} disabled={card.defending} style={{flex:1,background:card.defending?"#0f172a":"#1e3a5f",color:card.defending?"#334155":"white",border:card.defending?"1px solid #1e293b":"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:card.defending?"not-allowed":"pointer",opacity:card.defending?0.4:1}}>🛡</button>
                             </div>
                           )}
                         </>
