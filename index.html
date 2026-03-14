@@ -4133,19 +4133,35 @@ function App() {
 
         {/* BINDER */}
         {tab==="home"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
-          {/* Hero greeting */}
-          <div style={{background:"linear-gradient(135deg,#0f0a1e,#1e0a3c)",border:"1px solid #4c1d9533",borderRadius:16,padding:20,marginBottom:14,position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.06,pointerEvents:"none"}}>🌌</div>
-            <div style={{color:"#a855f7",fontSize:9,letterSpacing:4,fontWeight:800,marginBottom:4}}>COMMANDER STATUS</div>
-            <div style={{fontSize:22,fontWeight:900,marginBottom:2,background:"linear-gradient(135deg,#e2e8f0,#a855f7)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>
-              {unique.length===0?"Welcome, Commander":"Welcome Back"}
-            </div>
-            <div style={{color:"#64748b",fontSize:12}}>
-              {unique.length===0
-                ?"Your collection awaits — open a pack to begin."
-                :`${unique.length} cards · ${wins} wins · ${streak} day streak`}
-            </div>
-          </div>
+          {/* Hero banner — compact, info-dense */}
+          {(()=>{
+            const titles=["Rookie","Scout","Cadet","Soldier","Veteran","Elite","Commander","Warlord","Champion","Legend","Void Master"];
+            const title=titles[Math.min(Math.floor(playerLevel/3),titles.length-1)];
+            const xpIntoLevel=playerXp%500;
+            const pct=Math.round(xpIntoLevel/500*100);
+            return(
+              <div style={{background:"linear-gradient(135deg,#0f0a1e,#1e0a3c)",border:"1px solid #4c1d9533",borderRadius:16,padding:"14px 16px",marginBottom:14,position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.04,pointerEvents:"none"}}>🌌</div>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                  <div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"white",boxShadow:"0 0 16px #3b82f644",flexShrink:0}}>{playerLevel}</div>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                      <span style={{color:"white",fontWeight:900,fontSize:16}}>{username||"Commander"}</span>
+                      <span style={{background:"#1e0a3c",border:"1px solid #4c1d95",borderRadius:6,padding:"1px 7px",color:"#a855f7",fontSize:9,fontWeight:800,letterSpacing:1}}>{title.toUpperCase()}</span>
+                    </div>
+                    <div style={{color:"#475569",fontSize:11}}>{unique.length} cards · {wins} wins · {streak}d streak</div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{color:"#60a5fa",fontSize:10,fontWeight:700,marginBottom:2}}>LV {playerLevel}</div>
+                    <div style={{color:"#334155",fontSize:9}}>{pct}% to next</div>
+                  </div>
+                </div>
+                <div style={{background:"#0f172a",borderRadius:999,height:4}}>
+                  <div style={{width:`${pct}%`,height:"100%",background:"linear-gradient(90deg,#1d4ed8,#3b82f6)",borderRadius:999,transition:"width .5s"}}/>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Stats row */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
@@ -4207,6 +4223,30 @@ function App() {
             })}
           </div>
 
+          {/* Next Battle shortcut */}
+          {(()=>{
+            const nextNode=GALAXY_NODES.find((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
+            if(!nextNode||collection.length===0) return null;
+            const planet=PLANETS.find(p=>p.id===nextNode.planet);
+            return(
+              <div style={{background:"linear-gradient(135deg,#1a0000,#2d0a0a)",border:`1px solid ${nextNode.boss?"#f59e0b66":"#ef444433"}`,borderRadius:14,padding:14,marginBottom:14,display:"flex",alignItems:"center",gap:12,position:"relative",overflow:"hidden"}}>
+                {nextNode.boss&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite"}}/>}
+                <div style={{fontSize:32,flexShrink:0}}>{nextNode.boss?"👑":"⚔️"}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
+                    <span style={{color:nextNode.boss?"#f59e0b":"#ef4444",fontWeight:800,fontSize:13}}>{nextNode.name}</span>
+                    {nextNode.boss&&<span style={{background:"#78350f",color:"#f59e0b",fontSize:8,fontWeight:800,borderRadius:4,padding:"1px 5px"}}>BOSS</span>}
+                  </div>
+                  <div style={{color:"#64748b",fontSize:10}}>{nextNode.title} · {planet?.name} · 💎{nextNode.gems}</div>
+                </div>
+                <button onClick={()=>{SFX.play("click");setTab("battle");}}
+                  style={{background:nextNode.boss?"linear-gradient(135deg,#92400e,#f59e0b)":"linear-gradient(135deg,#7f1d1d,#ef4444)",color:nextNode.boss?"#000":"white",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0}}>
+                  Fight →
+                </button>
+              </div>
+            );
+          })()}
+
           {/* Today's featured card */}
           <CardOfTheDay setDetail={setDetail} setBattleCard={setBattleCard} setTab={setTab}/>
 
@@ -4245,28 +4285,16 @@ function App() {
             })}
           </div>}
 
-          {/* Share + Feedback row */}
-          <div style={{marginTop:14,display:"flex",gap:10}}>
-            <button onClick={()=>{
-              SFX.play("click");
-              const msg="Check out Void Cards! Free sci-fi card collecting & battle game 👾 voidcards.org";
-              if(navigator.share){navigator.share({title:"Void Cards",text:msg,url:"https://voidcards.org"}).catch(()=>{});}
-              else{navigator.clipboard.writeText("https://voidcards.org").then(()=>notify("Link copied! Share with friends 🚀","ok")).catch(()=>notify("voidcards.org","ok"));}
-            }} style={{flex:1,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,cursor:"pointer",color:"white"}}>
-              <span style={{fontSize:18}}>🚀</span>
-              <div style={{textAlign:"left"}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#e2e8f0"}}>Share Void Cards</div>
-                <div style={{fontSize:10,color:"#475569"}}>Invite friends to play</div>
-              </div>
-            </button>
-            <a href="mailto:resinfolk@gmail.com?subject=Void Cards Feedback" style={{flex:1,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:12,padding:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,textDecoration:"none",color:"white"}}>
-              <span style={{fontSize:18}}>📧</span>
-              <div style={{textAlign:"left"}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#e2e8f0"}}>Send Feedback</div>
-                <div style={{fontSize:10,color:"#475569"}}>We read every message</div>
-              </div>
-            </a>
-          </div>
+          {/* Share button */}
+          <button onClick={()=>{
+            SFX.play("click");
+            const msg="Check out Void Cards! Free sci-fi card collecting & battle game 👾 voidcards.org";
+            if(navigator.share){navigator.share({title:"Void Cards",text:msg,url:"https://voidcards.org"}).catch(()=>{});}
+            else{navigator.clipboard.writeText("https://voidcards.org").then(()=>notify("Link copied! Share with friends 🚀","ok")).catch(()=>notify("voidcards.org","ok"));}
+          }} style={{width:"100%",marginTop:14,background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9522",borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,cursor:"pointer",color:"white"}}>
+            <span style={{fontSize:16}}>🚀</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#94a3b8"}}>Share Void Cards with friends</span>
+          </button>
         </div>}
 
                 {tab==="collection"&&<div style={{animation:"tabFadeIn .25s ease-out"}}><BinderTab unique={unique} collection={collection} cardLevels={cardLevels} setDetail={setDetail} convertDupes={convertDupes} setDeckBuilder={setDeckBuilder} setFusionModal={setFusionModal} newCardIds={newCardIds} setNewCardIds={setNewCardIds} showDupesOnly={showDupesOnly} setShowDupesOnly={setShowDupesOnly} setShowDupesModal={setShowDupesModal} decks={decks} onDeleteDeck={(i)=>setDecks(d=>d.filter((_,j)=>j!==i))}/></div>}
