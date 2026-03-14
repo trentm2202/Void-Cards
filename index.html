@@ -3817,8 +3817,8 @@ function App() {
   const canClaimFreePack=dailyFreePack!==todayStr();
   const today=new Date().toISOString().slice(0,10);
   // Handle old boolean format (true) AND new date string format ("2026-03-08")
-  const todayStr=new Date().toDateString();
-  const canClaimDailyGems=dailyGems!==todayStr && dailyGems!==today && dailyGems!==true;
+  const todayDateStr=new Date().toDateString();
+  const canClaimDailyGems=dailyGems!==todayDateStr && dailyGems!==today && dailyGems!==true;
   const freePackCountdown=()=>{
     const now=new Date();
     const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
