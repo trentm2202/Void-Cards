@@ -3489,32 +3489,24 @@ function App() {
   useEffect(()=>S.set("newCardIds",[...newCardIds]),[newCardIds]);
   useEffect(()=>S.set("sfxVol",sfxVol),[sfxVol]);
 
-  // ── Stamina regen (1 per 30 min, max = 5 + playerLevel) ────────────────────
-  useEffect(()=>{
+  // ── Stamina regen (1 per 30 min, max = 5 + playerLevel/3) ─────────────────
+  const lastRefillRef = useRef(lastStaminaRefill);
+  useEffect(()=>{ lastRefillRef.current = lastStaminaRefill; },[lastStaminaRefill]);
+  useEffect(()=>{\
     const maxStam=5+Math.floor(playerLevel/3);
-    const t=setInterval(()=>{
-      setStamina(s=>{
-        if(s>=maxStam) return s;
-        const now=Date.now();
-        setLastStaminaRefill(prev=>{
-          const elapsed=now-prev;
-          if(elapsed>=30*60*1000){
-            setLastStaminaRefill(now);
-            return now;
-          }
-          return prev;
-        });
-        const now2=Date.now();
-        const refills=Math.floor((now2-lastStaminaRefill)/(30*60*1000));
-        if(refills>0){
-          setLastStaminaRefill(l=>l+refills*30*60*1000);
-          return Math.min(maxStam,s+refills);
-        }
-        return s;
-      });
-    },60000);
+    const t=setInterval(()=>{\
+      const now=Date.now();
+      const elapsed=now-lastRefillRef.current;
+      const refills=Math.floor(elapsed/(30*60*1000));
+      if(refills>0){\
+        const newRefillTime=lastRefillRef.current+(refills*30*60*1000);
+        lastRefillRef.current=newRefillTime;
+        setLastStaminaRefill(newRefillTime);
+        setStamina(s=>Math.min(maxStam,s+refills));
+      }
+    },15000);
     return ()=>clearInterval(t);
-  },[playerLevel,lastStaminaRefill]);
+  },[playerLevel]);
 
   // ── Auction house live tick ──────────────────────────────────────────────────
   useEffect(()=>{
@@ -4569,7 +4561,7 @@ function App() {
 
         </div>}
 
-        {/* PROFILE */}}
+        {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Username */}
           <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
