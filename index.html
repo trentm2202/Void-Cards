@@ -1064,8 +1064,19 @@ function HoloFrame({ card, w, h, hov }) {
 function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, showBack=false }) {
   const [hov,setHov]=useState(false);
   if(showBack) return (
-    <div style={{width:mini?60:112,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"3px solid #4c1d95",cursor:onClick?"pointer":"default",background:"#0a001a",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClick}>
-      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:mini?4:8}} alt="card back"/>
+    <div style={{width:mini?60:112,height:mini?84:168,borderRadius:mini?8:14,flexShrink:0,cursor:onClick?"pointer":"default",position:"relative",padding:2}} onClick={onClick}>
+      {/* Animated rarity border */}
+      <div style={{position:"absolute",inset:0,borderRadius:mini?8:14,border:`2px solid ${card?(_baseRc.color):"#7c3aed"}`,boxShadow:`0 0 10px ${card?(_baseRc.color):"#7c3aed"}88, inset 0 0 8px ${card?(_baseRc.color):"#7c3aed"}22`,animation:"borderGlow 2s ease-in-out infinite",pointerEvents:"none"}}/>
+      {/* Corner accents */}
+      {[["0%","0%","8px 0 0 0"],["100%","0%","0 8px 0 0"],["0%","100%","0 0 0 8px"],["100%","100%","0 0 8px 0"]].map(([l,t,br],i)=>(
+        <div key={i} style={{position:"absolute",left:l,top:t,width:8,height:8,background:card?(_baseRc.color):"#7c3aed",borderRadius:br,opacity:.9,zIndex:3,transform:l==="100%"?"translateX(-100%)":"none"}}/>
+      ))}
+      {/* Foil rainbow border overlay */}
+      {card?.foil&&<div style={{position:"absolute",inset:0,borderRadius:mini?8:14,border:"2px solid transparent",background:"linear-gradient(#0a001a,#0a001a) padding-box, linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#ff6b6b) border-box",backgroundSize:"300% 300%",animation:"foilBorderSpin 3s linear infinite",pointerEvents:"none",zIndex:2}}/>}
+      {/* Card back image */}
+      <div style={{width:"100%",height:"100%",borderRadius:mini?6:12,overflow:"hidden",background:"#0a001a"}}>
+        <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover",transform:"scale(0.92)",transformOrigin:"center"}} alt="card back"/>
+      </div>
     </div>
   );
   const isFoil=card.foil;
@@ -1093,6 +1104,24 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
         boxShadow:isHov?`0 18px 48px ${rc.color}66,0 0 30px ${rc.color}44`:`0 4px 14px #00000077${isFoil?`,0 0 18px ${rc.color}55`:""}`,
         borderRadius:14,WebkitTapHighlightColor:"transparent",
         animation:breatheAnim}}>
+      {/* Animated rarity border */}
+      <div style={{position:"absolute",inset:0,borderRadius:14,border:`2px solid ${rc.color}`,
+        animation:`borderFlow ${isLeg?"1.8s":isEpic?"2.4s":"3s"} ease-in-out infinite`,
+        "--rc":rc.color,pointerEvents:"none",zIndex:10}}/>
+      {/* Corner accents */}
+      {[["0px","0px","borderTop","borderLeft"],["0px","auto","borderTop","borderRight"],["auto","0px","borderBottom","borderLeft"],["auto","auto","borderBottom","borderRight"]].map(([t,r,b1,b2],i)=>(
+        <div key={i} style={{position:"absolute",top:t!=="auto"?t:undefined,right:r!=="auto"?r:undefined,bottom:t==="auto"?"0px":undefined,left:r==="auto"?"0px":undefined,
+          width:mini?8:14,height:mini?8:14,
+          borderTop:b1==="borderTop"?`2px solid ${rc.color}`:"none",
+          borderBottom:b1==="borderBottom"?`2px solid ${rc.color}`:"none",
+          borderLeft:b2==="borderLeft"?`2px solid ${rc.color}`:"none",
+          borderRight:b2==="borderRight"?`2px solid ${rc.color}`:"none",
+          borderRadius:b1==="borderTop"&&b2==="borderLeft"?"4px 0 0 0":b1==="borderTop"&&b2==="borderRight"?"0 4px 0 0":b1==="borderBottom"&&b2==="borderLeft"?"0 0 0 4px":"0 0 4px 0",
+          animation:`cornerPulse ${isLeg?"1.8s":isEpic?"2.4s":"3s"} ease-in-out infinite`,
+          animationDelay:`${i*0.15}s`,
+          pointerEvents:"none",zIndex:11,
+          filter:`drop-shadow(0 0 4px ${rc.color})`}}/>
+      ))}
       <div style={{width:w,height:h,background:`linear-gradient(160deg,#0f172a,${rc.bg},#000)`,borderRadius:14,padding:"5px 5px 7px",display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,borderRadius:14,background:`radial-gradient(ellipse at 50% 28%, ${rc.color}${isFoil?"28":"14"},transparent 65%)`,pointerEvents:"none"}}/>
         {/* Legendary golden flare sweep */}
@@ -4087,6 +4116,8 @@ function App() {
         @keyframes screenShake{0%,100%{transform:translate(0,0)}15%{transform:translate(-5px,3px)}30%{transform:translate(5px,-3px)}45%{transform:translate(-4px,2px)}60%{transform:translate(4px,-2px)}75%{transform:translate(-2px,1px)}90%{transform:translate(2px,-1px)}}
         @keyframes attackLunge{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.08)}70%{transform:translateY(-18px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
         @keyframes attackLungeDown{0%{transform:translateY(0) scale(1)}40%{transform:translateY(18px) scale(1.08)}70%{transform:translateY(18px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
+        @keyframes borderGlow{0%,100%{opacity:.6;filter:brightness(1)}50%{opacity:1;filter:brightness(1.4)}}
+        @keyframes foilBorderSpin{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         @keyframes hitFlash{0%,100%{filter:brightness(1)}25%{filter:brightness(3) saturate(0)}75%{filter:brightness(2)}}
         @keyframes shieldAppear{0%{opacity:0;transform:scale(0.5)}60%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
         @keyframes drawCard{0%{opacity:0;transform:translateY(20px) rotateY(90deg)}100%{opacity:1;transform:translateY(0) rotateY(0deg)}}
@@ -4103,6 +4134,8 @@ function App() {
         @keyframes toastSlide{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
         @keyframes particlePop{0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
         @keyframes legFlash{0%{opacity:0} 20%{opacity:1} 100%{opacity:0}}
+        @keyframes borderFlow{0%{opacity:.4;box-shadow:0 0 8px var(--rc),0 0 2px var(--rc) inset}50%{opacity:1;box-shadow:0 0 18px var(--rc),0 0 8px var(--rc) inset}100%{opacity:.4;box-shadow:0 0 8px var(--rc),0 0 2px var(--rc) inset}}
+        @keyframes cornerPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
         *{box-sizing:border-box} button{-webkit-tap-highlight-color:transparent} input{outline:none}
         ::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#4c1d9566;border-radius:4px}
       `}</style>
@@ -4958,8 +4991,15 @@ function App() {
               <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden"}}>
                 <Card card={detail} level={1}/>
               </div>
-              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:14,overflow:"hidden",border:"3px solid "+( detail.rarity==="Legendary"?"#f59e0b":detail.rarity==="Epic"?"#a855f7":detail.rarity==="Rare"?"#3b82f6":"#4c1d95"),background:"#0a001a",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:6}} alt="card back"/>
+              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:14,overflow:"visible",background:"#0a001a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <div style={{position:"absolute",inset:0,borderRadius:14,border:`3px solid ${RC[detail.rarity]?.color||"#7c3aed"}`,boxShadow:`0 0 16px ${RC[detail.rarity]?.color||"#7c3aed"}88,inset 0 0 12px ${RC[detail.rarity]?.color||"#7c3aed"}22`,animation:"borderGlow 2s ease-in-out infinite",pointerEvents:"none",zIndex:3}}/>
+                {[["2px","2px","6px 0 0 0"],["calc(100% - 10px)","2px","0 6px 0 0"],["2px","calc(100% - 10px)","0 0 0 6px"],["calc(100% - 10px)","calc(100% - 10px)","0 0 6px 0"]].map(([l,t,br],i)=>(
+                  <div key={i} style={{position:"absolute",left:l,top:t,width:10,height:10,background:RC[detail.rarity]?.color||"#7c3aed",borderRadius:br,opacity:.95,zIndex:4}}/>
+                ))}
+                {detail.foil&&<div style={{position:"absolute",inset:0,borderRadius:14,border:"3px solid transparent",background:"linear-gradient(#0a001a,#0a001a) padding-box, linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#ff6b6b) border-box",backgroundSize:"300% 300%",animation:"foilBorderSpin 3s linear infinite",pointerEvents:"none",zIndex:3}}/>}
+                <div style={{width:"88%",height:"88%",borderRadius:10,overflow:"hidden"}}>
+                  <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover",transform:"scale(0.92)",transformOrigin:"center"}} alt="card back"/>
+                </div>
               </div>
             </div>
           </div>
