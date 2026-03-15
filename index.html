@@ -1064,8 +1064,8 @@ function HoloFrame({ card, w, h, hov }) {
 function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, showBack=false }) {
   const [hov,setHov]=useState(false);
   if(showBack) return (
-    <div style={{width:mini?60:112,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"1px solid #4c1d95",cursor:onClick?"pointer":"default"}} onClick={onClick}>
-      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+    <div style={{width:mini?60:112,height:mini?84:168,borderRadius:mini?8:14,overflow:"hidden",flexShrink:0,boxShadow:"0 0 12px #7c3aed44",border:"3px solid #4c1d95",cursor:onClick?"pointer":"default",background:"#0a001a",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={onClick}>
+      <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:mini?4:8}} alt="card back"/>
     </div>
   );
   const isFoil=card.foil;
@@ -1262,7 +1262,7 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
                 <div key={i} style={{position:"relative",transition:"transform .3s",transform:isSpot?"scale(1.12)":"scale(1)"}}>
                   {/* Waiting slot — card back */}
                   {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:"1px solid #4c1d95",boxShadow:"0 0 8px #7c3aed44"}}>
-                    <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+                    <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:6}} alt="card back"/>
                   </div>}
                   {/* Spotlight glowing back */}
                   {isSpot&&<div style={{width:162,height:248,borderRadius:14,background:`linear-gradient(135deg,${cg}22,${cg}08)`,border:`2px solid ${cg}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 40px ${cg}66, inset 0 0 30px ${cg}22`,animation:"pulse .4s infinite"}}>
@@ -1528,6 +1528,35 @@ function scaleCard(card, diff){
 }
 
 // ── Card Fusion Modal ─────────────────────────────────────────────────────────
+function FeedbackForm({username, getSaveData}) {
+  const [fbText,setFbText]=useState("");
+  const [fbSent,setFbSent]=useState(false);
+  const sendFeedback=async()=>{
+    if(!fbText.trim())return;
+    try{
+      await sb.writeSave({...getSaveData(),_feedback:{msg:fbText,date:new Date().toISOString(),username}});
+      setFbSent(true); setFbText("");
+      setTimeout(()=>setFbSent(false),3000);
+    }catch(e){}
+  };
+  return(
+    <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
+      <div style={{color:"#a855f7",fontWeight:700,marginBottom:10}}>💬 Suggestions & Feedback</div>
+      {fbSent
+        ?<div style={{textAlign:"center",color:"#22c55e",padding:"16px 0",fontWeight:700}}>✅ Thanks for the feedback!</div>
+        :<>
+          <textarea value={fbText} onChange={e=>setFbText(e.target.value)} placeholder="Tell us what you'd like to see in Void Cards..." maxLength={500}
+            style={{width:"100%",background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"10px",color:"white",fontSize:12,lineHeight:1.6,resize:"vertical",minHeight:80,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}/>
+          <button onClick={sendFeedback} disabled={!fbText.trim()}
+            style={{width:"100%",background:fbText.trim()?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:fbText.trim()?"white":"#475569",border:"none",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,cursor:fbText.trim()?"pointer":"not-allowed"}}>
+            Send Feedback
+          </button>
+        </>
+      }
+    </div>
+  );
+}
+
 function FusionModal({collection,cardLevels,onFuse,onClose}){
   const [selected,setSelected]=useState(null);
   const [fusing,setFusing]=useState(false);
@@ -4544,19 +4573,60 @@ function App() {
         </div>}
 
         {/* FUSION */}
-        {tab==="fusion"&&<div>
+        {tab==="fusion"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
           <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>✨ Fusion Lab</div>
-          <div style={{color:"#64748b",fontSize:13,marginBottom:18}}>Combine 3 copies of any card into a golden Foil</div>
+          <div style={{color:"#64748b",fontSize:13,marginBottom:14}}>Combine 3 copies of any card into a Foil version with boosted stats</div>
           {/* Foil cards owned */}
           {unique.filter(c=>c.foil).length>0&&<>
             <div style={{color:"#f59e0b",fontSize:12,fontWeight:700,marginBottom:10}}>⭐ Your Foil Cards ({unique.filter(c=>c.foil).length})</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:24}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20}}>
               {unique.filter(c=>c.foil).map((c,i)=><Card key={i} card={c} mini level={1} onClick={setDetail}/>)}
             </div>
           </>}
-          {/* Fusion candidates - computed inline */}
-          <FusionCandidates collection={collection} cardLevels={cardLevels} onOpenFusion={()=>setFusionModal(true)}/>
-          <button onClick={()=>{SFX.play("click");setFusionModal(true);}} style={{background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:12,padding:"14px",width:"100%",fontWeight:800,fontSize:15,cursor:"pointer",marginTop:12}}>⚗️ Open Fusion Lab</button>
+          {/* Inline fusion — shows all fusable cards directly */}
+          {(()=>{
+            const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
+            const fusable=ALL_CARDS.filter(c=>countById[c.id]>=3&&!collection.find(x=>x.id===c.id&&x.foil));
+            if(fusable.length===0) return(
+              <div style={{textAlign:"center",padding:40,color:"#475569"}}>
+                <div style={{fontSize:48,marginBottom:12}}>🔬</div>
+                <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>No cards ready to fuse</div>
+                <div style={{fontSize:12}}>You need 3 copies of the same card. Open more packs!</div>
+              </div>
+            );
+            return(
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {fusable.map(card=>{
+                  const rc2=RC[card.rarity]||{color:"#94a3b8"};
+                  const foilPow=Math.round(card.power*1.2);
+                  const foilHp=Math.round(card.hp*1.2);
+                  const foilDef=Math.round(card.defense*1.2);
+                  return(
+                    <div key={card.id} style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b33",borderRadius:12,padding:14,display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{flexShrink:0}}><Card card={card} mini level={1}/></div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{color:"white",fontWeight:700,fontSize:13,marginBottom:2}}>{card.name}</div>
+                        <div style={{color:rc2.color,fontSize:11,marginBottom:4}}>{card.rarity} · ×{countById[card.id]} owned</div>
+                        <div style={{color:"#22c55e",fontSize:10}}>+{foilPow-card.power} PWR · +{foilHp-card.hp} HP · +{foilDef-card.defense} DEF after fusion</div>
+                      </div>
+                      <button onClick={()=>{
+                        SFX.play("fusion");
+                        const foilCard={...card,foil:true,power:foilPow,hp:foilHp,defense:foilDef};
+                        let removed=0;
+                        const newColl=collection.filter(c=>{if(c.id===card.id&&!c.foil&&removed<3){removed++;return false;}return true;});
+                        setCollection([...newColl,foilCard]);
+                        notify(`✨ ${card.name} Foil forged!`,"ach");
+                        updateQuest("fuse",1);
+                        checkAch({collection:[...newColl,foilCard],wins,coins,streak,cardLevels,decks,totalSold});
+                      }} style={{background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0}}>
+                        ✨ Fuse
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>}
 
         {/* QUESTS */}
@@ -4888,8 +4958,8 @@ function App() {
               <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden"}}>
                 <Card card={detail} level={1}/>
               </div>
-              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:14,overflow:"hidden",border:"1px solid "+( detail.rarity==="Legendary"?"#f59e0b":detail.rarity==="Epic"?"#a855f7":detail.rarity==="Rare"?"#3b82f6":"#4c1d95")}}>
-                <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+              <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",borderRadius:14,overflow:"hidden",border:"3px solid "+( detail.rarity==="Legendary"?"#f59e0b":detail.rarity==="Epic"?"#a855f7":detail.rarity==="Rare"?"#3b82f6":"#4c1d95"),background:"#0a001a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:6}} alt="card back"/>
               </div>
             </div>
           </div>
@@ -4978,39 +5048,10 @@ function App() {
             </div>
           </div>
 
-          {/* Feedback form */}
-          {(()=>{
-            const [fbText,setFbText]=React.useState("");
-            const [fbSent,setFbSent]=React.useState(false);
-            const sendFeedback=async()=>{
-              if(!fbText.trim())return;
-              try{
-                await sb.writeSave({...getSaveData(),_feedback:{msg:fbText,date:new Date().toISOString(),username}});
-                setFbSent(true);
-                setFbText("");
-                setTimeout(()=>setFbSent(false),3000);
-              }catch(e){}
-            };
-            return(
-              <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
-                <div style={{color:"#a855f7",fontWeight:700,marginBottom:10}}>💬 Suggestions & Feedback</div>
-                {fbSent
-                  ?<div style={{textAlign:"center",color:"#22c55e",padding:"16px 0",fontWeight:700}}>✅ Thanks for the feedback!</div>
-                  :<>
-                    <textarea value={fbText} onChange={e=>setFbText(e.target.value)} placeholder="Tell us what you'd like to see in Void Cards..." maxLength={500}
-                      style={{width:"100%",background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"10px",color:"white",fontSize:12,lineHeight:1.6,resize:"vertical",minHeight:80,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}/>
-                    <button onClick={sendFeedback} disabled={!fbText.trim()}
-                      style={{width:"100%",background:fbText.trim()?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:fbText.trim()?"white":"#475569",border:"none",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,cursor:fbText.trim()?"pointer":"not-allowed"}}>
-                      Send Feedback
-                    </button>
-                  </>
-                }
-              </div>
-            );
-          })()}
+          <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.63
+            Void Cards · Series 1 · v0.4.64
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
