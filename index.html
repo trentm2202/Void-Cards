@@ -1069,7 +1069,8 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
     </div>
   );
   const isFoil=card.foil;
-  const rc=isFoil?{...RC[card.rarity],stars:(RC[card.rarity]?.stars||1)+1}:RC[card.rarity]||RC.Common;
+  const _baseRc=RC[card.rarity]||{color:"#94a3b8",bg:"#1e293b",stars:1};
+  const rc=isFoil?{..._baseRc,stars:Math.min(5,(_baseRc.stars||1)+1)}:_baseRc;
   const w=mini?112:162, h=mini?168:248;
   const imgW=mini?100:150, imgH=mini?88:128;
   const isHov=hov||selected;
@@ -1120,8 +1121,8 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
 
         {/* Stars */}
         <div style={{textAlign:"center",marginBottom:mini?2:3,position:"relative",zIndex:1}}>
-          {[...Array(rc.stars)].map((_,i)=><span key={i} style={{color:rc.color,fontSize:mini?7:8}}>★</span>)}
-          {[...Array(5-rc.stars)].map((_,i)=><span key={i} style={{color:"#1e293b",fontSize:mini?7:8}}>★</span>)}
+          {[...Array(Math.max(0,Math.min(5,rc.stars||1)))].map((_,i)=><span key={i} style={{color:rc.color,fontSize:mini?7:8}}>★</span>)}
+          {[...Array(Math.max(0,5-(rc.stars||1)))].map((_,i)=><span key={i} style={{color:"#1e293b",fontSize:mini?7:8}}>★</span>)}
         </div>
         {/* Stats */}
         <div style={{display:"flex",justifyContent:"space-between",position:"relative",zIndex:1,background:"#ffffff0a",borderRadius:5,padding:"2px 5px"}}>
