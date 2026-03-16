@@ -18,7 +18,13 @@
   <meta property="og:type" content="website"/>
   <meta property="og:image" content="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
   <link rel="icon" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg" type="image/jpeg"/>
-  <link rel="apple-touch-icon" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <link rel="shortcut icon" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg" type="image/jpeg"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <link rel="apple-touch-icon" sizes="152x152" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <link rel="apple-touch-icon" sizes="120x120" href="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <meta name="msapplication-TileImage" content="https://trentm2202.github.io/Void-Cards/cards/logo.jpg"/>
+  <meta name="msapplication-TileColor" content="#020617"/>
+  <meta name="theme-color" content="#7c3aed"/>
   <meta name="keywords" content="card game, browser game, free card game, sci-fi card game, card collecting, battle game, void cards"/>
   <meta name="robots" content="index, follow"/>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Void Cards","url":"https://voidcards.org","description":"Free browser-based sci-fi card collecting and battle game with 100+ unique cards.","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
@@ -4906,7 +4912,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.69</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.70</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5292,7 +5298,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.69
+            Void Cards · Series 1 · v0.4.70
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
