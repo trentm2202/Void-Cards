@@ -1109,7 +1109,7 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
         transform:isHov?"translateY(-7px) scale(1.04)":"none",
         boxShadow:isHov?`0 18px 48px ${rc.color}66,0 0 30px ${rc.color}44`:`0 4px 14px #00000077${isFoil?`,0 0 18px ${rc.color}55`:""}`,
         borderRadius:14,WebkitTapHighlightColor:"transparent",
-        animation:breatheAnim}}>
+        animation:breatheAnim,overflow:"hidden"}}>
       {/* Animated rarity border */}
       <div style={{position:"absolute",inset:0,borderRadius:14,border:`2px solid ${rc.color}`,
         animation:`borderFlow ${isLeg?"1.8s":isEpic?"2.4s":"3s"} ease-in-out infinite`,
@@ -2094,7 +2094,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
               {node.boss&&<div style={{background:"#78350f",borderRadius:8,padding:"6px 12px",color:"#f59e0b",fontWeight:700,fontSize:12}}>⭐ BOSS</div>}
             </div>
           </div>
-          <div style={{color:"#f59e0b",fontSize:12,marginBottom:6,fontWeight:600}}>⚡ Costs {staminaCost} stamina</div>
+          <div style={{color:"#f59e0b",fontSize:12,marginBottom:6,fontWeight:600}}>⚡ Costs {staminaCost} stamina · You have {stamina} remaining</div>
           <div style={{color:"white",fontWeight:700,fontSize:14,marginBottom:10}}>Build your deck (pick 12 cards):</div>
           <div style={{color:"#475569",fontSize:11,marginBottom:12}}>
             Costs: Common/Uncommon=1 mana · Rare=2 · Epic=3 · Legendary=4
@@ -2206,7 +2206,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
             {/* ── ENEMY FIELD ── */}
             <div style={{padding:"10px 14px 6px",minHeight:100}}>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3}}>
                 {[0,1,2,3].map(i=>{
                   const card=enemyField[i];
                   return(
@@ -2214,7 +2214,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                       onClick={()=>{if(card&&phase2==="targeting"&&selectedField!==null)doAttack(selectedField,i,pendingSpecial);}}>
                       {card?(
                         <div style={{position:"relative",width:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}>
-                          <div style={{position:"relative",animation:hitCard===i?"hitFlash 0.4s ease-out":"none"}}>
+                          <div style={{position:"relative",animation:hitCard===i?"hitFlash 0.4s ease-out":"none",transform:"scale(0.82)",transformOrigin:"top center"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             <div style={{position:"absolute",inset:0,borderRadius:12,background:"rgba(220,38,38,0.18)",pointerEvents:"none"}}/>
                             {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
@@ -2246,8 +2246,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             </div>
 
             {/* ── PLAYER FIELD ── */}
-            <div style={{padding:"6px 14px 10px"}}>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+            <div style={{padding:"6px 8px 10px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3}}>
                 {[0,1,2,3].map(i=>{
                   const card=playerField[i];
                   const acted=card&&actedCards.has(card.uid);
@@ -2257,7 +2257,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                     <div key={i} style={{position:"relative",minHeight:90,borderRadius:12,border:card?(selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s"}}>
                       {card?(
                         <>
-                          <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none")}}>
+                          <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none"),transform:"scale(0.82)",transformOrigin:"top center"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
                             {selectedField===i&&<div style={{position:"absolute",inset:0,border:"2px solid #a855f7",borderRadius:12,boxShadow:"0 0 14px #a855f766"}}/>}
@@ -2309,7 +2309,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           </div>
 
           {/* ── END TURN + CANCEL ── */}
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{display:"flex",gap:8,marginBottom:10,position:"sticky",bottom:0,zIndex:50,background:"linear-gradient(0deg,#020617 80%,transparent)",paddingTop:8,paddingBottom:4}}>
             <button onClick={endTurn} disabled={!canEndTurn}
               style={{flex:1,background:canEndTurn?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#1e293b",color:canEndTurn?"white":"#475569",border:"none",borderRadius:10,padding:"11px",fontWeight:800,fontSize:13,cursor:canEndTurn?"pointer":"not-allowed",boxShadow:canEndTurn?"0 0 16px #3b82f644":"none",transition:"all .2s"}}>
               {canEndTurn?"End Turn ▶":"Waiting..."}
@@ -3486,6 +3486,111 @@ function useWindowWidth(){
   return w;
 }
 
+// ── Fusion Tab ────────────────────────────────────────────────────────────────
+function FusionTab({collection,unique,setDetail,setCollection,notify,updateQuest,checkAch,wins,coins,streak,cardLevels,decks,totalSold}){
+  const [showFusable,setShowFusable]=useState(false);
+  const [selected,setSelected]=useState(null);
+  const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
+  const fusable=ALL_CARDS.filter(c=>countById[c.id]>=3&&!collection.find(x=>x.id===c.id&&x.foil));
+  const foils=unique.filter(c=>c.foil);
+
+  const doFuse=(card)=>{
+    SFX.play("fusion");
+    const foilPow=Math.round(card.power*1.2);
+    const foilHp=Math.round(card.hp*1.2);
+    const foilDef=Math.round(card.defense*1.2);
+    const foilCard={...card,foil:true,power:foilPow,hp:foilHp,defense:foilDef};
+    let removed=0;
+    const newColl=collection.filter(c=>{if(c.id===card.id&&!c.foil&&removed<3){removed++;return false;}return true;});
+    setCollection([...newColl,foilCard]);
+    notify(`✨ ${card.name} Foil forged!`,"ach");
+    updateQuest("fuse",1);
+    checkAch({collection:[...newColl,foilCard],wins,coins,streak,cardLevels,decks,totalSold});
+    setSelected(null);
+    setShowFusable(false);
+  };
+
+  return(
+    <div style={{animation:"tabFadeIn .25s ease-out"}}>
+      <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>✨ Fusion Lab</div>
+      <div style={{color:"#64748b",fontSize:13,marginBottom:14}}>Combine 3 copies of any card into a Foil with +20% stats</div>
+
+      {/* Foil cards owned */}
+      {foils.length>0&&<>
+        <div style={{color:"#f59e0b",fontSize:12,fontWeight:700,marginBottom:10}}>⭐ Your Foil Cards ({foils.length})</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:20}}>
+          {foils.map((c,i)=><Card key={i} card={c} mini level={1} onClick={setDetail}/>)}
+        </div>
+      </>}
+
+      {/* Fusable cards button */}
+      {fusable.length>0&&!showFusable&&<button onClick={()=>{setShowFusable(true);SFX.play("click");}}
+        style={{width:"100%",background:"linear-gradient(135deg,#92400e,#f59e0b)",color:"#000",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer",marginBottom:14,boxShadow:"0 0 20px #f59e0b33"}}>
+        🔬 View {fusable.length} Card{fusable.length!==1?"s":""} Ready to Fuse
+      </button>}
+
+      {fusable.length===0&&!showFusable&&<div style={{textAlign:"center",padding:40,color:"#475569",background:"linear-gradient(135deg,#1c1008,#2d1a00)",borderRadius:14,border:"1px solid #f59e0b22"}}>
+        <div style={{fontSize:48,marginBottom:12}}>🔬</div>
+        <div style={{fontSize:14,fontWeight:700,marginBottom:6,color:"#f59e0b"}}>No cards ready to fuse</div>
+        <div style={{fontSize:12}}>Collect 3 copies of any card to unlock fusion</div>
+      </div>}
+
+      {/* Fusable grid */}
+      {showFusable&&<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{color:"#f59e0b",fontWeight:700,fontSize:14}}>🔬 Ready to Fuse ({fusable.length})</div>
+          <button onClick={()=>{setShowFusable(false);setSelected(null);}} style={{background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:8,padding:"5px 12px",fontSize:12,cursor:"pointer"}}>✕ Close</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+          {fusable.map(card=>(
+            <div key={card.id} onClick={()=>setSelected(selected?.id===card.id?null:card)}
+              style={{cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              <div style={{position:"relative"}}>
+                <Card card={card} mini level={1} selected={selected?.id===card.id}/>
+                <div style={{position:"absolute",bottom:-4,left:"50%",transform:"translateX(-50%)",background:RC[card.rarity]?.color||"#94a3b8",color:"#000",fontSize:8,fontWeight:800,borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap"}}>×{countById[card.id]}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Stat preview + fuse button */}
+        {selected&&(()=>{
+          const rc2=RC[selected.rarity]||{color:"#94a3b8"};
+          const foilPow=Math.round(selected.power*1.2);
+          const foilHp=Math.round(selected.hp*1.2);
+          const foilDef=Math.round(selected.defense*1.2);
+          return(
+            <div style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b66",borderRadius:14,padding:16,marginBottom:14}}>
+              <div style={{color:"#f59e0b",fontWeight:700,fontSize:14,marginBottom:10}}>✨ {selected.name} → Foil</div>
+              <div style={{display:"flex",gap:16,marginBottom:14}}>
+                <div style={{flex:1}}>
+                  <div style={{color:"#475569",fontSize:10,marginBottom:4}}>BEFORE</div>
+                  <div style={{color:"#f97316",fontSize:13,fontWeight:700}}>PWR {selected.power}</div>
+                  <div style={{color:"#22c55e",fontSize:13,fontWeight:700}}>HP {selected.hp}</div>
+                  <div style={{color:"#3b82f6",fontSize:13,fontWeight:700}}>DEF {selected.defense}</div>
+                </div>
+                <div style={{color:"#f59e0b",fontSize:20,alignSelf:"center"}}>→</div>
+                <div style={{flex:1}}>
+                  <div style={{color:"#f59e0b",fontSize:10,marginBottom:4}}>AFTER FOIL</div>
+                  <div style={{color:"#f97316",fontSize:13,fontWeight:700}}>PWR {foilPow} <span style={{color:"#22c55e",fontSize:10}}>+{foilPow-selected.power}</span></div>
+                  <div style={{color:"#22c55e",fontSize:13,fontWeight:700}}>HP {foilHp} <span style={{color:"#22c55e",fontSize:10}}>+{foilHp-selected.hp}</span></div>
+                  <div style={{color:"#3b82f6",fontSize:13,fontWeight:700}}>DEF {foilDef} <span style={{color:"#22c55e",fontSize:10}}>+{foilDef-selected.defense}</span></div>
+                </div>
+              </div>
+              <div style={{color:"#64748b",fontSize:11,marginBottom:12}}>Uses 3× {selected.name} · Cannot be undone</div>
+              <button onClick={()=>doFuse(selected)}
+                style={{width:"100%",background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:10,padding:"14px",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 0 20px #f59e0b44"}}>
+                ✨ Forge Foil Card!
+              </button>
+            </div>
+          );
+        })()}
+      </>}
+    </div>
+  );
+}
+
+
 function App() {
   const [authed,setAuthed]         = useState(false);
   const [isRestoring,setIsRestoring] = useState(()=>!!localStorage.getItem("vc_token"));
@@ -4642,61 +4747,7 @@ function App() {
         </div>}
 
         {/* FUSION */}
-        {tab==="fusion"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>✨ Fusion Lab</div>
-          <div style={{color:"#64748b",fontSize:13,marginBottom:14}}>Combine 3 copies of any card into a Foil version with boosted stats</div>
-          {/* Foil cards owned */}
-          {unique.filter(c=>c.foil).length>0&&<>
-            <div style={{color:"#f59e0b",fontSize:12,fontWeight:700,marginBottom:10}}>⭐ Your Foil Cards ({unique.filter(c=>c.foil).length})</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20}}>
-              {unique.filter(c=>c.foil).map((c,i)=><Card key={i} card={c} mini level={1} onClick={setDetail}/>)}
-            </div>
-          </>}
-          {/* Inline fusion — shows all fusable cards directly */}
-          {(()=>{
-            const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
-            const fusable=ALL_CARDS.filter(c=>countById[c.id]>=3&&!collection.find(x=>x.id===c.id&&x.foil));
-            if(fusable.length===0) return(
-              <div style={{textAlign:"center",padding:40,color:"#475569"}}>
-                <div style={{fontSize:48,marginBottom:12}}>🔬</div>
-                <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>No cards ready to fuse</div>
-                <div style={{fontSize:12}}>You need 3 copies of the same card. Open more packs!</div>
-              </div>
-            );
-            return(
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {fusable.map(card=>{
-                  const rc2=RC[card.rarity]||{color:"#94a3b8"};
-                  const foilPow=Math.round(card.power*1.2);
-                  const foilHp=Math.round(card.hp*1.2);
-                  const foilDef=Math.round(card.defense*1.2);
-                  return(
-                    <div key={card.id} style={{background:"linear-gradient(135deg,#1c1008,#2d1a00)",border:"1px solid #f59e0b33",borderRadius:12,padding:14,display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{flexShrink:0}}><Card card={card} mini level={1}/></div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{color:"white",fontWeight:700,fontSize:13,marginBottom:2}}>{card.name}</div>
-                        <div style={{color:rc2.color,fontSize:11,marginBottom:4}}>{card.rarity} · ×{countById[card.id]} owned</div>
-                        <div style={{color:"#22c55e",fontSize:10}}>+{foilPow-card.power} PWR · +{foilHp-card.hp} HP · +{foilDef-card.defense} DEF after fusion</div>
-                      </div>
-                      <button onClick={()=>{
-                        SFX.play("fusion");
-                        const foilCard={...card,foil:true,power:foilPow,hp:foilHp,defense:foilDef};
-                        let removed=0;
-                        const newColl=collection.filter(c=>{if(c.id===card.id&&!c.foil&&removed<3){removed++;return false;}return true;});
-                        setCollection([...newColl,foilCard]);
-                        notify(`✨ ${card.name} Foil forged!`,"ach");
-                        updateQuest("fuse",1);
-                        checkAch({collection:[...newColl,foilCard],wins,coins,streak,cardLevels,decks,totalSold});
-                      }} style={{background:"linear-gradient(135deg,#f59e0b,#fbbf24)",color:"#000",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:12,cursor:"pointer",flexShrink:0}}>
-                        ✨ Fuse
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>}
+        {tab==="fusion"&&<FusionTab collection={collection} unique={unique} setDetail={setDetail} setCollection={setCollection} notify={notify} updateQuest={updateQuest} checkAch={checkAch} wins={wins} coins={coins} streak={streak} cardLevels={cardLevels} decks={decks} totalSold={totalSold}/>}
 
         {/* QUESTS */}
         {tab==="quests"&&<div>
@@ -5136,7 +5187,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.65
+            Void Cards · Series 1 · v0.4.66
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
