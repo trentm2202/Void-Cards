@@ -584,7 +584,10 @@ const DAILY_QUESTS_POOL = [
 const ACHIEVEMENTS = [
   { id:"first_win",  name:"First Blood",      desc:"Win your first battle",          icon:"⚔️",  check:s=>s.wins>=1 },
   { id:"wins10",     name:"Veteran",          desc:"Win 10 battles",                 icon:"🏆",  check:s=>s.wins>=10 },
+  { id:"wins25",     name:"Warbringer",       desc:"Win 25 campaign battles",        icon:"⚔️",  check:s=>s.wins>=25 },
   { id:"wins50",     name:"Champion",         desc:"Win 50 battles",                 icon:"👑",  check:s=>s.wins>=50 },
+  { id:"wins75",     name:"Void Conqueror",   desc:"Win 75 campaign battles",        icon:"🌌",  check:s=>s.wins>=75 },
+  { id:"wins100",    name:"Galactic Legend",  desc:"Win 100 campaign battles",       icon:"🌟",  check:s=>s.wins>=100 },
   { id:"first_leg",  name:"Legend Hunter",    desc:"Own a Legendary card",           icon:"🌟",  check:s=>s.collection.some(c=>c.rarity==="Legendary") },
   { id:"cards20",    name:"Collector",        desc:"Own 20 unique cards",            icon:"📦",  check:s=>new Set(s.collection.map(c=>c.id)).size>=20 },
   { id:"cards50",    name:"Hoarder",          desc:"Own 50 unique cards",               icon:"🗃️",  check:s=>new Set(s.collection.map(c=>c.id)).size>=50 },
@@ -595,6 +598,9 @@ const ACHIEVEMENTS = [
   { id:"deck",       name:"Strategist",       desc:"Save your first deck",           icon:"🃏",  check:s=>(s.decks||[]).length>=1 },
   { id:"fused",      name:"Alchemist",        desc:"Fuse your first Foil card",      icon:"✨",  check:s=>s.collection.some(c=>c.foil) },
   { id:"team_win",   name:"Team Captain",     desc:"Win a 3v3 team battle",          icon:"🤝",  check:s=>(s.teamWins||0)>=1 },
+  { id:"foil_all",   name:"???",              desc:"???",                            icon:"❓",  hidden:true, reward:5000, check:s=>(s.collection||[]).filter(c=>c.foil).length>=100 },
+  { id:"foil_5",     name:"Shimmer Seeker",   desc:"Own 5 foil cards",               icon:"✨",  check:s=>(s.collection||[]).filter(c=>c.foil).length>=5 },
+  { id:"foil_20",    name:"???",              desc:"???",                            icon:"❓",  hidden:true, check:s=>(s.collection||[]).filter(c=>c.foil).length>=20 },
   { id:"full_s1",    name:"Series 1 Master",  desc:"Own all Series 1 cards",         icon:"📀",  check:s=>ALL_CARDS.filter(c=>c.series==="Series 1").every(c=>s.collection.some(o=>o.id===c.id)) },
 ];
 
@@ -1075,7 +1081,7 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
       {card?.foil&&<div style={{position:"absolute",inset:0,borderRadius:mini?8:14,border:"2px solid transparent",background:"linear-gradient(#0a001a,#0a001a) padding-box, linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#ff6b6b) border-box",backgroundSize:"300% 300%",animation:"foilBorderSpin 3s linear infinite",pointerEvents:"none",zIndex:2}}/>}
       {/* Card back image */}
       <div style={{width:"100%",height:"100%",borderRadius:mini?6:12,overflow:"hidden",background:"#0a001a"}}>
-        <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover",transform:"scale(0.92)",transformOrigin:"center"}} alt="card back"/>
+        <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
       </div>
     </div>
   );
@@ -1129,7 +1135,8 @@ function Card({ card, onClick, mini, selected, showHp, currentHp, count, level, 
           <div style={{position:"absolute",top:0,bottom:0,width:"40%",background:"linear-gradient(90deg,transparent,rgba(251,191,36,.22),transparent)",animation:"goldFlare 3.5s ease-in-out infinite",animationDelay:`${(card.id%5)*0.4}s`}}/>
         </div>}
         {/* Foil prismatic shimmer — keeps rarity color, adds rainbow sheen */}
-        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(105deg,transparent 20%,rgba(255,255,255,.15) 40%,rgba(255,200,255,.1) 50%,rgba(200,255,255,.1) 60%,transparent 80%)",backgroundSize:"200% 100%",animation:"foilSweep 2.5s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
+        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(105deg,transparent 15%,rgba(255,100,100,.25) 30%,rgba(255,255,100,.2) 42%,rgba(100,255,100,.2) 54%,rgba(100,200,255,.25) 66%,rgba(200,100,255,.2) 78%,transparent 85%)",backgroundSize:"300% 100%",animation:"foilSweep 2s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
+        {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(45deg,rgba(255,100,100,.08),rgba(255,255,0,.08),rgba(0,255,100,.08),rgba(0,150,255,.08),rgba(200,0,255,.08))",animation:"foilSweep 4s linear infinite reverse",pointerEvents:"none",zIndex:2}}/>}
         {isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,border:`2px solid ${rc.color}`,boxShadow:`inset 0 0 20px ${rc.color}33`,pointerEvents:"none",zIndex:2}}/>}
         {/* Epic glow pulse */}
         {isEpic&&!isFoil&&<div style={{position:"absolute",inset:0,borderRadius:14,boxShadow:`inset 0 0 18px ${rc.color}22`,animation:"epicGlow 2.5s ease-in-out infinite",pointerEvents:"none",zIndex:2}}/>}
@@ -2603,11 +2610,11 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
           <div style={{fontSize:40,marginBottom:10}}>🔍</div>
           <div>No cards match your search</div>
         </div>
-        :<div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+        :<div style={{display:"flex",flexWrap:"wrap",gap:12,padding:"4px 2px"}}>
           {filtered.map((c,i)=>{
             const isNew=newCardIds.has(c.id);
             return (
-              <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}}>
+              <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative",flexShrink:0}}>
                 {isNew&&<div style={{position:"absolute",top:-4,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",fontSize:7,fontWeight:800,borderRadius:4,padding:"2px 6px",letterSpacing:1,zIndex:10,whiteSpace:"nowrap",boxShadow:"0 0 8px #22c55e88",animation:"pulse 1.5s ease-in-out infinite"}}>✨ NEW</div>}
                 <Card card={c} mini onClick={(card)=>{setDetail(card);if(newCardIds.has(card.id)){const s=new Set(newCardIds);s.delete(card.id);setNewCardIds(s);}}} count={countById[c.id]>1?countById[c.id]:undefined} level={1}/>
 
@@ -3274,7 +3281,7 @@ function ResetPasswordScreen({token, refreshToken, onDone}){
 
   const submit=async()=>{
     // Validate first — before touching any tokens
-    if(password.length<6){setError("Password must be at least 6 characters.");return;}
+    if(password.length<8){setError("Password must be at least 8 characters.");return;}
     if(password!==confirm){setError("Passwords don't match.");return;}
     setLoading(true);setError("");
     try{
@@ -3320,7 +3327,7 @@ function ResetPasswordScreen({token, refreshToken, onDone}){
             :<>
               <div style={{marginBottom:12}}>
                 <div style={{color:"#64748b",fontSize:11,fontWeight:600,marginBottom:5}}>NEW PASSWORD</div>
-                <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Min 6 characters"
+                <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Min 8 characters"
                   style={{width:"100%",background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"11px 14px",color:"white",fontSize:13,boxSizing:"border-box"}}
                   onKeyDown={e=>e.key==="Enter"&&submit()}/>
               </div>
@@ -3353,7 +3360,7 @@ function AuthScreen({onAuth}){
 
   const submit=async()=>{
     if(!email||!password){setError("Please enter email and password.");return;}
-    if(password.length<6){setError("Password must be at least 6 characters.");return;}
+    if(password.length<8){setError("Password must be at least 8 characters.");return;}
     if(mode==="signup"&&!agreed){setError("Please agree to the Privacy Policy to continue.");return;}
     if(mode==="signup"&&!signupUsername.trim()){setError("Please choose a username.");return;}
     setLoading(true); setError("");
@@ -3400,7 +3407,7 @@ function AuthScreen({onAuth}){
           {/* Password */}
           <div style={{marginBottom:16}}>
             <div style={{color:"#64748b",fontSize:11,fontWeight:600,marginBottom:5}}>PASSWORD</div>
-            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Min 6 characters"
+            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Min 8 characters"
               style={{width:"100%",background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"11px 14px",color:"white",fontSize:13,boxSizing:"border-box"}}
               onKeyDown={e=>e.key==="Enter"&&submit()}/>
           </div>
@@ -3411,7 +3418,7 @@ function AuthScreen({onAuth}){
             <input value={signupUsername} onChange={e=>setSignupUsername(e.target.value)} type="text" placeholder="Choose a username..." maxLength={20}
               style={{width:"100%",background:"#0f172a",border:"1px solid #1e293b",borderRadius:8,padding:"11px 14px",color:"white",fontSize:13,boxSizing:"border-box"}}
               onKeyDown={e=>e.key==="Enter"&&submit()}/>
-            <div style={{color:"#334155",fontSize:10,marginTop:4}}>Max 20 characters · shown in Auction House</div>
+            <div style={{color:"#334155",fontSize:10,marginTop:4}}>Max 20 characters</div>
           </div>}
 
           {/* Error */}
@@ -4153,10 +4160,9 @@ function App() {
           <div style={{fontSize:22,fontWeight:900,letterSpacing:-.5,background:"linear-gradient(135deg,#e2e8f0,#a855f7)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>VOID CARDS</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <button onClick={()=>{const m=SFX.toggle();MUSIC.toggle();setMuted(m);}} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>{muted?"🔇":"🔊"}</button>
           <button onClick={()=>setShowSettings(true)} style={{background:"#ffffff08",border:"1px solid #ffffff14",borderRadius:8,padding:"6px 10px",fontSize:15,cursor:"pointer",color:"white",backdropFilter:"blur(8px)"}}>⚙️</button>
           {canClaimDailyGems&&<button onClick={claimDaily} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:800,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #f59e0b44"}}>🎁 Daily</button>}
-          <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop {packsSinceLeg>0&&<span style={{fontSize:9,opacity:.8}}>({20-packsSinceLeg} to 🌟)</span>}</button>
+          <button onClick={()=>{SFX.play("click");setDailyShop(true);}} style={{background:"linear-gradient(135deg,#0e7490,#06b6d4)",color:"white",border:"none",borderRadius:8,padding:"7px 11px",fontWeight:700,fontSize:11,cursor:"pointer",boxShadow:"0 0 14px #06b6d444"}}>🏪 Shop {}</button>
           <div style={{background:"linear-gradient(135deg,#1e0a3c,#2d1060)",border:"1px solid var(--t1b)",borderRadius:10,padding:"6px 12px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 0 16px #7c3aed22"}}>
             <span style={{fontSize:14}}>💎</span>
             <span style={{color:"#c084fc",fontWeight:900,fontSize:16,textShadow:"0 0 8px #a855f7"}}>{coins.toLocaleString()}</span>
@@ -4210,11 +4216,12 @@ function App() {
           const tc=tabColors[t.id]||"#a855f7";
           const showBadge=t.id==="collection"&&newCardIds.size>0&&tab!=="collection";
           return <button key={t.id} onClick={()=>{SFX.play("click");setTab(t.id);}} style={{
-            background:"transparent",border:"1px solid #ffffff0a",
-            color:active?tc:"#475569",
-            borderRadius:10,padding:"7px 13px",fontSize:11,fontWeight:active?700:500,
-            cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:5,
-            flexShrink:0,transition:"all .2s",backdropFilter:"blur(8px)",position:"relative"
+            background:active?`${tc}18`:"transparent",border:`1px solid ${active?tc+"44":"#ffffff0a"}`,
+            color:active?tc:"#64748b",
+            borderRadius:12,padding:"9px 16px",fontSize:13,fontWeight:active?800:500,
+            cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:6,
+            flexShrink:0,transition:"all .2s",backdropFilter:"blur(8px)",position:"relative",
+            minHeight:44
           }}>
             {t.i} {t.l}
             {showBadge&&<span style={{background:"#22c55e",color:"white",fontSize:8,fontWeight:800,borderRadius:999,padding:"1px 5px",marginLeft:2,animation:"pulse 1.5s infinite"}}>{newCardIds.size}</span>}
@@ -4405,7 +4412,7 @@ function App() {
         {tab==="battle"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
           {/* Stats row */}
           <div style={{display:"flex",gap:8,marginBottom:12}}>
-            {[{l:"WINS",v:wins,c:"#22c55e",b:"#052e16",bd:"#14532d"},{l:"LOSSES",v:losses,c:"#ef4444",b:"#1a0000",bd:"#7f1d1d"},{l:"NODES",v:completedNodes.length,c:"#a855f7",b:"#1e0a3c",bd:"#4c1d95"}].map(s=>(
+            {[{l:"MISSIONS",v:completedNodes.length,c:"#a855f7",b:"#1e0a3c",bd:"#4c1d95"},{l:"STREAK",v:`${battleStreak}🔥`,c:"#f59e0b",b:"#1c1008",bd:"#78350f"}].map(s=>(
               <div key={s.l} style={{background:s.b,border:`1px solid ${s.bd}`,borderRadius:10,padding:"10px 14px",flex:1,textAlign:"center"}}>
                 <div style={{color:s.c,fontWeight:800,fontSize:18}}>{s.v}</div>
                 <div style={{color:"#64748b",fontSize:10}}>{s.l}</div>
@@ -4439,9 +4446,9 @@ function App() {
           {/* Galaxy Map header */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
             <div style={{fontSize:16,fontWeight:700}}>🌌 Galaxy Campaign</div>
-            <div style={{color:"#475569",fontSize:11}}>{completedNodes.length}/{GALAXY_NODES.length} nodes</div>
+            <div style={{color:"#475569",fontSize:11}}>{completedNodes.length}/{GALAXY_NODES.length} missions</div>
           </div>
-          <div style={{color:"#64748b",fontSize:12,marginBottom:12}}>Scroll to explore · Defeat enemies · Conquer planets</div>
+          <div style={{color:"#64748b",fontSize:12,marginBottom:12}}>Scroll to explore · Complete missions · Conquer planets</div>
 
           {collection.length===0
             ?<div style={{textAlign:"center",color:"#334155",paddingTop:40}}>
@@ -4998,7 +5005,7 @@ function App() {
                 ))}
                 {detail.foil&&<div style={{position:"absolute",inset:0,borderRadius:14,border:"3px solid transparent",background:"linear-gradient(#0a001a,#0a001a) padding-box, linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#ff6b6b) border-box",backgroundSize:"300% 300%",animation:"foilBorderSpin 3s linear infinite",pointerEvents:"none",zIndex:3}}/>}
                 <div style={{width:"88%",height:"88%",borderRadius:10,overflow:"hidden"}}>
-                  <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover",transform:"scale(0.92)",transformOrigin:"center"}} alt="card back"/>
+                  <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
                 </div>
               </div>
             </div>
@@ -5088,6 +5095,15 @@ function App() {
             </div>
           </div>
 
+          {/* Discord */}
+          <div style={{background:"linear-gradient(135deg,#1a1040,#2d1a60)",border:"1px solid #5865f244",borderRadius:12,padding:14,marginBottom:12}}>
+            <div style={{color:"#5865f2",fontWeight:700,fontSize:13,marginBottom:6}}>💬 Join the Community</div>
+            <div style={{color:"#94a3b8",fontSize:12,marginBottom:10}}>Share decks, suggest cards, and connect with other players.</div>
+            <button onClick={()=>{window.open("https://discord.gg/voidcards","_blank");SFX.play("click");}}
+              style={{width:"100%",background:"linear-gradient(135deg,#4752c4,#5865f2)",color:"white",border:"none",borderRadius:8,padding:"10px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+              Join Discord 🎮
+            </button>
+          </div>
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
