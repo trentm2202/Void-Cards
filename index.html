@@ -1346,8 +1346,8 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
               return (
                 <div key={i} style={{position:"relative",transition:"transform .3s",transform:isSpot?"scale(1.12)":"scale(1)"}}>
                   {/* Waiting slot — card back */}
-                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:"1px solid #4c1d95",boxShadow:"0 0 8px #7c3aed44"}}>
-                    <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"92%",height:"92%",objectFit:"cover",borderRadius:6}} alt="card back"/>
+                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:"1px solid #4c1d95",boxShadow:"0 0 8px #7c3aed44",position:"relative"}}>
+                    <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
                   </div>}
                   {/* Spotlight glowing back */}
                   {isSpot&&<div style={{width:162,height:248,borderRadius:14,background:`linear-gradient(135deg,${cg}22,${cg}08)`,border:`2px solid ${cg}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 40px ${cg}66, inset 0 0 30px ${cg}22`,animation:"pulse .4s infinite"}}>
@@ -4596,8 +4596,14 @@ function App() {
             <div style={{fontSize:64,marginBottom:16}}>⚔️</div>
             <div style={{color:"#ef4444",fontWeight:900,fontSize:22,marginBottom:8}}>PvP Battle</div>
             <div style={{color:"#64748b",fontSize:14,marginBottom:24,lineHeight:1.7}}>Challenge other players head to head.<br/>Coming in a future update.</div>
-            <div style={{background:"linear-gradient(135deg,#1a0000,#2d0a0a)",border:"1px solid #ef444433",borderRadius:14,padding:20,display:"inline-block"}}>
-              <div style={{color:"#ef4444",fontSize:12,fontWeight:700}}>🔔 You'll be notified when PvP launches</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+              <div style={{background:"linear-gradient(135deg,#1a0000,#2d0a0a)",border:"1px solid #ef444433",borderRadius:14,padding:"12px 20px"}}>
+                <div style={{color:"#ef4444",fontSize:12,fontWeight:700}}>🚧 In development — coming in a future update</div>
+              </div>
+              <button onClick={()=>{window.open("https://discord.gg/voidcards","_blank");SFX.play("click");}}
+                style={{background:"linear-gradient(135deg,#4752c4,#5865f2)",color:"white",border:"none",borderRadius:10,padding:"10px 20px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                💬 Join Discord for updates
+              </button>
             </div>
           </div>
         </div>}
@@ -4768,15 +4774,15 @@ function App() {
                 })}
               </div>
 
-              {/* Selected node detail panel */}
+              {/* Selected node detail panel — sticky at bottom */}
               {(()=>{
-                // Find next available node
                 const nextNode=GALAXY_NODES.find((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
                 if(!nextNode)return null;
                 const clears=nodeClears[nextNode.id]||0;
                 const planet=PLANETS.find(p=>p.id===nextNode.planet);
                 return(
-                  <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${nextNode.boss?"#f59e0b44":"#4c1d9544"}`,borderRadius:14,padding:14,marginTop:4}}>
+                  <div style={{position:"sticky",bottom:0,zIndex:20,background:"linear-gradient(0deg,#020617 85%,transparent)",paddingTop:12,marginTop:4}}>
+                  <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${nextNode.boss?"#f59e0b44":"#4c1d9544"}`,borderRadius:14,padding:14}}>
                     {nextNode.boss&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite",borderRadius:"14px 14px 0 0"}}/>}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                       <div>
@@ -4798,6 +4804,7 @@ function App() {
                       <span style={{color:"#475569",fontSize:11}}>⚡ 1 stamina</span>
                       {clears>0&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}{clears===2?" → bonus gems!":""}</span>}
                     </div>
+                  </div>
                   </div>
                 );
               })()}
@@ -4899,7 +4906,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.68</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.69</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5285,7 +5292,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.68
+            Void Cards · Series 1 · v0.4.69
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
