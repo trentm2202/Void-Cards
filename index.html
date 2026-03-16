@@ -522,6 +522,31 @@ const AVATARS = [
   {id:"star",      icon:"⭐",   name:"Cosmic",        unlock:{type:"nodes",v:100},desc:"Complete all 100 nodes"},
 ];
 
+
+// ── Themes ────────────────────────────────────────────────────────────────────
+const THEMES = [
+  { id:"void",    name:"Void",       unlockLevel:1,  t1:"#7c3aed", t2:"#a855f7", t3:"#6d28d9", t4:"#1e0a3c", t5:"#0f0a1e", t2b:"#a855f733", t1b:"#7c3aed44" },
+  { id:"ember",   name:"Ember",      unlockLevel:10, t1:"#c2410c", t2:"#f97316", t3:"#9a3412", t4:"#1c0a00", t5:"#0f0800", t2b:"#f9731633", t1b:"#c2410c44" },
+  { id:"ocean",   name:"Ocean",      unlockLevel:20, t1:"#0e7490", t2:"#06b6d4", t3:"#0c4a6e", t4:"#001a22", t5:"#000f14", t2b:"#06b6d433", t1b:"#0e749044" },
+  { id:"forest",  name:"Forest",     unlockLevel:30, t1:"#15803d", t2:"#22c55e", t3:"#14532d", t4:"#001a0a", t5:"#000f06", t2b:"#22c55e33", t1b:"#15803d44" },
+  { id:"crimson", name:"Crimson",    unlockLevel:40, t1:"#be123c", t2:"#f43f5e", t3:"#9f1239", t4:"#1a0008", t5:"#0f0005", t2b:"#f43f5e33", t1b:"#be123c44" },
+  { id:"gold",    name:"Gold",       unlockLevel:50, t1:"#b45309", t2:"#f59e0b", t3:"#92400e", t4:"#1c1000", t5:"#0f0900", t2b:"#f59e0b33", t1b:"#b4530944" },
+  { id:"midnight",name:"Midnight",   unlockLevel:60, t1:"#1e3a5f", t2:"#3b82f6", t3:"#1e3a5f", t4:"#000a1a", t5:"#00060f", t2b:"#3b82f633", t1b:"#1e3a5f44" },
+  { id:"rose",    name:"Rose",       unlockLevel:75, t1:"#9d174d", t2:"#ec4899", t3:"#831843", t4:"#1a0010", t5:"#0f0009", t2b:"#ec489933", t1b:"#9d174d44" },
+  { id:"cosmic",  name:"Cosmic",     unlockLevel:100,t1:"#4c1d95", t2:"#8b5cf6", t3:"#2e1065", t4:"#0a0020", t5:"#050010", t2b:"#8b5cf633", t1b:"#4c1d9544" },
+];
+
+const applyTheme=(theme)=>{
+  const r=document.documentElement.style;
+  r.setProperty("--t1",theme.t1);
+  r.setProperty("--t2",theme.t2);
+  r.setProperty("--t3",theme.t3);
+  r.setProperty("--t4",theme.t4);
+  r.setProperty("--t5",theme.t5);
+  r.setProperty("--t2b",theme.t2b);
+  r.setProperty("--t1b",theme.t1b);
+};
+
 const TITLES_LIST=[
   {id:"rookie",    label:"Rookie",          unlockLevel:1},
   {id:"scout",     label:"Scout",           unlockLevel:3},
@@ -3624,6 +3649,7 @@ function App() {
   const [username,setUsername]       = useState(()=>S.get("username",""));
   const [avatar,setAvatar]           = useState(()=>S.get("avatar","astronaut"));
   const [selectedTitle,setSelectedTitle]= useState(()=>S.get("selectedTitle","rookie"));
+  const [selectedTheme,setSelectedTheme]= useState(()=>S.get("selectedTheme","void"));
   const [showTitleSelector,setShowTitleSelector]= useState(false);
   const [editingUsername,setEditingUsername] = useState(false);
   const [usernameDraft,setUsernameDraft]     = useState("");
@@ -3719,6 +3745,11 @@ function App() {
   useEffect(()=>S.set("collection",collection),[collection]);
   useEffect(()=>S.set("playerXp",playerXp),[playerXp]);
   useEffect(()=>S.set("playerLevel",playerLevel),[playerLevel]);
+  useEffect(()=>{
+    const theme=THEMES.find(t=>t.id===selectedTheme)||THEMES[0];
+    applyTheme(theme);
+    S.set("selectedTheme",selectedTheme);
+  },[selectedTheme]);
   useEffect(()=>S.set("avatar",avatar),[avatar]);
   useEffect(()=>S.set("wins",wins),[wins]);
   useEffect(()=>S.set("losses",losses),[losses]);
@@ -3859,7 +3890,7 @@ function App() {
 
   // ── Cloud save sync — writes to Supabase every 30s and on key changes ───────
   const getSaveData=()=>({
-    username,avatar,selectedTitle,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
+    username,avatar,selectedTitle,selectedTheme,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
@@ -4170,6 +4201,7 @@ function App() {
       apply("username",setUsername,save.username);
       apply("avatar",setAvatar,save.avatar);
     apply("selectedTitle",setSelectedTitle,save.selectedTitle);
+    apply("selectedTheme",setSelectedTheme,save.selectedTheme);
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
       apply("coins",setCoins,save.coins);
       apply("collection",setCollection,save.collection);
@@ -4867,7 +4899,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.67</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.68</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5119,7 +5151,7 @@ function App() {
       {detail&&<Modal onClose={()=>{setDetail(null);setDetailFlipped(false);}} title={detail.name}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:16,minHeight:430,alignItems:"flex-start",paddingTop:20}}>
           <div style={{transform:"scale(1.7)",transformOrigin:"top center",perspective:800,cursor:"pointer"}} onClick={()=>{SFX.play("click");setDetailFlipped(f=>!f);}}>
-            <div style={{transition:"transform .45s cubic-bezier(.4,0,.2,1)",transformStyle:"preserve-3d",transform:detailFlipped?"rotateY(180deg)":"rotateY(0deg)",position:"relative",width:162,height:248}}>
+            <div style={{transition:"transform .5s cubic-bezier(.34,1.2,.64,1)",transformStyle:"preserve-3d",transform:detailFlipped?"rotateY(180deg)":"rotateY(0deg)",position:"relative",width:162,height:248}}>
               <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden"}}>
                 <Card card={detail} level={1}/>
               </div>
@@ -5129,8 +5161,9 @@ function App() {
                   <div key={i} style={{position:"absolute",left:l,top:t,width:10,height:10,background:RC[detail.rarity]?.color||"#7c3aed",borderRadius:br,opacity:.95,zIndex:4}}/>
                 ))}
                 {detail.foil&&<div style={{position:"absolute",inset:0,borderRadius:14,border:"3px solid transparent",background:"linear-gradient(#0a001a,#0a001a) padding-box, linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#ff6b6b) border-box",backgroundSize:"300% 300%",animation:"foilBorderSpin 3s linear infinite",pointerEvents:"none",zIndex:3}}/>}
-                <div style={{width:"88%",height:"88%",borderRadius:10,overflow:"hidden"}}>
+                <div style={{width:"100%",height:"100%",borderRadius:14,overflow:"hidden"}}>
                   <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+                  {detail.foil&&<div style={{position:"absolute",inset:0,borderRadius:14,background:"linear-gradient(105deg,transparent 15%,rgba(255,100,100,.3) 30%,rgba(255,255,100,.25) 42%,rgba(100,255,100,.25) 54%,rgba(100,200,255,.3) 66%,rgba(200,100,255,.25) 78%,transparent 85%)",backgroundSize:"300% 100%",animation:"foilSweep 2s ease-in-out infinite",pointerEvents:"none"}}/>}
                 </div>
               </div>
             </div>
@@ -5229,10 +5262,30 @@ function App() {
               Join Discord 🎮
             </button>
           </div>
+          {/* Theme Colors */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:12}}>
+            <div style={{color:"#a855f7",fontWeight:700,marginBottom:4}}>🎨 Theme Colors</div>
+            <div style={{color:"#475569",fontSize:11,marginBottom:12}}>Unlock new themes by leveling up</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {THEMES.map(t=>{
+                const unlocked=playerLevel>=t.unlockLevel;
+                const active=selectedTheme===t.id;
+                return(
+                  <div key={t.id} onClick={()=>{if(unlocked){setSelectedTheme(t.id);SFX.play("click");}}}
+                    style={{background:active?`linear-gradient(135deg,${t.t4},${t.t3})`:"#0f172a",border:`2px solid ${active?t.t2:"#1e293b"}`,borderRadius:10,padding:"10px 6px",textAlign:"center",cursor:unlocked?"pointer":"not-allowed",opacity:unlocked?1:0.4,transition:"all .2s",position:"relative"}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${t.t1},${t.t2})`,margin:"0 auto 6px",boxShadow:active?`0 0 10px ${t.t2}`:"none"}}/>
+                    <div style={{color:active?t.t2:"#64748b",fontSize:10,fontWeight:active?700:400}}>{t.name}</div>
+                    {!unlocked&&<div style={{color:"#334155",fontSize:8,marginTop:2}}>LV{t.unlockLevel}</div>}
+                    {active&&<div style={{position:"absolute",top:4,right:4,width:8,height:8,borderRadius:"50%",background:t.t2,boxShadow:`0 0 6px ${t.t2}`}}/>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.67
+            Void Cards · Series 1 · v0.4.68
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
