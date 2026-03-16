@@ -522,6 +522,30 @@ const AVATARS = [
   {id:"star",      icon:"⭐",   name:"Cosmic",        unlock:{type:"nodes",v:100},desc:"Complete all 100 nodes"},
 ];
 
+const TITLES_LIST=[
+  {id:"rookie",    label:"Rookie",          unlockLevel:1},
+  {id:"scout",     label:"Scout",           unlockLevel:3},
+  {id:"cadet",     label:"Cadet",           unlockLevel:5},
+  {id:"soldier",   label:"Soldier",         unlockLevel:8},
+  {id:"veteran",   label:"Veteran",         unlockLevel:12},
+  {id:"elite",     label:"Elite",           unlockLevel:16},
+  {id:"commander", label:"Commander",       unlockLevel:20},
+  {id:"warlord",   label:"Warlord",         unlockLevel:25},
+  {id:"champion",  label:"Champion",        unlockLevel:30},
+  {id:"legend",    label:"Legend",          unlockLevel:40},
+  {id:"voidmaster",label:"Void Master",     unlockLevel:50},
+  {id:"hunter",    label:"Void Hunter",     unlockLevel:15},
+  {id:"ghost",     label:"Ghost",           unlockLevel:18},
+  {id:"phantom",   label:"Phantom",         unlockLevel:22},
+  {id:"sentinel",  label:"Sentinel",        unlockLevel:28},
+  {id:"harbinger", label:"Harbinger",       unlockLevel:35},
+  {id:"nebula",    label:"Nebula Born",     unlockLevel:45},
+  {id:"cosmic",    label:"Cosmic Drifter",  unlockLevel:55},
+  {id:"sovereign", label:"Sovereign",       unlockLevel:60},
+  {id:"eternal",   label:"Eternal",         unlockLevel:75},
+  {id:"voidgod",   label:"Void God",        unlockLevel:100},
+];
+
 const avatarUnlocked=(av,{playerLevel,collection,completedNodes})=>{
   if(!av.unlock) return true;
   const u=av.unlock;
@@ -3599,6 +3623,8 @@ function App() {
   const [newPlayer,setNewPlayer]   = useState(()=>S.get("newPlayer",true));
   const [username,setUsername]       = useState(()=>S.get("username",""));
   const [avatar,setAvatar]           = useState(()=>S.get("avatar","astronaut"));
+  const [selectedTitle,setSelectedTitle]= useState(()=>S.get("selectedTitle","rookie"));
+  const [showTitleSelector,setShowTitleSelector]= useState(false);
   const [editingUsername,setEditingUsername] = useState(false);
   const [usernameDraft,setUsernameDraft]     = useState("");
   const [coins,setCoins]           = useState(()=>S.get("coins",500));
@@ -3833,7 +3859,7 @@ function App() {
 
   // ── Cloud save sync — writes to Supabase every 30s and on key changes ───────
   const getSaveData=()=>({
-    username,avatar,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
+    username,avatar,selectedTitle,coins,collection,playerXp,playerLevel,wins,losses,totalPacks,totalSold,
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
@@ -4143,6 +4169,7 @@ function App() {
       const apply=(key,setter,val)=>{ if(val!=null){setter(val);S.set(key,val);} };
       apply("username",setUsername,save.username);
       apply("avatar",setAvatar,save.avatar);
+    apply("selectedTitle",setSelectedTitle,save.selectedTitle);
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
       apply("coins",setCoins,save.coins);
       apply("collection",setCollection,save.collection);
@@ -4360,8 +4387,8 @@ function App() {
         {tab==="home"&&<div style={{animation:"tabFadeIn .25s ease-out"}}>
           {/* Hero banner — compact, info-dense */}
           {(()=>{
-            const titles=["Rookie","Scout","Cadet","Soldier","Veteran","Elite","Commander","Warlord","Champion","Legend","Void Master"];
-            const title=titles[Math.min(Math.floor(playerLevel/3),titles.length-1)];
+            const activeTitleObj=TITLES_LIST.find(t=>t.id===selectedTitle)||TITLES_LIST[0];
+            const title=activeTitleObj.label;
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
             let accumulated=0;
             for(let i=1;i<Math.min(playerLevel,200);i++) accumulated+=xpForLv(i);
@@ -4836,11 +4863,11 @@ function App() {
                   <button onClick={()=>{setUsernameDraft(username);setEditingUsername(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
                 </div>
               }
-              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters</div>
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.62</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.67</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -4854,12 +4881,17 @@ function App() {
               <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.05,pointerEvents:"none"}}>⭐</div>
               <div style={{color:"#60a5fa",fontSize:9,letterSpacing:4,fontWeight:800,marginBottom:6}}>COMMANDER RANK</div>
               <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-                <div style={{width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"0 0 20px #3b82f655",flexShrink:0}}>
+                <div onClick={()=>setShowSettings(true)} style={{width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"0 0 20px #3b82f655",flexShrink:0,cursor:"pointer",position:"relative"}}>
                   {(AVATARS.find(a=>a.id===avatar)||AVATARS[0]).icon}
+                  <div style={{position:"absolute",bottom:-2,right:-2,background:"#1e293b",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,border:"1px solid #334155"}}>✏️</div>
                 </div>
                 <div style={{flex:1}}>
                   <div style={{color:"white",fontWeight:900,fontSize:18,marginBottom:2}}>Level {playerLevel}</div>
-                  <div style={{color:"#64748b",fontSize:12}}>{playerXp.toLocaleString()} total XP · {xpToNext} XP to next level</div>
+                  <div style={{color:"#64748b",fontSize:11,marginBottom:4}}>{playerXp.toLocaleString()} XP · {xpToNext} to next level</div>
+                  <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#0f172a",borderRadius:8,padding:"3px 10px",border:"1px solid #3b82f644",cursor:"pointer"}} onClick={()=>setShowTitleSelector(s=>!s)}>
+                    <span style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>{(TITLES_LIST.find(t=>t.id===selectedTitle)||TITLES_LIST[0]).label}</span>
+                    <span style={{color:"#334155",fontSize:10}}>▼</span>
+                  </div>
                 </div>
               </div>
               <div style={{background:"#0f172a",borderRadius:999,height:8,marginBottom:6}}>
@@ -4875,6 +4907,19 @@ function App() {
                   </div>
                 ))}
               </div>
+              {showTitleSelector&&<div style={{marginTop:14,borderTop:"1px solid #1e293b",paddingTop:14}}>
+                <div style={{color:"#60a5fa",fontSize:11,fontWeight:700,marginBottom:10}}>🏷️ Select Title</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {TITLES_LIST.map(t=>{
+                    const unlocked=playerLevel>=t.unlockLevel;
+                    const active=selectedTitle===t.id;
+                    return <button key={t.id} disabled={!unlocked} onClick={()=>{if(unlocked){setSelectedTitle(t.id);S.set("selectedTitle",t.id);SFX.play("click");setShowTitleSelector(false);}}}
+                      style={{background:active?"linear-gradient(135deg,#1d4ed8,#3b82f6)":unlocked?"#1e293b":"#0f172a",color:active?"white":unlocked?"#94a3b8":"#334155",border:active?"1px solid #3b82f6":"1px solid #1e293b",borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:active?700:400,cursor:unlocked?"pointer":"not-allowed",whiteSpace:"nowrap"}}>
+                      {unlocked?t.label:`🔒 LV${t.unlockLevel}`}
+                    </button>;
+                  })}
+                </div>
+              </div>}
             </div>;
           })()}
           <div style={{fontSize:16,fontWeight:700,marginBottom:14}}>Stats</div>
@@ -5153,7 +5198,7 @@ function App() {
                   <button onClick={()=>{setUsernameDraft(username);setEditingUsername(true);SFX.play("click");}} style={{background:"#1e293b",color:"#a855f7",border:"1px solid #4c1d95",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️ Edit</button>
                 </div>
               }
-              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters · shown in Auction House</div>
+              <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters</div>
             </div>
           </div>
           {/* Avatar selector */}
@@ -5187,7 +5232,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.66
+            Void Cards · Series 1 · v0.4.67
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
