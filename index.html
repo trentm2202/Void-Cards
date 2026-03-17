@@ -2297,7 +2297,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                 <span style={{color:"#f59e0b",fontSize:10,fontWeight:800}}>TURN {turn}</span>
                 <span style={{color:"#334155",fontSize:10}}>·</span>
                 <span style={{color:playerTurn?"#22c55e":"#ef4444",fontSize:10,fontWeight:700}}>{playerTurn?"YOUR TURN":"ENEMY TURN"}</span>
-                {coinFlip&&turn<=2&&<><span style={{color:"#334155",fontSize:10}}>·</span><span style={{color:coinFlip==="heads"?"#22c55e":"#ef4444",fontSize:10}}>🪙 {coinFlip==="heads"?"HEADS":"TAILS"}</span></>}
+                {coinFlip&&turn<=2&&phase==="battle"&&<><span style={{color:"#334155",fontSize:10}}>·</span><span style={{color:coinFlip==="heads"?"#22c55e":"#ef4444",fontSize:10}}>🪙 {coinFlip==="heads"?"HEADS":"TAILS"}</span></>}
               </div>
               <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,#334155,transparent)"}}/>
             </div>
@@ -3773,6 +3773,7 @@ function App() {
 
   // ── Stamina regen (1 per 30 min, max = 5 + playerLevel/3) ─────────────────
   const lastRefillRef = useRef(lastStaminaRefill);
+  const mapScrollRef = useRef(null);
   useEffect(()=>{ lastRefillRef.current = lastStaminaRefill; },[lastStaminaRefill]);
   useEffect(()=>{
     const maxStam=5+Math.floor(playerLevel/3);
@@ -3862,6 +3863,19 @@ function App() {
   useEffect(()=>S.set("achievements",unlockedAch),[unlockedAch]);
   useEffect(()=>S.set("newPlayer",newPlayer),[newPlayer]);
   useEffect(()=>{ MUSIC.setTab(tab); },[tab]);
+  useEffect(()=>{
+    if(tab==="campaign"&&mapScrollRef.current){
+      // Find the index of the next available node and scroll to it
+      const nextIdx=GALAXY_NODES.findIndex((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
+      if(nextIdx>=0){
+        // Each planet section is roughly 400px wide, each node is ~50px
+        const approxScrollX=Math.max(0,Math.floor(nextIdx/20)*440+(nextIdx%20)*50-100);
+        setTimeout(()=>{
+          if(mapScrollRef.current) mapScrollRef.current.scrollLeft=approxScrollX;
+        },150);
+      }
+    }
+  },[tab]);
   useEffect(()=>{ if(tab==="collection") setNewCardIds(new Set()); },[tab]);
 
   // ── Session restore on mount — auto-login if token exists in localStorage ──────
@@ -4662,7 +4676,7 @@ function App() {
               <div style={{fontSize:48}}>⚔️</div>
               <div style={{marginTop:12}}>Get cards from the Shop first!</div>
             </div>
-            :<div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:12}}>
+            :<div ref={mapScrollRef} style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:12,scrollBehavior:"smooth"}}>
               {/* Scrollable horizontal map */}
               <div style={{display:"flex",alignItems:"center",gap:0,minWidth:"max-content",padding:"20px 16px"}}>
                 {PLANETS.map((planet,pi)=>{
@@ -4696,7 +4710,8 @@ function App() {
                             // glow state
                             const glowColor=clears>=3?"#f59e0b":clears>=2?"#3b82f6":done?"#22c55e":"#a855f7";
                             const glowShadow=clears>=3?"0 0 12px #f59e0b88":clears>=2?"0 0 10px #3b82f688":done?"0 0 8px #22c55e66":"none";
-                            const nodeIcon=locked?"🔒":clears>=3?"⭐":clears>=2?"✓✓":done?"✓":"⚔️";
+                            const isNext=!locked&&!done&&(globalIdx===0||completedNodes.includes(GALAXY_NODES[globalIdx-1]?.id));
+                            const nodeIcon=locked?"🔒":clears>=3?"⭐":clears>=2?"✓✓":done?"✓":isNext?"📍":"⚔️";
                             return(
                               <React.Fragment key={node.id}>
                                 {ni>0&&<div style={{width:18,height:2,background:locked?"#1e293b":done?"#22c55e33":"#a855f722",flexShrink:0}}/>}
@@ -4705,13 +4720,14 @@ function App() {
                                   title={locked?"Locked":node.name}
                                   style={{
                                     width:32,height:32,borderRadius:"50%",flexShrink:0,
-                                    background:locked?"#0f172a":clears>=3?"linear-gradient(135deg,#78350f,#f59e0b)":clears>=2?"linear-gradient(135deg,#1e3a5f,#3b82f6)":done?"linear-gradient(135deg,#052e16,#22c55e)":"linear-gradient(135deg,#1e0a3c,#7c3aed)",
-                                    border:`2px solid ${locked?"#1e293b":glowColor}`,
-                                    boxShadow:locked?"none":glowShadow,
+                                    background:locked?"#0f172a":clears>=3?"linear-gradient(135deg,#78350f,#f59e0b)":clears>=2?"linear-gradient(135deg,#1e3a5f,#3b82f6)":done?"linear-gradient(135deg,#052e16,#22c55e)":isNext?"linear-gradient(135deg,#4c1d95,#a855f7)":"linear-gradient(135deg,#1e0a3c,#7c3aed)",
+                                    border:`2px solid ${locked?"#1e293b":isNext?"#c084fc":glowColor}`,
+                                    boxShadow:locked?"none":isNext?"0 0 16px #a855f799,0 0 32px #a855f744":glowShadow,
                                     display:"flex",alignItems:"center",justifyContent:"center",
                                     fontSize:11,cursor:locked?"default":"pointer",
                                     transition:"transform .15s,box-shadow .15s",
                                     opacity:locked?0.3:1,
+                                    animation:isNext?"pulse 1.5s ease-in-out infinite":undefined,
                                   }}
                                   onMouseEnter={e=>{if(!locked)e.currentTarget.style.transform="scale(1.2)";}}
                                   onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
@@ -4914,7 +4930,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.72</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.73</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5300,7 +5316,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.72
+            Void Cards · Series 1 · v0.4.73
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
