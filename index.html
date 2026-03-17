@@ -2265,11 +2265,11 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                 {[0,1,2,3].map(i=>{
                   const card=enemyField[i];
                   return(
-                    <div key={i} style={{position:"relative",minHeight:90,borderRadius:12,border:card?(phase2==="targeting"?"2px solid #ef4444":"1px solid #ef444433"):"1px dashed #ef444420",background:card?"transparent":"#1a00000a",display:"flex",alignItems:"center",justifyContent:"center",cursor:card&&phase2==="targeting"?"pointer":"default",transition:"border-color .2s"}}
+                    <div key={i} style={{position:"relative",minHeight:70,borderRadius:12,border:card?(phase2==="targeting"?"2px solid #ef4444":"1px solid #ef444433"):"1px dashed #ef444420",background:card?"transparent":"#1a00000a",display:"flex",alignItems:"center",justifyContent:"center",cursor:card&&phase2==="targeting"?"pointer":"default",transition:"border-color .2s"}}
                       onClick={()=>{if(card&&phase2==="targeting"&&selectedField!==null)doAttack(selectedField,i,pendingSpecial);}}>
                       {card?(
                         <div style={{position:"relative",width:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}>
-                          <div style={{position:"relative",animation:hitCard===i?"hitFlash 0.4s ease-out":"none",transform:"scale(0.82)",transformOrigin:"top center"}}>
+                          <div style={{position:"relative",animation:hitCard===i?"hitFlash 0.4s ease-out":"none",transform:"scale(0.72)",transformOrigin:"top center"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             <div style={{position:"absolute",inset:0,borderRadius:12,background:"rgba(220,38,38,0.18)",pointerEvents:"none"}}/>
                             {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
@@ -2309,10 +2309,10 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                   const su=card&&specialUsed.has(card.uid);
                   const isLunging=attackingCard===i;
                   return(
-                    <div key={i} style={{position:"relative",minHeight:90,borderRadius:12,border:card?(selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s"}}>
+                    <div key={i} style={{position:"relative",minHeight:70,borderRadius:12,border:card?(selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s"}}>
                       {card?(
                         <>
-                          <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none"),transform:"scale(0.82)",transformOrigin:"top center"}}>
+                          <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none"),transform:"scale(0.72)",transformOrigin:"top center"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
                             {selectedField===i&&<div style={{position:"absolute",inset:0,border:"2px solid #a855f7",borderRadius:12,boxShadow:"0 0 14px #a855f766"}}/>}
@@ -3598,9 +3598,9 @@ function FusionTab({collection,unique,setDetail,setCollection,notify,updateQuest
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
           {fusable.map(card=>(
-            <div key={card.id} onClick={()=>setSelected(selected?.id===card.id?null:card)}
-              style={{cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              <div style={{position:"relative"}}>
+            <div key={card.id} onClick={(e)=>{e.stopPropagation();setSelected(selected?.id===card.id?null:card);SFX.play("click");}}
+              style={{cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,WebkitTapHighlightColor:"transparent"}}>
+              <div style={{position:"relative",pointerEvents:"none"}}>
                 <Card card={card} mini level={1} selected={selected?.id===card.id}/>
                 <div style={{position:"absolute",bottom:-4,left:"50%",transform:"translateX(-50%)",background:RC[card.rarity]?.color||"#94a3b8",color:"#000",fontSize:8,fontWeight:800,borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap"}}>×{countById[card.id]}</div>
               </div>
@@ -4912,7 +4912,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.70</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.71</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5298,7 +5298,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · Series 1 · v0.4.70
+            Void Cards · Series 1 · v0.4.71
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
