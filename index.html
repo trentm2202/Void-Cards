@@ -4326,6 +4326,10 @@ function App() {
         @keyframes foilSweep{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         @keyframes foilBorder{0%{--a:0deg}100%{--a:360deg}}
         @keyframes shake{0%,100%{transform:rotate(-3deg) scale(1.05)}50%{transform:rotate(3deg) scale(1.05)}}
+        .mapScroll::-webkit-scrollbar{height:8px}
+        .mapScroll::-webkit-scrollbar-track{background:#0f172a;border-radius:4px}
+        .mapScroll::-webkit-scrollbar-thumb{background:#4c1d95;border-radius:4px;min-width:40px}
+        .mapScroll::-webkit-scrollbar-thumb:hover{background:#7c3aed}
         @keyframes screenShake{0%,100%{transform:translate(0,0)}15%{transform:translate(-5px,3px)}30%{transform:translate(5px,-3px)}45%{transform:translate(-4px,2px)}60%{transform:translate(4px,-2px)}75%{transform:translate(-2px,1px)}90%{transform:translate(2px,-1px)}}
         @keyframes attackLunge{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-18px) scale(1.08)}70%{transform:translateY(-18px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
         @keyframes attackLungeDown{0%{transform:translateY(0) scale(1)}40%{transform:translateY(18px) scale(1.08)}70%{transform:translateY(18px) scale(1.08)}100%{transform:translateY(0) scale(1)}}
@@ -4678,7 +4682,8 @@ function App() {
               <div style={{fontSize:48}}>⚔️</div>
               <div style={{marginTop:12}}>Get cards from the Shop first!</div>
             </div>
-            :<div ref={mapScrollRef} style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:12,scrollBehavior:"smooth"}}>
+            :<div ref={mapScrollRef} style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:16,scrollBehavior:"smooth"}}
+              className="mapScroll">
               {/* Scrollable horizontal map */}
               <div style={{display:"flex",alignItems:"center",gap:0,minWidth:"max-content",padding:"20px 16px"}}>
                 {PLANETS.map((planet,pi)=>{
@@ -4714,7 +4719,7 @@ function App() {
                             const glowShadow=clears>=3?"0 0 12px #f59e0b88":clears>=2?"0 0 10px #3b82f688":done?"0 0 8px #22c55e66":"none";
                             const isNext=!locked&&!done&&(globalIdx===0||completedNodes.includes(GALAXY_NODES[globalIdx-1]?.id));
                             const nodeIcon=locked?"🔒":clears>=3?"⭐":clears>=2?"✓✓":done?"✓":isNext?"📍":"⚔️";
-                            const zigOffset=ni%2===0?-14:14;
+                            const zigOffset=ni%3===0?-20:ni%3===1?4:20;
                             return(
                               <React.Fragment key={node.id}>
                                 {ni>0&&<div style={{width:14,height:2,background:locked?"#1e293b":done?"#22c55e55":"#a855f733",flexShrink:0,marginTop:0,alignSelf:"center"}}/>}
@@ -4723,7 +4728,7 @@ function App() {
                                   title={locked?"Locked":node.name}
                                   style={{
                                     marginTop:zigOffset,
-                                    width:40,height:40,borderRadius:"50%",flexShrink:0,
+                                    width:48,height:48,borderRadius:"50%",flexShrink:0,
                                     background:locked?"#0f172a":clears>=3?"linear-gradient(135deg,#78350f,#f59e0b)":clears>=2?"linear-gradient(135deg,#1e3a5f,#3b82f6)":done?"linear-gradient(135deg,#052e16,#22c55e)":isNext?"linear-gradient(135deg,#4c1d95,#a855f7)":"linear-gradient(135deg,#1e0a3c,#7c3aed)",
                                     border:`2px solid ${locked?"#1e293b":isNext?"#c084fc":glowColor}`,
                                     boxShadow:locked?"none":isNext?"0 0 16px #a855f799,0 0 32px #a855f744":glowShadow,
@@ -4737,6 +4742,7 @@ function App() {
                                   onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}
                                 >
                                   {nodeIcon}
+                                  {/* Enemy icon placeholder — swap emoji for real art when available */}
                                 </div>
                               </React.Fragment>
                             );
@@ -4787,7 +4793,7 @@ function App() {
                           {planetNodes.map((node,ni)=>(
                             <React.Fragment key={node.id}>
                               {ni>0&&<div style={{width:18}}/>}
-                              <div style={{width:32,textAlign:"center"}}>
+                              <div style={{width:48,textAlign:"center"}}>
                                 <div style={{color:"#475569",fontSize:7}}>💎{node.gems}</div>
                               </div>
                             </React.Fragment>
@@ -4802,42 +4808,42 @@ function App() {
                 })}
               </div>
 
-              {/* Selected node detail panel — sticky at bottom */}
-              {(()=>{
-                const nextNode=GALAXY_NODES.find((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
-                if(!nextNode)return null;
-                const clears=nodeClears[nextNode.id]||0;
-                const planet=PLANETS.find(p=>p.id===nextNode.planet);
-                return(
-                  <div style={{position:"sticky",bottom:0,zIndex:20,background:"linear-gradient(0deg,#020617 85%,transparent)",paddingTop:12,marginTop:4}}>
-                  <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${nextNode.boss?"#f59e0b44":"#4c1d9544"}`,borderRadius:14,padding:14}}>
-                    {nextNode.boss&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite",borderRadius:"14px 14px 0 0"}}/>}
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                      <div>
-                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                          <span style={{color:nextNode.boss?"#f59e0b":"#a855f7",fontWeight:900,fontSize:14}}>{nextNode.boss?"👑":"⚔️"} {nextNode.name}</span>
-                          {nextNode.boss&&<span style={{background:"#78350f",color:"#f59e0b",fontSize:9,fontWeight:700,borderRadius:5,padding:"1px 6px"}}>BOSS</span>}
-                        </div>
-                        <div style={{color:"#64748b",fontSize:11}}>{nextNode.title} · {planet?.name}</div>
-                        <div style={{color:"#475569",fontSize:11,fontStyle:"italic",marginTop:4}}>"{nextNode.dialogue}"</div>
-                      </div>
-                      <button onClick={()=>{SFX.play("click");setGalaxyBattle(nextNode);}}
-                        style={{background:nextNode.boss?"linear-gradient(135deg,#92400e,#f59e0b)":"linear-gradient(135deg,var(--t1),var(--t2))",color:nextNode.boss?"#000":"white",border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0,marginLeft:12}}>
-                        Battle →
-                      </button>
-                    </div>
-                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      <span style={{color:"#f59e0b",fontSize:11}}>💎 {clears===0?nextNode.gems:clears>=2?`${Math.round(nextNode.gems*0.5)} (3rd clear)`:"XP only"}</span>
-                      {nextNode.card&&clears===0&&<span style={{color:RC[nextNode.card]?.color||"#94a3b8",fontSize:11}}>🃏 {nextNode.card} card</span>}
-                      <span style={{color:"#475569",fontSize:11}}>⚡ 1 stamina</span>
-                      {clears>0&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}{clears===2?" → bonus gems!":""}</span>}
-                    </div>
-                  </div>
-                  </div>
-                );
-              })()}
             </div>
           }
+          {/* Selected node detail panel — outside scroll container so sticky works */}
+          {tab==="campaign"&&collection.length>0&&(()=>{
+            const nextNode=GALAXY_NODES.find((n,i)=>!completedNodes.includes(n.id)&&(i===0||completedNodes.includes(GALAXY_NODES[i-1].id)));
+            if(!nextNode)return null;
+            const clears=nodeClears[nextNode.id]||0;
+            const planet=PLANETS.find(p=>p.id===nextNode.planet);
+            return(
+              <div style={{position:"sticky",bottom:0,zIndex:20,background:"linear-gradient(0deg,#020617 90%,transparent)",paddingTop:16,marginTop:4}}>
+                <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:`1px solid ${nextNode.boss?"#f59e0b66":"#4c1d9566"}`,borderRadius:14,padding:14,position:"relative",overflow:"hidden"}}>
+                  {nextNode.boss&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f59e0b,#fbbf24,#f59e0b)",animation:"goldFlare 2s linear infinite"}}/>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                    <div style={{flex:1,minWidth:0,marginRight:12}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                        <span style={{color:nextNode.boss?"#f59e0b":"#a855f7",fontWeight:900,fontSize:14}}>{nextNode.boss?"👑":"⚔️"} {nextNode.name}</span>
+                        {nextNode.boss&&<span style={{background:"#78350f",color:"#f59e0b",fontSize:9,fontWeight:700,borderRadius:5,padding:"1px 6px"}}>BOSS</span>}
+                      </div>
+                      <div style={{color:"#64748b",fontSize:11,marginBottom:2}}>{nextNode.title} · {planet?.name}</div>
+                      <div style={{color:"#475569",fontSize:11,fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>"{nextNode.dialogue}"</div>
+                    </div>
+                    <button onClick={()=>{SFX.play("click");setGalaxyBattle(nextNode);}}
+                      style={{background:nextNode.boss?"linear-gradient(135deg,#92400e,#f59e0b)":"linear-gradient(135deg,var(--t1),var(--t2))",color:nextNode.boss?"#000":"white",border:"none",borderRadius:10,padding:"10px 18px",fontWeight:800,fontSize:13,cursor:"pointer",flexShrink:0}}>
+                      Battle →
+                    </button>
+                  </div>
+                  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                    <span style={{color:"#f59e0b",fontSize:11}}>💎 {clears===0?nextNode.gems:clears>=2?`${Math.round(nextNode.gems*0.5)} (3rd clear)`:"XP only"}</span>
+                    {nextNode.card&&clears===0&&<span style={{color:RC[nextNode.card]?.color||"#94a3b8",fontSize:11}}>🃏 {nextNode.card} card</span>}
+                    <span style={{color:"#475569",fontSize:11}}>⚡ 1 stamina</span>
+                    {clears>0&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}{clears===2?" → bonus gems!":""}</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>}
 
         {/* FUSION */}
@@ -4934,7 +4940,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.74</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.75</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5320,7 +5326,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.74
+            Void Cards · v0.4.75
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
