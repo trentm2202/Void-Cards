@@ -1736,8 +1736,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [enemyField,setEnemyField]=useState([]);       // up to 4 on field
   const [enemyHand,setEnemyHand]=useState([]);         // enemy remaining deck
   const [playerDeckLeft,setPlayerDeckLeft]=useState([]);// remaining deck to draw from
-  const [mana,setMana]=useState(0);                    // current mana
-  const [maxMana,setMaxMana]=useState(0);              // this turn's max
+  const [battleStamina,setBattleStamina]=useState(8);  // stamina resets to 8 each turn
   const [turn,setTurn]=useState(1);
   const [playerTurn,setPlayerTurn]=useState(true);
   const [log,setLog]=useState([]);
@@ -1756,6 +1755,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [actedCards,setActedCards]=useState(new Set()); // uids of cards that acted this turn
   const [specialUsed,setSpecialUsed]=useState(new Set()); // uids that used special this battle
   const [coinFlip,setCoinFlip]=useState(null); // null|"heads"|"tails"
+  const [shieldedCards,setShieldedCards]=useState(new Set()); // uids with active Shield buff (absorbs next hit 60%)
+  const [intimidatedCards,setIntimidatedCards]=useState({}); // uid -> 0.75 multiplier (permanent until card leaves)
 
   const addLog=(text,type="info")=>setLog(prev=>[{text,type,id:Date.now()+Math.random()},...prev].slice(0,20));
   const addDmg=(text,color,fieldIdx,isEnemy)=>{
@@ -1801,7 +1802,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setEnemyHand([...enemyStartHand,...enemyLeft].map(c=>({...c,uid:Math.random()})));
     setActedCards(new Set());
     setSpecialUsed(new Set());
-    setMana(playerFirst?1:0); setMaxMana(playerFirst?1:0); setTurn(1); setPlayerTurn(playerFirst);
+    setShieldedCards(new Set());
+    setIntimidatedCards({});
+    setBattleStamina(8); setTurn(1); setPlayerTurn(playerFirst);
     setLog([
       {text:`⚔️ ${node.name}: "${node.dialogue}"`,type:"system",id:0},
       {text:`🪙 ${flip==="heads"?"You go first!":"Enemy goes first!"}`,type:"system",id:1}
@@ -1816,12 +1819,12 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   // Play a card from hand onto field
   const playCard=(handCard)=>{
     const cost=MANA_COST[handCard.rarity]||1;
-    if(mana<cost){addLog(`Not enough mana! ${handCard.name} costs ${cost} mana.`,"err");return;}
+    if(battleStamina<cost){addLog(`Not enough stamina! ${handCard.name} costs ${cost}.`,"err");return;}
     if(playerField.length>=4){addLog("Field is full! (max 4 cards)","err");return;}
-    setMana(m=>m-cost);
+    setBattleStamina(s=>s-cost);
     setPlayerHand(h=>h.filter(c=>c.uid!==handCard.uid));
     setPlayerField(f=>[...f,{...handCard,hp:handCard.hp,maxHp:handCard.hp,defending:false,uid:handCard.uid}]);
-    addLog(`▶ Played ${handCard.name} (cost: ${cost} mana)`,"player");
+    addLog(`▶ Played ${handCard.name} (cost: ${cost})`,"player");
     SFX.play("cardFlip");
   };
 
@@ -1839,9 +1842,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const doAttack=(attackerIdx, targetIdx, isSpecial=false)=>{
     if(animating)return;
     const cost=isSpecial?3:1;
-    if(mana<cost){addLog(`Not enough mana! ${isSpecial?"Special":"Attack"} costs ${cost} mana.`,"err");setPhase2("free");setSelectedField(null);return;}
+    if(battleStamina<cost){addLog(`Not enough stamina! ${isSpecial?"Special":"Attack"} costs ${cost}.`,"err");setPhase2("free");setSelectedField(null);return;}
     setAnimating(true);
-    setMana(m=>m-cost);
+    setBattleStamina(s=>s-cost);
     setPhase2("free");
     setSelectedField(null);
     setPendingSpecial(false);
@@ -1859,9 +1862,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     const rawDmg=isSpecial?Math.round(atk.power*(atk.specialMult||1.5)):atk.power;
     let dmg=Math.round(rawDmg*mult);
 
-    let reflectDmg=0;
     if(def.defending){
-      if(def.defense>=dmg){ reflectDmg=def.defense-dmg; dmg=0; }
+      if(def.defense>=dmg){ dmg=0; }
       else { dmg=dmg-def.defense; }
     }
 
@@ -1900,16 +1902,6 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
 
-    if(reflectDmg>0){
-      addLog(`⚡ Reflected ${reflectDmg} damage to ${atk.name}!`,"good");
-      addDmg(`-${reflectDmg}`,"#f59e0b",attackerIdx,false);
-      setPlayerField(prev=>{
-        const next=[...prev];
-        next[attackerIdx]={...next[attackerIdx],hp:Math.max(0,next[attackerIdx].hp-reflectDmg)};
-        return next;
-      });
-    }
-
     if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}${tl?` (${tl.text})`:""}`,"player");
     SFX.play(isSpecial?"specialHit":"hit");
     setTimeout(()=>setAnimating(false),400);
@@ -1928,6 +1920,188 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setActedCards(prev=>{const next=new Set(prev);next.add(card.uid);return next;});
     addLog(`🛡 ${card.name} braces for impact. High DEF = counterattack!`,"player");
     SFX.play("click");
+  };
+
+  // ── resolveAbility(casterCard, targetCard, casterOwner, targetOwner) ──────────
+  // casterOwner: "player" | "enemy"
+  // targetOwner: "player" | "enemy"
+  // targetCard: the enemy card selected (used by offensive/debuff abilities)
+  //             pass null for self-targeting abilities (Regen, Shield, Berserker, Last Stand, Rally Cry)
+  const resolveAbility=(casterCard, targetCard, casterOwner, targetOwner)=>{
+    const abilityKey=CARD_ABILITIES[casterCard.id];
+    if(!abilityKey){addLog(`${casterCard.name} has no ability.`,"err");return;}
+
+    // Helpers: setters for the caster's field and the target's field
+    const setCasterField=casterOwner==="player"?setPlayerField:setEnemyField;
+    const setTargetField=targetOwner==="player"?setPlayerField:setEnemyField;
+
+    switch(abilityKey){
+
+      // ── BURN: 24 damage to one target ──────────────────────────────────────
+      case "burn":{
+        const dmg=24;
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const newHp=Math.max(0,next[idx].hp-dmg);
+          next[idx]={...next[idx],hp:newHp};
+          addDmg(`-${dmg}`,"#f97316",idx,targetOwner==="enemy");
+          addLog(`🔥 ${casterCard.name} uses Burn! ${targetCard.name} takes ${dmg} fire damage.`,"player");
+          if(newHp<=0) addLog(`💀 ${targetCard.name} burned down!`,"good");
+          return next;
+        });
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── POISON: 20 damage to one target ────────────────────────────────────
+      case "poison":{
+        const dmg=20;
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const newHp=Math.max(0,next[idx].hp-dmg);
+          next[idx]={...next[idx],hp:newHp};
+          addDmg(`-${dmg}`,"#4ade80",idx,targetOwner==="enemy");
+          addLog(`☠️ ${casterCard.name} uses Poison! ${targetCard.name} takes ${dmg} poison damage.`,"player");
+          if(newHp<=0) addLog(`💀 ${targetCard.name} poisoned out!`,"good");
+          return next;
+        });
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── PIERCE: deals caster power ignoring 50% of target defense ──────────
+      case "pierce":{
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const target=next[idx];
+          const effectiveDef=Math.round(target.defense*0.5); // 50% defense ignored
+          const dmg=Math.max(1,casterCard.power-effectiveDef);
+          const newHp=Math.max(0,target.hp-dmg);
+          next[idx]={...next[idx],hp:newHp};
+          addDmg(`-${dmg}`,"#f1f5f9",idx,targetOwner==="enemy");
+          addLog(`🗡️ ${casterCard.name} uses Pierce! ${dmg} dmg (ignores 50% DEF).`,"player");
+          if(newHp<=0) addLog(`💀 ${target.name} pierced down!`,"good");
+          return next;
+        });
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── REGEN: restore 30 HP to caster (capped at maxHp) ───────────────────
+      case "regen":{
+        setCasterField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===casterCard.uid);
+          if(idx===-1)return prev;
+          const healed=Math.min(30,next[idx].maxHp-next[idx].hp);
+          next[idx]={...next[idx],hp:Math.min(next[idx].maxHp,next[idx].hp+30)};
+          addDmg(`+${healed}`,"#4ade80",idx,casterOwner==="enemy");
+          addLog(`💚 ${casterCard.name} uses Regen! Restored ${healed} HP.`,"player");
+          return next;
+        });
+        SFX.play("coin");
+        break;
+      }
+
+      // ── SHIELD: next hit on this card is reduced 60% ───────────────────────
+      case "shield":{
+        setShieldedCards(prev=>{const next=new Set(prev);next.add(casterCard.uid);return next;});
+        addLog(`🛡️ ${casterCard.name} uses Shield! Next hit reduced by 60%.`,"player");
+        SFX.play("click");
+        break;
+      }
+
+      // ── THORNS: deals 40% of caster defense as damage to one target ────────
+      case "thorns":{
+        const dmg=Math.max(1,Math.round(casterCard.defense*0.4));
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const newHp=Math.max(0,next[idx].hp-dmg);
+          next[idx]={...next[idx],hp:newHp};
+          addDmg(`-${dmg}`,"#86efac",idx,targetOwner==="enemy");
+          addLog(`🌵 ${casterCard.name} uses Thorns! ${dmg} counter damage (40% of DEF ${casterCard.defense}).`,"player");
+          if(newHp<=0) addLog(`💀 ${targetCard.name} was spiked!`,"good");
+          return next;
+        });
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── BERSERKER: grant 50% power boost flag on caster for this turn ──────
+      // Sets a berserkerActive flag on the card in its field so doAttack can read it.
+      case "berserker":{
+        setCasterField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===casterCard.uid);
+          if(idx===-1)return prev;
+          next[idx]={...next[idx],berserkerActive:true};
+          return next;
+        });
+        addLog(`😤 ${casterCard.name} goes Berserk! +50% power this turn.`,"player");
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── LAST STAND: deals current HP as damage, minimum 20 ─────────────────
+      case "laststand":{
+        const dmg=Math.max(20,casterCard.hp);
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const newHp=Math.max(0,next[idx].hp-dmg);
+          next[idx]={...next[idx],hp:newHp};
+          addDmg(`-${dmg}`,"#f59e0b",idx,targetOwner==="enemy");
+          addLog(`⚡ ${casterCard.name} uses Last Stand! ${dmg} dmg (current HP: ${casterCard.hp}).`,"player");
+          if(newHp<=0) addLog(`💀 ${targetCard.name} couldn't withstand it!`,"good");
+          return next;
+        });
+        SFX.play("specialHit");
+        break;
+      }
+
+      // ── RALLY CRY: heal 20 HP to every card on caster's field ──────────────
+      case "rallycry":{
+        setCasterField(prev=>{
+          const next=prev.map(c=>{
+            const healed=Math.min(20,c.maxHp-c.hp);
+            return {...c,hp:Math.min(c.maxHp,c.hp+20)};
+          });
+          const totalHealed=next.reduce((sum,c,i)=>sum+(Math.min(20,prev[i].maxHp-prev[i].hp)),0);
+          addLog(`📣 ${casterCard.name} uses Rally Cry! All allies healed 20 HP (${totalHealed} total).`,"player");
+          return next;
+        });
+        SFX.play("achievement");
+        break;
+      }
+
+      // ── INTIMIDATE: reduce one target card's power by 25% permanently ──────
+      case "intimidate":{
+        setIntimidatedCards(prev=>({...prev,[targetCard.uid]:0.75}));
+        setTargetField(prev=>{
+          const next=[...prev];
+          const idx=next.findIndex(c=>c.uid===targetCard.uid);
+          if(idx===-1)return prev;
+          const reducedPower=Math.round(next[idx].power*0.75);
+          next[idx]={...next[idx],power:reducedPower};
+          addLog(`👁️ ${casterCard.name} uses Intimidate! ${targetCard.name} power reduced to ${reducedPower} (−25%).`,"player");
+          return next;
+        });
+        SFX.play("sub");
+        break;
+      }
+
+      default:
+        addLog(`${casterCard.name}: ability not recognised.`,"err");
+    }
   };
 
   // Remove dead player cards
@@ -2003,19 +2177,14 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             const target=newPf[targetIdx];
             const mult=typeMultiplier(ec.type,target.type);
             let dmg=Math.round(ec.power*mult*(0.8+Math.random()*0.4));
-            let reflectDmg=0;
             if(target.defending){
-              if(target.defense>=dmg){reflectDmg=target.defense-dmg;dmg=0;}
+              if(target.defense>=dmg){dmg=0;}
               else dmg=dmg-target.defense;
             }
             addDmg(dmg>0?`-${dmg}`:"BLOCKED","#ef4444",targetIdx,false);
             if(dmg>0) addLog(`🤖 ${ec.name} attacks ${target.name} for ${dmg}`,dmg>30?"err":"info");
             if(target.defending&&target.defense>0) addLog(`🛡 ${target.name} deflects! DEF ${target.defense}`,"info");
             newPf[targetIdx]={...newPf[targetIdx],hp:Math.max(0,newPf[targetIdx].hp-dmg),defending:false};
-            if(reflectDmg>0){
-              addLog(`⚡ Reflect! ${reflectDmg} back to ${ec.name}`,"good");
-              newEf[ei]={...newEf[ei],hp:Math.max(0,newEf[ei].hp-reflectDmg)};
-            }
           });
 
           // Remove dead player cards
@@ -2031,37 +2200,32 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
         return ef;
       });
 
-      // Enemy plays cards from hand to field (respects mana — turn number = mana, max 10)
+      // Enemy plays cards from hand to field (flat stamina of 8)
       setEnemyHand(eh=>{
         setEnemyField(ef=>{
           if(ef.length>=4||eh.length===0) return ef;
-          const enemyMana=Math.min(10,turn); // mirror player mana: turn number = mana
-          let manaLeft=enemyMana;
+          const enemyStamina=8;
+          let stamLeft=enemyStamina;
           const toPlay=[];
           const remaining=[...eh];
           for(let i=0;i<remaining.length&&toPlay.length<2&&ef.length+toPlay.length<4;i++){
             const c=remaining[i];
             const cost=MANA_COST[c.rarity]||1;
-            if(cost<=manaLeft){
+            if(cost<=stamLeft){
               toPlay.push({...c,defending:false,hp:c.hp,maxHp:c.hp});
-              manaLeft-=cost;
+              stamLeft-=cost;
             }
           }
           if(toPlay.length>0) addLog(`🤖 ${node.name} plays ${toPlay.map(c=>c.name).join(", ")} to field`,"info");
           return [...ef,...toPlay];
         });
-        // Remove played cards from hand
-        setEnemyField(ef=>{
-          const onField=new Set(ef.map(c=>c.uid));
-          return ef; // field already updated above; just reference to get played count
-        });
-        // Recalculate which cards were played by mana logic to trim hand correctly
-        const enemyMana2=Math.min(10,turn);
-        let manaLeft2=enemyMana2;
+        // Recalculate which cards were played to trim hand correctly
+        const enemyStamina2=8;
+        let stamLeft2=enemyStamina2;
         let played=0;
         for(let i=0;i<eh.length&&played<2;i++){
           const cost=MANA_COST[eh[i].rarity]||1;
-          if(cost<=manaLeft2){manaLeft2-=cost;played++;}
+          if(cost<=stamLeft2){stamLeft2-=cost;played++;}
         }
         return eh.slice(played);
       });
@@ -2070,9 +2234,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       setTimeout(()=>{
         setTurn(t=>{
           const nt=t+1;
-          const newMax=Math.min(10,nt);
-          setMaxMana(newMax);
-          setMana(newMax);
+          setBattleStamina(8);
           // Draw a card
           setPlayerDeckLeft(dl=>{
             if(dl.length>0){
@@ -2083,7 +2245,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             }
             return dl;
           });
-          addLog(`── Turn ${nt} — ${newMax} mana ──`,"system");
+          addLog(`── Turn ${nt} — Stamina reset to 8 ──`,"system");
           return nt;
         });
         setActedCards(new Set());
@@ -2156,7 +2318,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           <div style={{color:"#f59e0b",fontSize:12,marginBottom:6,fontWeight:600}}>⚡ Costs {staminaCost} stamina · You have {stamina} remaining</div>
           <div style={{color:"white",fontWeight:700,fontSize:14,marginBottom:10}}>Build your deck (pick 12 cards):</div>
           <div style={{color:"#475569",fontSize:11,marginBottom:12}}>
-            Costs: Common/Uncommon=1 mana · Rare=2 · Epic=3 · Legendary=4
+            Costs: Common/Uncommon=1 stamina · Rare=2 · Epic=3 · Legendary=4
           </div>
           {/* Type advantages quick ref */}
           <div style={{background:"#0f172a",borderRadius:8,padding:"8px 12px",marginBottom:14}}>
@@ -2351,9 +2513,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
                   <div style={{flex:1,background:"#1e293b",borderRadius:999,height:5,maxWidth:80}}>
                     <div style={{width:`${playerMaxHp>0?Math.max(0,playerHp/playerMaxHp*100):0}%`,height:"100%",background:playerHp/playerMaxHp>0.5?"linear-gradient(90deg,#dc2626,#ef4444)":playerHp/playerMaxHp>0.25?"linear-gradient(90deg,#ea580c,#f97316)":"linear-gradient(90deg,#7f1d1d,#dc2626)",borderRadius:999,transition:"width .4s"}}/>
                   </div>
-                  <span style={{color:"#a855f7",fontSize:10,fontWeight:700,marginLeft:4}}>⚡ {mana}/{maxMana}</span>
+                  <span style={{color:"#a855f7",fontSize:10,fontWeight:700,marginLeft:4}}>⚡ {battleStamina}/8</span>
                   <div style={{background:"#1e293b",borderRadius:999,height:5,width:50}}>
-                    <div style={{width:`${maxMana>0?mana/maxMana*100:0}%`,height:"100%",background:"linear-gradient(90deg,#7c3aed,#a855f7)",borderRadius:999,transition:"width .3s"}}/>
+                    <div style={{width:`${battleStamina/8*100}%`,height:"100%",background:"linear-gradient(90deg,#7c3aed,#a855f7)",borderRadius:999,transition:"width .3s"}}/>
                   </div>
                 </div>
               </div>
@@ -2387,7 +2549,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
               :<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {playerHand.map((card,i)=>{
                   const cost=MANA_COST[card.rarity]||1;
-                  const canPlay=mana>=cost&&playerField.length<4&&playerTurn&&!animating;
+                  const canPlay=battleStamina>=cost&&playerField.length<4&&playerTurn&&!animating;
                   return(
                     <div key={card.uid} style={{position:"relative",opacity:canPlay?1:0.45,cursor:canPlay?"pointer":"not-allowed",transform:canPlay?"translateY(0)":"translateY(2px)",transition:"all .15s",animation:"drawCard .3s ease-out"}}
                       onClick={()=>canPlay&&playCard(card)}>
@@ -4940,7 +5102,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.75</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.76</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5326,7 +5488,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.75
+            Void Cards · v0.4.76
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
