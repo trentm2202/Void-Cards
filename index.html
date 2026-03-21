@@ -747,20 +747,16 @@ const AUCTION_INIT = [
 
 // ── Card Illustration ─────────────────────────────────────────────────────────
 const ABILITIES = {
-  // Offensive
-  burn:      { name:"Burn",       icon:"🔥", desc:"Deals 8 dmg/turn to enemy",         type:"dot",     value:8  },
-  poison:    { name:"Poison",     icon:"☠️",  desc:"Deals 5 dmg/turn, stacks 2x",       type:"dot",     value:5  },
-  pierce:    { name:"Pierce",     icon:"🗡️",  desc:"Ignores 40% of enemy defense",       type:"passive", value:0.4},
-  // Defensive
-  regen:     { name:"Regen",      icon:"💚", desc:"Heals 10 HP per turn",               type:"hot",     value:10 },
-  shield:    { name:"Shield",     icon:"🛡️",  desc:"First hit each battle reduced 60%",  type:"passive", value:0.4},
-  thorns:    { name:"Thorns",     icon:"🌵", desc:"Reflects 25% damage back to attacker",type:"reflect", value:0.25},
-  // Conditional
-  berserker: { name:"Berserker",  icon:"😤", desc:"+40% power when below 50% HP",        type:"passive", value:1.4},
-  laststand: { name:"Last Stand", icon:"⚡", desc:"+25% all stats when last card alive",  type:"passive", value:1.25},
-  // Entry
-  rallycry:  { name:"Rally Cry",  icon:"📣", desc:"Heals 20 HP when entering battle",    type:"entry",   value:20 },
-  intimidate:{ name:"Intimidate", icon:"👁️",  desc:"Reduces enemy power 20% on entry",   type:"entry",   value:0.8},
+  burn:      { name:"Burn",       icon:"🔥", desc:"15% max HP/turn for 3 turns on trigger",             type:"dot"     },
+  poison:    { name:"Poison",     icon:"☠️",  desc:"10% max HP/turn for 3 turns on trigger",             type:"dot"     },
+  pierce:    { name:"Pierce",     icon:"🗡️",  desc:"Special ignores Defend entirely",                    type:"special" },
+  regen:     { name:"Regen",      icon:"💚", desc:"15% max HP/turn for 3 turns on trigger",             type:"hot"     },
+  shield:    { name:"Shield",     icon:"🛡️",  desc:"Next hit reduced 50% (after Defend) on trigger",    type:"special" },
+  thorns:    { name:"Thorns",     icon:"🌵", desc:"Attacker takes 20% of final damage dealt (min 1)",   type:"reflect" },
+  berserker: { name:"Berserker",  icon:"😤", desc:"+25% Attack and Special Attack for 3 turns",         type:"buff"    },
+  laststand: { name:"Last Stand", icon:"⚡", desc:"At ≤30% HP after Special: +40% Attack/Special 2 turns",type:"conditional"},
+  rallycry:  { name:"Rally Cry",  icon:"📣", desc:"+20% Defense 3 turns + heal 10% max HP immediately", type:"buff"    },
+  intimidate:{ name:"Intimidate", icon:"👁️",  desc:"Target gets −20% Attack and Special Attack",        type:"debuff"  },
 };
 
 // Assign abilities to cards by id
@@ -1535,14 +1531,14 @@ const TYPE_ADV = {
 };
 function typeMultiplier(atkType, defType){
   if(!TYPE_ADV[atkType]) return 1;
-  if(TYPE_ADV[atkType].strong===defType) return 1.5;
-  if(TYPE_ADV[atkType].weak===defType)   return 0.7;
+  if(TYPE_ADV[atkType].strong===defType) return 1.2;
+  if(TYPE_ADV[atkType].weak===defType)   return 0.8;
   return 1;
 }
 function typeLabel(atkType, defType){
   const m=typeMultiplier(atkType,defType);
-  if(m>1) return {text:"Super Effective!",color:"#22c55e"};
-  if(m<1) return {text:"Not Very Effective",color:"#ef4444"};
+  if(m>1) return {text:"Super Effective! (+20%)",color:"#22c55e"};
+  if(m<1) return {text:"Not Very Effective (-20%)",color:"#ef4444"};
   return null;
 }
 
@@ -1844,19 +1840,12 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
   // Start battle after deck is chosen
   const startBattle=(deck, plLevel)=>{
-    // Guaranteed opening hand: at least 1 Common or Uncommon
-    const cheap=deck.filter(c=>c.rarity==="Common"||c.rarity==="Uncommon");
-    const rest=deck.filter(c=>c.rarity!=="Common"&&c.rarity!=="Uncommon");
-    const shuffledCheap=[...cheap].sort(()=>Math.random()-.5);
-    const shuffledRest=[...rest].sort(()=>Math.random()-.5);
-    const guaranteed=shuffledCheap.slice(0,1);
-    const remaining=[...shuffledCheap.slice(1),...shuffledRest].sort(()=>Math.random()-.5);
-    const fullDeck=[...guaranteed,...remaining];
-    const shuffled=fullDeck;
+    // Shuffle deck — no forced opening hand guarantee (deck rules allow any composition)
+    const shuffled=[...deck].sort(()=>Math.random()-.5);
     const startHand=shuffled.slice(0,4);
     const deckLeft=shuffled.slice(4);
-    // Player health: base 5, +1 per 5 levels
-    const maxHp=5+Math.floor((plLevel||1)/5);
+    // Player health: 100 + (5 × player level)
+    const maxHp=100+((plLevel||1)*5);
     setPlayerHp(maxHp);
     setPlayerMaxHp(maxHp);
     // Enemy HP scales with node difficulty: easy nodes have less HP
@@ -1879,6 +1868,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setSpecialUsed(new Set());
     setShieldedCards(new Set());
     setIntimidatedCards({});
+    setPlayedThisTurn(new Set());
+    setActiveEffects({});
+    setReplacingSlot(null);
     setBattleStamina(playerFirst?1:0); setTurn(1); setPlayerTurn(playerFirst);
     setLog([
       {text:`⚔️ ${node.name}: "${node.dialogue}"`,type:"system",id:0},
@@ -1896,9 +1888,13 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     const cost=MANA_COST[handCard.rarity]||1;
     if(battleStamina<cost){addLog(`Not enough stamina! ${handCard.name} costs ${cost}.`,"err");return;}
     if(playerField.length>=4){addLog("Field is full! (max 4 cards)","err");return;}
+    if(playerField.filter(c=>c.id===handCard.id).length>=2){addLog(`Max 2 copies of ${handCard.name} on field at once.`,"err");return;}
     setBattleStamina(s=>s-cost);
     setPlayerHand(h=>h.filter(c=>c.uid!==handCard.uid));
     setPlayerField(f=>[...f,{...handCard,hp:handCard.hp,maxHp:handCard.hp,defending:false,uid:handCard.uid}]);
+    // Card cannot act the same turn it is played
+    setPlayedThisTurn(prev=>{const next=new Set(prev);next.add(handCard.uid);return next;});
+    setReplacingSlot(null);
     addLog(`▶ Played ${handCard.name} (cost: ${cost})`,"player");
     SFX.play("cardFlip");
   };
@@ -1906,6 +1902,10 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   // Select a field card to attack with
   const selectAttacker=(idx,isSpecial=false)=>{
     if(!playerTurn||animating)return;
+    // Turn 1 restriction: play cards only — no attack, defend, or special
+    if(turn===1){addLog("Turn 1: you may only play cards.","err");return;}
+    const card=playerField[idx];
+    if(card&&playedThisTurn.has(card.uid)){addLog(`${card.name} cannot act the turn it was played.`,"err");return;}
     if(enemyField.length===0){addLog("No enemy cards to attack!","err");return;}
     setSelectedField(idx);
     setPendingSpecial(isSpecial);
@@ -1913,7 +1913,19 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     addLog(`Select an enemy card to ${isSpecial?"use special on":"attack with"} ${playerField[idx].name}...`,"info");
   };
 
-  // Execute attack
+  // Ability trigger chance by rarity + foil bonus, hard cap 50%
+  // Common=10%, Uncommon=15%, Rare=20%, Epic=25%, Legendary=30%, God=35%, Foil+5%
+  const abilityTriggerChance=(card)=>{
+    const base={Common:0.10,Uncommon:0.15,Rare:0.20,Epic:0.25,Legendary:0.30,God:0.35}[card.rarity]||0.10;
+    const foilBonus=card.foil?0.05:0;
+    return Math.min(0.50,base+foilBonus);
+  };
+
+  // Execute attack — resolution order per design:
+  // 1. base damage  2. type modifier (×1.2/×0.8, floor)
+  // 3. Defend (subtract DEF; excess reflected if DEF>dmg)
+  // 4. Shield (50% of remaining, floor)  5. apply damage
+  // 6. ability trigger roll (Special only, target must survive)
   const doAttack=(attackerIdx, targetIdx, isSpecial=false)=>{
     if(animating)return;
     const cost=isSpecial?3:1;
@@ -1926,46 +1938,77 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     setActedCards(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
     if(isSpecial) setSpecialUsed(prev=>{const next=new Set(prev);next.add(playerField[attackerIdx]?.uid);return next;});
 
-    // Trigger lunge animation on attacker
+    // Trigger lunge animation
     setAttackingCard(attackerIdx);
     setTimeout(()=>setAttackingCard(null),500);
 
     const atk=playerField[attackerIdx];
     const def=enemyField[targetIdx];
-    const mult=typeMultiplier(atk.type,def.type);
-    const tl=typeLabel(atk.type,def.type);
-    const rawDmg=isSpecial?Math.round(atk.power*(atk.specialMult||1.5)):atk.power;
-    let dmg=Math.round(rawDmg*mult);
 
+    // Step 1: base damage
+    const rawDmg=isSpecial?Math.floor(atk.power*(atk.specialMult||1.5)):atk.power;
+
+    // Step 2: type modifier — +20% or -20%, round DOWN
+    const tAdv=TYPE_ADV[atk.type];
+    let typeMod=1;
+    let typeText=null;
+    if(tAdv){
+      if(tAdv.strong===def.type){typeMod=1.2;typeText="Super Effective! (+20%)";}
+      else if(tAdv.weak===def.type){typeMod=0.8;typeText="Not Very Effective (-20%)";}
+    }
+    let dmg=Math.floor(rawDmg*typeMod);
+    if(typeText) addLog(`${typeText}`,typeMod>1?"good":"err");
+
+    // Step 3: Defend — subtract DEF; if DEF > dmg → reflect excess to attacker
+    let reflectDmg=0;
     if(def.defending){
-      if(def.defense>=dmg){ dmg=0; }
-      else { dmg=dmg-def.defense; }
+      if(def.defense>=dmg){
+        reflectDmg=def.defense-dmg;
+        dmg=0;
+      } else {
+        dmg=dmg-def.defense;
+      }
+      addLog(`🛡 ${def.name} defended! (DEF ${def.defense})${reflectDmg>0?" — reflects "+reflectDmg+" back!":""}`,
+        reflectDmg>0?"good":"info");
     }
 
-    if(tl) addLog(`${tl.text} (×${mult})!`,mult>1?"good":"err");
-    if(def.defending&&def.defense>0) addLog(`🛡 ${def.name} defended! (DEF ${def.defense})`,"info");
+    // Step 4: Shield — 50% of remaining damage, round down (applies after Defend)
+    let shieldAbsorbed=0;
+    if(shieldedCards.has(def.uid)&&dmg>0){
+      shieldAbsorbed=Math.floor(dmg*0.50);
+      dmg=dmg-shieldAbsorbed;
+      setShieldedCards(prev=>{const next=new Set(prev);next.delete(def.uid);return next;});
+      addLog(`🛡 ${def.name}'s Shield absorbs ${shieldAbsorbed} dmg (50%)!`,"info");
+    }
 
-    // Trigger hit flash on enemy target after lunge peak
+    // Trigger hit flash
     setTimeout(()=>{
       setHitCard(targetIdx);
       setTimeout(()=>setHitCard(null),400);
     },220);
 
+    // Step 5: apply final damage
     setEnemyField(prev=>{
       const next=[...prev];
+      if(targetIdx>=next.length)return prev;
       const newHp=Math.max(0,next[targetIdx].hp-dmg);
       next[targetIdx]={...next[targetIdx],hp:newHp,defending:false};
       addDmg(dmg>0?`-${dmg}`:"BLOCKED","#ef4444",targetIdx,true);
+      if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}`,
+        "player");
       if(newHp<=0){
         addLog(`💀 ${def.name} destroyed!`,"good");
         SFX.play("achievement");
+        // Remove effects on destroyed card
+        setActiveEffects(prev=>{const next2={...prev};delete next2[def.uid];return next2;});
         setTimeout(()=>{
           setEnemyField(f=>{
             const updated=f.filter((_,i)=>i!==targetIdx);
             setEnemyHand(eh=>{
               if(eh.length>0){
-                const [next,...rest]=eh;
-                setEnemyField(f2=>[...f2.filter((_,i)=>i!==targetIdx),{...next,hp:next.hp,maxHp:next.hp,defending:false}]);
+                const [nextCard,...rest]=eh;
+                setEnemyField(f2=>[...f2.filter((_,i)=>i!==targetIdx),
+                  {... nextCard,hp:nextCard.hp,maxHp:nextCard.hp,defending:false}]);
                 return rest;
               }
               return eh;
@@ -1977,15 +2020,55 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
 
-    if(dmg>0) addLog(`⚔️ ${atk.name} → ${def.name}: ${dmg} dmg${isSpecial?" (special)":""}${tl?` (${tl.text})`:""}`,"player");
+    // Apply reflect damage to attacker
+    if(reflectDmg>0){
+      setPlayerField(prev=>{
+        const next=[...prev];
+        if(attackerIdx>=next.length)return prev;
+        const newHp=Math.max(0,next[attackerIdx].hp-reflectDmg);
+        next[attackerIdx]={...next[attackerIdx],hp:newHp};
+        addDmg(`-${reflectDmg}`,"#f59e0b",attackerIdx,false);
+        addLog(`↩ ${atk.name} takes ${reflectDmg} reflected damage!`,"err");
+        return next;
+      });
+    }
+
     SFX.play(isSpecial?"specialHit":"hit");
+
+    // Step 6: ability trigger — Special only, roll chance, target must survive
+    if(isSpecial){
+      const chance=abilityTriggerChance(atk);
+      const roll=Math.random();
+      if(roll<chance){
+        // Check target still alive before resolving enemy-targeted abilities
+        setTimeout(()=>{
+          setEnemyField(ef=>{
+            const targetAlive=ef.some(c=>c.uid===def.uid&&c.hp>0);
+            const abilityKey=CARD_ABILITIES[atk.id];
+            const isOffensive=["burn","poison","pierce","thorns","laststand","intimidate"].includes(abilityKey);
+            if(isOffensive&&!targetAlive){
+              // Target dead — offensive ability does not resolve
+            } else {
+              addLog(`✨ ${atk.name} triggers ${ABILITIES[abilityKey]?.name||abilityKey}! (${Math.round(chance*100)}% chance)`,
+                "player");
+              resolveAbility(atk, def, "player","enemy");
+            }
+            return ef;
+          });
+        },450);
+      }
+    }
+
     setTimeout(()=>setAnimating(false),400);
   };
 
-  // Defend a card — pure defensive stance, no mana reward
+  // Defend a card — pure defensive stance
   const doDefend=(fieldIdx)=>{
     if(!playerTurn||animating)return;
+    // Turn 1 restriction: play cards only
+    if(turn===1){addLog("Turn 1: you may only play cards.","err");return;}
     const card=playerField[fieldIdx];
+    if(playedThisTurn.has(card.uid)){addLog(`${card.name} cannot act the turn it was played.`,"err");return;}
     if(card.defending){addLog(`${card.name} is already defending.`,"err");return;}
     setPlayerField(prev=>{
       const next=[...prev];
@@ -1993,108 +2076,90 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       return next;
     });
     setActedCards(prev=>{const next=new Set(prev);next.add(card.uid);return next;});
-    addLog(`🛡 ${card.name} braces for impact. High DEF = counterattack!`,"player");
+    addLog(`🛡 ${card.name} braces for impact. DEF absorbs damage; excess reflects!`,"player");
     SFX.play("click");
   };
 
-  // ── resolveAbility(casterCard, targetCard, casterOwner, targetOwner) ──────────
-  // casterOwner: "player" | "enemy"
-  // targetOwner: "player" | "enemy"
-  // targetCard: the enemy card selected (used by offensive/debuff abilities)
-  //             pass null for self-targeting abilities (Regen, Shield, Berserker, Last Stand, Rally Cry)
+  // ── resolveAbility ────────────────────────────────────────────────────────────
+  // Abilities trigger ONLY on Special, after trigger roll in doAttack.
+  // Burn/Poison apply DoT effects (tick at start of controller's next turn).
+  // casterOwner: "player"|"enemy"  targetOwner: "player"|"enemy"
   const resolveAbility=(casterCard, targetCard, casterOwner, targetOwner)=>{
     const abilityKey=CARD_ABILITIES[casterCard.id];
     if(!abilityKey){addLog(`${casterCard.name} has no ability.`,"err");return;}
 
-    // Helpers: setters for the caster's field and the target's field
     const setCasterField=casterOwner==="player"?setPlayerField:setEnemyField;
     const setTargetField=targetOwner==="player"?setPlayerField:setEnemyField;
 
+    // Helper: apply a DoT effect to a card (no stacking — refresh duration)
+    const applyEffect=(targetUid, effectType, ticks)=>{
+      setActiveEffects(prev=>{
+        const existing=(prev[targetUid]||[]).filter(e=>e.type!==effectType);
+        return {...prev,[targetUid]:[...existing,{type:effectType,ticksLeft:ticks}]};
+      });
+    };
+
     switch(abilityKey){
 
-      // ── BURN: 24 damage to one target ──────────────────────────────────────
+      // ── BURN: 15% of target maxHp per tick, 3 turns ────────────────────────
       case "burn":{
-        const dmg=24;
-        setTargetField(prev=>{
-          const next=[...prev];
-          const idx=next.findIndex(c=>c.uid===targetCard.uid);
-          if(idx===-1)return prev;
-          const newHp=Math.max(0,next[idx].hp-dmg);
-          next[idx]={...next[idx],hp:newHp};
-          addDmg(`-${dmg}`,"#f97316",idx,targetOwner==="enemy");
-          addLog(`🔥 ${casterCard.name} uses Burn! ${targetCard.name} takes ${dmg} fire damage.`,"player");
-          if(newHp<=0) addLog(`💀 ${targetCard.name} burned down!`,"good");
-          return next;
-        });
+        if(!targetCard){addLog(`${casterCard.name} Burn: no target.`,"err");break;}
+        applyEffect(targetCard.uid,"burn",3);
+        addLog(`🔥 ${casterCard.name} applies Burn! 15% max HP/turn for 3 turns.`,"player");
         SFX.play("specialHit");
         break;
       }
 
-      // ── POISON: 20 damage to one target ────────────────────────────────────
+      // ── POISON: 10% of target maxHp per tick, 3 turns ──────────────────────
       case "poison":{
-        const dmg=20;
-        setTargetField(prev=>{
-          const next=[...prev];
-          const idx=next.findIndex(c=>c.uid===targetCard.uid);
-          if(idx===-1)return prev;
-          const newHp=Math.max(0,next[idx].hp-dmg);
-          next[idx]={...next[idx],hp:newHp};
-          addDmg(`-${dmg}`,"#4ade80",idx,targetOwner==="enemy");
-          addLog(`☠️ ${casterCard.name} uses Poison! ${targetCard.name} takes ${dmg} poison damage.`,"player");
-          if(newHp<=0) addLog(`💀 ${targetCard.name} poisoned out!`,"good");
-          return next;
-        });
+        if(!targetCard){addLog(`${casterCard.name} Poison: no target.`,"err");break;}
+        applyEffect(targetCard.uid,"poison",3);
+        addLog(`☠️ ${casterCard.name} applies Poison! 10% max HP/turn for 3 turns.`,"player");
         SFX.play("specialHit");
         break;
       }
 
-      // ── PIERCE: deals caster power ignoring 50% of target defense ──────────
+      // ── PIERCE: caster power, ignoring 50% of target defense ───────────────
       case "pierce":{
+        if(!targetCard){addLog(`${casterCard.name} Pierce: no target.`,"err");break;}
         setTargetField(prev=>{
           const next=[...prev];
           const idx=next.findIndex(c=>c.uid===targetCard.uid);
           if(idx===-1)return prev;
-          const target=next[idx];
-          const effectiveDef=Math.round(target.defense*0.5); // 50% defense ignored
+          const effectiveDef=Math.floor(next[idx].defense*0.5);
           const dmg=Math.max(1,casterCard.power-effectiveDef);
-          const newHp=Math.max(0,target.hp-dmg);
+          const newHp=Math.max(0,next[idx].hp-dmg);
           next[idx]={...next[idx],hp:newHp};
           addDmg(`-${dmg}`,"#f1f5f9",idx,targetOwner==="enemy");
-          addLog(`🗡️ ${casterCard.name} uses Pierce! ${dmg} dmg (ignores 50% DEF).`,"player");
-          if(newHp<=0) addLog(`💀 ${target.name} pierced down!`,"good");
+          addLog(`🗡️ ${casterCard.name} Pierce! ${dmg} dmg (ignores 50% DEF).`,"player");
+          if(newHp<=0){addLog(`💀 ${next[idx].name} pierced down!`,"good");setActiveEffects(p=>{const n={...p};delete n[targetCard.uid];return n;});}
           return next;
         });
         SFX.play("specialHit");
         break;
       }
 
-      // ── REGEN: restore 30 HP to caster (capped at maxHp) ───────────────────
+      // ── REGEN: restore HP to caster each turn for 3 turns ──────────────────
+      // (REGEN as a self-effect — heals 10 HP/tick for 3 turns)
       case "regen":{
-        setCasterField(prev=>{
-          const next=[...prev];
-          const idx=next.findIndex(c=>c.uid===casterCard.uid);
-          if(idx===-1)return prev;
-          const healed=Math.min(30,next[idx].maxHp-next[idx].hp);
-          next[idx]={...next[idx],hp:Math.min(next[idx].maxHp,next[idx].hp+30)};
-          addDmg(`+${healed}`,"#4ade80",idx,casterOwner==="enemy");
-          addLog(`💚 ${casterCard.name} uses Regen! Restored ${healed} HP.`,"player");
-          return next;
-        });
+        applyEffect(casterCard.uid,"regen",3);
+        addLog(`💚 ${casterCard.name} activates Regen! +10 HP/turn for 3 turns.`,"player");
         SFX.play("coin");
         break;
       }
 
-      // ── SHIELD: next hit on this card is reduced 60% ───────────────────────
+      // ── SHIELD: next hit reduced 50% (after Defend) ────────────────────────
       case "shield":{
         setShieldedCards(prev=>{const next=new Set(prev);next.add(casterCard.uid);return next;});
-        addLog(`🛡️ ${casterCard.name} uses Shield! Next hit reduced by 60%.`,"player");
+        addLog(`🛡️ ${casterCard.name} activates Shield! Next hit reduced by 50%.`,"player");
         SFX.play("click");
         break;
       }
 
-      // ── THORNS: deals 40% of caster defense as damage to one target ────────
+      // ── THORNS: deals 25% of caster defense to target ──────────────────────
       case "thorns":{
-        const dmg=Math.max(1,Math.round(casterCard.defense*0.4));
+        if(!targetCard){addLog(`${casterCard.name} Thorns: no target.`,"err");break;}
+        const dmg=Math.max(1,Math.floor(casterCard.defense*0.25));
         setTargetField(prev=>{
           const next=[...prev];
           const idx=next.findIndex(c=>c.uid===targetCard.uid);
@@ -2102,16 +2167,15 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           const newHp=Math.max(0,next[idx].hp-dmg);
           next[idx]={...next[idx],hp:newHp};
           addDmg(`-${dmg}`,"#86efac",idx,targetOwner==="enemy");
-          addLog(`🌵 ${casterCard.name} uses Thorns! ${dmg} counter damage (40% of DEF ${casterCard.defense}).`,"player");
-          if(newHp<=0) addLog(`💀 ${targetCard.name} was spiked!`,"good");
+          addLog(`🌵 ${casterCard.name} Thorns! ${dmg} dmg (25% of DEF).`,"player");
+          if(newHp<=0){addLog(`💀 ${targetCard.name} spiked!`,"good");setActiveEffects(p=>{const n={...p};delete n[targetCard.uid];return n;});}
           return next;
         });
         SFX.play("specialHit");
         break;
       }
 
-      // ── BERSERKER: grant 50% power boost flag on caster for this turn ──────
-      // Sets a berserkerActive flag on the card in its field so doAttack can read it.
+      // ── BERSERKER: +50% power boost to caster this turn ────────────────────
       case "berserker":{
         setCasterField(prev=>{
           const next=[...prev];
@@ -2120,13 +2184,14 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           next[idx]={...next[idx],berserkerActive:true};
           return next;
         });
-        addLog(`😤 ${casterCard.name} goes Berserk! +50% power this turn.`,"player");
+        addLog(`😤 ${casterCard.name} Berserker! +50% power this turn.`,"player");
         SFX.play("specialHit");
         break;
       }
 
-      // ── LAST STAND: deals current HP as damage, minimum 20 ─────────────────
+      // ── LAST STAND: deals current HP as damage (min 20) ────────────────────
       case "laststand":{
+        if(!targetCard){addLog(`${casterCard.name} Last Stand: no target.`,"err");break;}
         const dmg=Math.max(20,casterCard.hp);
         setTargetField(prev=>{
           const next=[...prev];
@@ -2135,39 +2200,37 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           const newHp=Math.max(0,next[idx].hp-dmg);
           next[idx]={...next[idx],hp:newHp};
           addDmg(`-${dmg}`,"#f59e0b",idx,targetOwner==="enemy");
-          addLog(`⚡ ${casterCard.name} uses Last Stand! ${dmg} dmg (current HP: ${casterCard.hp}).`,"player");
-          if(newHp<=0) addLog(`💀 ${targetCard.name} couldn't withstand it!`,"good");
+          addLog(`⚡ ${casterCard.name} Last Stand! ${dmg} dmg.`,"player");
+          if(newHp<=0){addLog(`💀 ${targetCard.name} couldn't withstand it!`,"good");setActiveEffects(p=>{const n={...p};delete n[targetCard.uid];return n;});}
           return next;
         });
         SFX.play("specialHit");
         break;
       }
 
-      // ── RALLY CRY: heal 20 HP to every card on caster's field ──────────────
+      // ── RALLY CRY: heal all caster-side field cards 20 HP ──────────────────
       case "rallycry":{
         setCasterField(prev=>{
-          const next=prev.map(c=>{
-            const healed=Math.min(20,c.maxHp-c.hp);
-            return {...c,hp:Math.min(c.maxHp,c.hp+20)};
-          });
-          const totalHealed=next.reduce((sum,c,i)=>sum+(Math.min(20,prev[i].maxHp-prev[i].hp)),0);
-          addLog(`📣 ${casterCard.name} uses Rally Cry! All allies healed 20 HP (${totalHealed} total).`,"player");
+          const next=prev.map(c=>({...c,hp:Math.min(c.maxHp,c.hp+20)}));
+          const totalHealed=next.reduce((sum,c,i)=>sum+Math.min(20,prev[i].maxHp-prev[i].hp),0);
+          addLog(`📣 ${casterCard.name} Rally Cry! All allies +20 HP (${totalHealed} total).`,"player");
           return next;
         });
         SFX.play("achievement");
         break;
       }
 
-      // ── INTIMIDATE: reduce one target card's power by 25% permanently ──────
+      // ── INTIMIDATE: reduce target power by 25% (permanent this battle) ──────
       case "intimidate":{
+        if(!targetCard){addLog(`${casterCard.name} Intimidate: no target.`,"err");break;}
         setIntimidatedCards(prev=>({...prev,[targetCard.uid]:0.75}));
         setTargetField(prev=>{
           const next=[...prev];
           const idx=next.findIndex(c=>c.uid===targetCard.uid);
           if(idx===-1)return prev;
-          const reducedPower=Math.round(next[idx].power*0.75);
+          const reducedPower=Math.floor(next[idx].power*0.75);
           next[idx]={...next[idx],power:reducedPower};
-          addLog(`👁️ ${casterCard.name} uses Intimidate! ${targetCard.name} power reduced to ${reducedPower} (−25%).`,"player");
+          addLog(`👁️ ${casterCard.name} Intimidate! ${targetCard.name} power → ${reducedPower} (−25%).`,"player");
           return next;
         });
         SFX.play("sub");
@@ -2177,6 +2240,52 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       default:
         addLog(`${casterCard.name}: ability not recognised.`,"err");
     }
+  };
+
+  // ── Tick active effects on a field — called at start of each side's turn ─────
+  // fieldSetter: setPlayerField or setEnemyField
+  // owner: "player" or "enemy" (for log labels and dmgPop direction)
+  const tickEffects=(fieldSetter, owner)=>{
+    fieldSetter(prev=>{
+      const next=[...prev];
+      const toRemove=[];
+      next.forEach((card,idx)=>{
+        const effects=activeEffects[card.uid];
+        if(!effects||effects.length===0)return;
+        effects.forEach(eff=>{
+          if(eff.type==="burn"){
+            const dmg=Math.floor(card.maxHp*0.15);
+            const newHp=Math.max(0,next[idx].hp-dmg);
+            next[idx]={...next[idx],hp:newHp};
+            addDmg(`🔥-${dmg}`,"#f97316",idx,owner==="enemy");
+            addLog(`🔥 ${card.name} burns for ${dmg} dmg (15% max HP).`,"err");
+          } else if(eff.type==="poison"){
+            const dmg=Math.floor(card.maxHp*0.10);
+            const newHp=Math.max(0,next[idx].hp-dmg);
+            next[idx]={...next[idx],hp:newHp};
+            addDmg(`☠-${dmg}`,"#4ade80",idx,owner==="enemy");
+            addLog(`☠️ ${card.name} takes ${dmg} poison dmg (10% max HP).`,"err");
+          } else if(eff.type==="regen"){
+            const heal=Math.min(10,next[idx].maxHp-next[idx].hp);
+            next[idx]={...next[idx],hp:Math.min(next[idx].maxHp,next[idx].hp+10)};
+            addDmg(`+${heal}`,"#4ade80",idx,owner==="enemy");
+            addLog(`💚 ${card.name} regenerates ${heal} HP.`,"player");
+          }
+        });
+      });
+      return next;
+    });
+    // Decrement tick counts, remove expired effects, remove effects from dead cards
+    setActiveEffects(prev=>{
+      const next={...prev};
+      Object.keys(next).forEach(uid=>{
+        next[uid]=next[uid]
+          .map(e=>({...e,ticksLeft:e.ticksLeft-1}))
+          .filter(e=>e.ticksLeft>0);
+        if(next[uid].length===0) delete next[uid];
+      });
+      return next;
+    });
   };
 
   // Remove dead player cards
@@ -2216,6 +2325,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     addLog(`🤖 ${node.name}'s turn...`,"system");
 
     setTimeout(()=>{
+      // Tick effects on enemy cards at start of enemy turn
+      tickEffects(setEnemyField,"enemy");
+
       // Direct damage to enemy if their field is empty
       setEnemyField(ef=>{
         if(ef.length===0){
@@ -2245,28 +2357,53 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           let newPf=[...pf];
           let newEf=[...ef];
 
-          // Each enemy card attacks a random player card
-          newEf.forEach((ec,ei)=>{
+          // Each enemy card attacks a random player card — same deterministic formula as player
+          newEf.forEach((ec)=>{
             if(newPf.length===0)return;
             const targetIdx=Math.floor(Math.random()*newPf.length);
             const target=newPf[targetIdx];
-            const mult=typeMultiplier(ec.type,target.type);
-            let dmg=Math.round(ec.power*mult*(0.8+Math.random()*0.4));
+            // Type modifier: +20% or -20%, floor (same as player)
+            const tAdv=TYPE_ADV[ec.type];
+            let typeMod=1;
+            if(tAdv){
+              if(tAdv.strong===target.type)typeMod=1.2;
+              else if(tAdv.weak===target.type)typeMod=0.8;
+            }
+            let dmg=Math.floor(ec.power*typeMod);
+            // Defend: subtract DEF; excess reflects back to attacker
+            let reflectBack=0;
             if(target.defending){
-              if(target.defense>=dmg){dmg=0;}
+              if(target.defense>=dmg){reflectBack=target.defense-dmg;dmg=0;}
               else dmg=dmg-target.defense;
             }
+            // Shield: 50% of remaining, floor
+            if(shieldedCards.has(target.uid)&&dmg>0){
+              dmg=Math.floor(dmg*0.50);
+              setShieldedCards(prev=>{const n=new Set(prev);n.delete(target.uid);return n;});
+            }
             addDmg(dmg>0?`-${dmg}`:"BLOCKED","#ef4444",targetIdx,false);
-            if(dmg>0) addLog(`🤖 ${ec.name} attacks ${target.name} for ${dmg}`,dmg>30?"err":"info");
-            if(target.defending&&target.defense>0) addLog(`🛡 ${target.name} deflects! DEF ${target.defense}`,"info");
+            if(dmg>0) addLog(`🤖 ${ec.name} attacks ${target.name} for ${dmg}`,"info");
+            if(target.defending&&target.defense>0) addLog(`🛡 ${target.name} deflects! DEF ${target.defense}${reflectBack>0?` — reflects ${reflectBack}`:""}`,"info");
             newPf[targetIdx]={...newPf[targetIdx],hp:Math.max(0,newPf[targetIdx].hp-dmg),defending:false};
+            // Apply reflect to attacking enemy card
+            if(reflectBack>0){
+              const eidx=newEf.findIndex(c=>c.uid===ec.uid);
+              if(eidx>=0) newEf[eidx]={...newEf[eidx],hp:Math.max(0,newEf[eidx].hp-reflectBack)};
+              addLog(`↩ ${ec.name} takes ${reflectBack} reflected damage!`,"good");
+            }
           });
 
-          // Remove dead player cards
-          newPf.filter(c=>c.hp<=0).forEach(c=>addLog(`💀 ${c.name} fell!`,"err"));
+          // Remove dead player cards (clear their effects)
+          newPf.filter(c=>c.hp<=0).forEach(c=>{
+            addLog(`💀 ${c.name} fell!`,"err");
+            setActiveEffects(prev=>{const n={...prev};delete n[c.uid];return n;});
+          });
           newPf=newPf.filter(c=>c.hp>0);
-          // Remove dead enemy cards, draw replacements
-          newEf.filter(c=>c.hp<=0).forEach(c=>addLog(`💀 ${c.name} destroyed!`,"good"));
+          // Remove dead enemy cards (clear their effects)
+          newEf.filter(c=>c.hp<=0).forEach(c=>{
+            addLog(`💀 ${c.name} destroyed!`,"good");
+            setActiveEffects(prev=>{const n={...prev};delete n[c.uid];return n;});
+          });
           newEf=newEf.filter(c=>c.hp>0);
 
           setAnimating(false);
@@ -2275,7 +2412,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
         return ef;
       });
 
-      // Enemy plays cards from hand to field (flat stamina of 8)
+      // Enemy plays cards from hand to field (stamina = turn, cap 8)
       setEnemyHand(eh=>{
         setEnemyField(ef=>{
           if(ef.length>=4||eh.length===0) return ef;
@@ -2294,7 +2431,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           if(toPlay.length>0) addLog(`🤖 ${node.name} plays ${toPlay.map(c=>c.name).join(", ")} to field`,"info");
           return [...ef,...toPlay];
         });
-        // Recalculate which cards were played to trim hand correctly
+        // Trim hand: remove cards that were played
         const enemyStamina2=Math.min(turn,8);
         let stamLeft2=enemyStamina2;
         let played=0;
@@ -2311,27 +2448,60 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           const nt=t+1;
           const newStam=Math.min(nt,8);
           setBattleStamina(newStam);
-          // Draw a card
-          setPlayerDeckLeft(dl=>{
-            if(dl.length>0){
-              const [drawn,...rest]=dl;
-              setPlayerHand(h=>[...h,drawn]);
-              addLog(`📥 Drew ${drawn.name}`,"info");
-              return rest;
-            }
-            return dl;
-          });
           addLog(`── Turn ${nt} — ⚡ ${newStam} stamina ──`,"system");
           return nt;
         });
+        // Draw 1 card outside setTurn — skip if hand at max 6 or deck empty
+        setPlayerDeckLeft(dl=>{
+          if(dl.length===0) return dl;
+          const drawn=dl[0];
+          const rest=dl.slice(1);
+          setPlayerHand(h=>{
+            if(h.length>=6) return h; // max hand = 6, skip draw
+            addLog(`📥 Drew ${drawn.name}`,"info");
+            return [...h,drawn];
+          });
+          return rest;
+        });
         setActedCards(new Set());
+        setPlayedThisTurn(new Set()); // reset played-this-turn for new player turn
         setPlayerTurn(true);
         setAnimating(false);
-        // Clear defending status — defend only lasts through opponent's turn
+        // Clear defending status — defend expires after enemy turn
         setPlayerField(f=>f.map(c=>({...c,defending:false})));
+        // Tick effects on player cards at start of player turn
+        tickEffects(setPlayerField,"player");
       },800);
     },1200);
-  },[enemyField,playerField,node]);
+  },[enemyField,playerField,node,activeEffects,shieldedCards]);
+
+  // Replace a card in a field slot with one from hand
+  // Discards existing card immediately, removes all its effects, clears Defend.
+  const replaceCard=(slotIdx, handCard)=>{
+    if(!playerTurn||animating)return;
+    const cost=MANA_COST[handCard.rarity]||1;
+    if(battleStamina<cost){addLog(`Not enough stamina! ${handCard.name} costs ${cost}.`,"err");setReplacingSlot(null);return;}
+    const existing=playerField[slotIdx];
+    // Max 2 same card on field: count copies in OTHER slots (excluding slot being replaced)
+    const copiesElsewhere=playerField.filter((c,idx)=>idx!==slotIdx&&c.id===handCard.id).length;
+    if(copiesElsewhere>=2){addLog(`Max 2 copies of ${handCard.name} on field at once.`,"err");setReplacingSlot(null);return;}
+    // Remove all effects from discarded card
+    if(existing) setActiveEffects(prev=>{const n={...prev};delete n[existing.uid];return n;});
+    // Remove from shielded set
+    if(existing) setShieldedCards(prev=>{const n=new Set(prev);n.delete(existing.uid);return n;});
+    setBattleStamina(s=>s-cost);
+    setPlayerHand(h=>h.filter(c=>c.uid!==handCard.uid));
+    setPlayerField(prev=>{
+      const next=[...prev];
+      next[slotIdx]={...handCard,hp:handCard.hp,maxHp:handCard.hp,defending:false,uid:handCard.uid};
+      return next;
+    });
+    // New card cannot act the turn it was played
+    setPlayedThisTurn(prev=>{const n=new Set(prev);n.add(handCard.uid);return n;});
+    setReplacingSlot(null);
+    addLog(`♻ ${existing?existing.name+" replaced by ":""}${handCard.name} (cost: ${cost})`,"player");
+    SFX.play("cardFlip");
+  };
 
   const endTurn=()=>{
     if(!playerTurn||animating)return;
@@ -2348,6 +2518,13 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       });
       SFX.play("hit");
     }
+    // Shield expires at end of opponent's turn — clear enemy shields when player ends turn
+    setShieldedCards(prev=>{
+      const next=new Set(prev);
+      enemyField.forEach(c=>next.delete(c.uid));
+      return next;
+    });
+    setReplacingSlot(null);
     setPlayerTurn(false);
     setPhase2("free");
     setSelectedField(null);
@@ -2392,9 +2569,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             </div>
           </div>
           <div style={{color:"#f59e0b",fontSize:12,marginBottom:6,fontWeight:600}}>⚡ Costs {staminaCost} stamina · You have {stamina} remaining</div>
-          <div style={{color:"white",fontWeight:700,fontSize:14,marginBottom:10}}>Build your deck (pick 12 cards):</div>
+          <div style={{color:"white",fontWeight:700,fontSize:14,marginBottom:10}}>Build your deck (4–12 cards):</div>
           <div style={{color:"#475569",fontSize:11,marginBottom:12}}>
-            Costs: Common/Uncommon=1 stamina · Rare=2 · Epic=3 · Legendary=4
+            Costs: Common/Uncommon=1 · Rare=2 · Epic=3 · Legendary=4 · Max 2 copies per card
           </div>
           {/* Type advantages quick ref */}
           <div style={{background:"#0f172a",borderRadius:8,padding:"8px 12px",marginBottom:14}}>
@@ -2426,27 +2603,30 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           <div style={{color:"#64748b",fontSize:12,marginBottom:8}}>Or pick cards manually ({customDeck.length}/12):</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
             {allUnique.map((card,i)=>{
-              const picked=customDeck.filter(c=>c.uid===card.uid||c.id===card.id).length;
-              const inDeck=customDeck.some(c=>c.id===card.id);
-              return <div key={i} style={{position:"relative",cursor:"pointer"}} onClick={()=>{
-                if(inDeck){setCustomDeck(d=>{const idx=d.findIndex(c=>c.id===card.id);return d.filter((_,j)=>j!==idx);});}
-                else if(customDeck.length<12){setCustomDeck(d=>[...d,{...card,uid:Math.random()}]);}
+              const copyCount=customDeck.filter(c=>c.id===card.id&&!!c.foil===!!card.foil).length;
+              const foilCount=customDeck.filter(c=>c.foil).length;
+              const inDeck=copyCount>0;
+              const atCopyMax=copyCount>=2;
+              const atFoilMax=card.foil&&foilCount>=3;
+              const atDeckMax=customDeck.length>=12;
+              const canAdd=!atCopyMax&&!atFoilMax&&!atDeckMax;
+              return <div key={i} style={{position:"relative",cursor:inDeck||canAdd?"pointer":"not-allowed",opacity:!inDeck&&!canAdd?0.35:1}} onClick={()=>{
+                if(inDeck){setCustomDeck(d=>{const idx=d.findIndex(c=>c.id===card.id&&!!c.foil===!!card.foil);return d.filter((_,j)=>j!==idx);});}
+                else if(canAdd){setCustomDeck(d=>[...d,{...card,uid:Math.random()}]);}
               }}>
                 <Card card={card} mini selected={inDeck}/>
-                {inDeck&&<div style={{position:"absolute",top:2,right:2,background:"#a855f7",color:"white",borderRadius:999,width:16,height:16,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>✓</div>}
+                {copyCount>0&&<div style={{position:"absolute",top:2,right:2,background:"#a855f7",color:"white",borderRadius:999,width:16,height:16,fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>×{copyCount}</div>}
               </div>;
             })}
           </div>
           <button onClick={()=>{
-            const cheapCount=customDeck.filter(c=>c.rarity==="Common"||c.rarity==="Uncommon").length;
-            if(customDeck.length<6){alert("Pick at least 6 cards!");return;}
-            if(cheapCount<4){alert("Need at least 4 Common or Uncommon cards in your deck — otherwise you might not be able to play anything on Turn 1!");return;}
+            if(customDeck.length<4){alert("Pick at least 4 cards!");return;}
             const deck=customDeck.length<12?[...customDeck,...customDeck].slice(0,12):customDeck;
             if(stamina<staminaCost){alert("Not enough stamina!");return;}
             onSpendStamina(staminaCost);
             startBattle(deck, playerLevel);
-          }} disabled={customDeck.length<6}
-            style={{width:"100%",background:customDeck.length>=6?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:customDeck.length>=6?"white":"#475569",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:customDeck.length>=6?"pointer":"not-allowed"}}>
+          }} disabled={customDeck.length<4}
+            style={{width:"100%",background:customDeck.length>=4?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:customDeck.length>=4?"white":"#475569",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:customDeck.length>=4?"pointer":"not-allowed"}}>
             ⚔️ Battle! ({customDeck.length}/12 cards)
           </button>
         </div>
@@ -2544,30 +2724,50 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
             {/* ── PLAYER FIELD ── */}
             <div style={{padding:"6px 8px 10px"}}>
+              {replacingSlot!==null&&<div style={{color:"#f59e0b",fontSize:9,fontWeight:700,letterSpacing:1,textAlign:"center",marginBottom:4}}>SELECT A CARD FROM HAND TO REPLACE SLOT {replacingSlot+1} · <span onClick={()=>setReplacingSlot(null)} style={{cursor:"pointer",color:"#ef4444"}}>✕ CANCEL</span></div>}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:3}}>
                 {[0,1,2,3].map(i=>{
                   const card=playerField[i];
                   const acted=card&&actedCards.has(card.uid);
+                  const justPlayed=card&&playedThisTurn.has(card.uid);
                   const su=card&&specialUsed.has(card.uid);
                   const isLunging=attackingCard===i;
+                  const isFirstTurnBlock=turn===1;
+                  const actionBlocked=acted||justPlayed||isFirstTurnBlock;
+                  const isReplaceTarget=replacingSlot===i;
                   return(
-                    <div key={i} style={{position:"relative",minHeight:70,borderRadius:12,border:card?(selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s"}}>
+                    <div key={i} style={{position:"relative",minHeight:70,borderRadius:12,
+                      border:card?(isReplaceTarget?"2px solid #f59e0b":selectedField===i?"2px solid #a855f7":"1px solid #a855f733"):"1px dashed #a855f720",
+                      background:card?"transparent":"#0a001a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",transition:"border-color .2s",
+                      cursor:card&&playerTurn&&!animating&&replacingSlot===null?"pointer":"default"}}
+                      onClick={()=>{
+                        if(!card||!playerTurn||animating)return;
+                        if(replacingSlot===i){setReplacingSlot(null);return;}
+                        if(replacingSlot!==null){setReplacingSlot(i);return;}
+                        if(phase2==="free"&&!isFirstTurnBlock) setReplacingSlot(i);
+                      }}>
                       {card?(
                         <>
                           <div style={{position:"relative",animation:isLunging?"attackLunge 0.45s ease-in-out":(selectedField===i&&phase2==="targeting"?"cardBreathe 1s ease-in-out infinite":"none"),transform:"scale(0.72)",transformOrigin:"top center"}}>
                             <Card card={card} mini showHp currentHp={card.hp}/>
                             {card.defending&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,animation:"shieldAppear .3s ease-out",filter:"drop-shadow(0 0 8px #3b82f6)"}}>🛡</div>}
+                            {shieldedCards.has(card.uid)&&<div style={{position:"absolute",top:2,right:2,fontSize:10,filter:"drop-shadow(0 0 4px #3b82f6)"}}>🔵</div>}
                             {selectedField===i&&<div style={{position:"absolute",inset:0,border:"2px solid #a855f7",borderRadius:12,boxShadow:"0 0 14px #a855f766"}}/>}
-                            {acted&&<div style={{position:"absolute",inset:0,background:"#00000055",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#475569",fontSize:10,fontWeight:800}}>ACTED</span></div>}
+                            {isReplaceTarget&&<div style={{position:"absolute",inset:0,border:"2px solid #f59e0b",borderRadius:12,boxShadow:"0 0 12px #f59e0b66",animation:"pulse 0.8s infinite"}}/>}
+                            {actionBlocked&&!isReplaceTarget&&<div style={{position:"absolute",inset:0,background:"#00000055",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              <span style={{color:"#475569",fontSize:9,fontWeight:800,textAlign:"center",padding:"0 2px"}}>
+                                {isFirstTurnBlock?"TURN 1":justPlayed?"JUST PLAYED":"ACTED"}
+                              </span>
+                            </div>}
                           </div>
                           {dmgPops.filter(p=>!p.isEnemy&&p.fieldIdx===i).map(p=>(
                             <div key={p.id} style={{position:"absolute",top:-14,left:"50%",transform:"translateX(-50%)",color:p.color,fontWeight:900,fontSize:15,animation:"dmgPop .8s ease-out forwards",pointerEvents:"none",whiteSpace:"nowrap",zIndex:20,textShadow:"0 0 8px currentColor"}}>{p.text}</div>
                           ))}
-                          {playerTurn&&!animating&&!acted&&(
+                          {playerTurn&&!animating&&!actionBlocked&&replacingSlot===null&&(
                             <div style={{display:"flex",gap:3,marginTop:4,justifyContent:"center",width:"100%",paddingBottom:2}}>
-                              <button onClick={()=>selectAttacker(i)} style={{flex:1,background:"#7f1d1d",color:"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>⚔️</button>
-                              <button onClick={()=>{if(!su)selectAttacker(i,true);}} style={{flex:1,background:su?"#1e293b":"#4c1d95",color:su?"#334155":"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:su?"not-allowed":"pointer"}}>✨</button>
-                              <button onClick={()=>{if(!card.defending)doDefend(i);}} disabled={card.defending} style={{flex:1,background:card.defending?"#0f172a":"#1e3a5f",color:card.defending?"#334155":"white",border:card.defending?"1px solid #1e293b":"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:card.defending?"not-allowed":"pointer",opacity:card.defending?0.4:1}}>🛡</button>
+                              <button onClick={(e)=>{e.stopPropagation();selectAttacker(i);}} style={{flex:1,background:"#7f1d1d",color:"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>⚔️</button>
+                              <button onClick={(e)=>{e.stopPropagation();if(!su)selectAttacker(i,true);}} style={{flex:1,background:su?"#1e293b":"#4c1d95",color:su?"#334155":"white",border:"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:su?"not-allowed":"pointer"}}>✨</button>
+                              <button onClick={(e)=>{e.stopPropagation();if(!card.defending)doDefend(i);}} disabled={card.defending} style={{flex:1,background:card.defending?"#0f172a":"#1e3a5f",color:card.defending?"#334155":"white",border:card.defending?"1px solid #1e293b":"none",borderRadius:5,padding:"3px 0",fontSize:8,fontWeight:800,cursor:card.defending?"not-allowed":"pointer",opacity:card.defending?0.4:1}}>🛡</button>
                             </div>
                           )}
                         </>
@@ -2619,19 +2819,28 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
 
           {/* ── HAND ── */}
           <div style={{marginBottom:10}}>
-            <div style={{color:"#64748b",fontSize:9,fontWeight:700,letterSpacing:2,marginBottom:6}}>YOUR HAND ({playerHand.length})</div>
+            <div style={{color:"#64748b",fontSize:9,fontWeight:700,letterSpacing:2,marginBottom:6}}>
+              YOUR HAND ({playerHand.length}/6){replacingSlot!==null&&<span style={{color:"#f59e0b",marginLeft:6}}>— tap a card to replace slot {replacingSlot+1}</span>}
+            </div>
             {playerHand.length===0
               ?<div style={{color:"#334155",fontSize:11,textAlign:"center",padding:"14px",background:"#0f172a",borderRadius:10,border:"1px dashed #1e293b"}}>No cards in hand</div>
               :<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {playerHand.map((card,i)=>{
                   const cost=MANA_COST[card.rarity]||1;
-                  const canPlay=battleStamina>=cost&&playerField.length<4&&playerTurn&&!animating;
+                  const canReplace=replacingSlot!==null&&battleStamina>=cost&&playerTurn&&!animating;
+                  const canPlay=replacingSlot===null&&battleStamina>=cost&&playerField.length<4&&playerTurn&&!animating;
+                  const isActive=canPlay||canReplace;
                   return(
-                    <div key={card.uid} style={{position:"relative",opacity:canPlay?1:0.45,cursor:canPlay?"pointer":"not-allowed",transform:canPlay?"translateY(0)":"translateY(2px)",transition:"all .15s",animation:"drawCard .3s ease-out"}}
-                      onClick={()=>canPlay&&playCard(card)}>
+                    <div key={card.uid} style={{position:"relative",opacity:isActive?1:0.45,cursor:isActive?"pointer":"not-allowed",transform:isActive?"translateY(0)":"translateY(2px)",transition:"all .15s",animation:"drawCard .3s ease-out",
+                      outline:canReplace?"2px solid #f59e0b":"none",borderRadius:12}}
+                      onClick={()=>{
+                        if(canReplace){replaceCard(replacingSlot,card);return;}
+                        if(canPlay) playCard(card);
+                      }}>
                       <Card card={card} mini/>
-                      <div style={{position:"absolute",top:2,left:2,background:canPlay?"#a855f7":"#475569",color:"white",borderRadius:999,width:16,height:16,fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:canPlay?"0 0 6px #a855f788":"none"}}>{cost}</div>
+                      <div style={{position:"absolute",top:2,left:2,background:isActive?(canReplace?"#f59e0b":"#a855f7"):"#475569",color:canReplace?"#000":"white",borderRadius:999,width:16,height:16,fontSize:9,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isActive?"0 0 6px #a855f788":"none"}}>{cost}</div>
                       {canPlay&&<div style={{position:"absolute",inset:0,borderRadius:12,boxShadow:"0 0 10px #a855f733",pointerEvents:"none"}}/>}
+                      {canReplace&&<div style={{position:"absolute",inset:0,borderRadius:12,boxShadow:"0 0 10px #f59e0b55",pointerEvents:"none"}}/>}
                     </div>
                   );
                 })}
@@ -3008,25 +3217,38 @@ function DeckBuilderModal({ collection, cardLevels, onSave, onClose, editDeck=nu
   const [selected,setSelected]=useState(editDeck?editDeck.cards.slice(0,12):[]);
   const [deckName,setDeckName]=useState(editDeck?editDeck.name:"My Deck");
   const [filter,setFilter]=useState("All");
-  const MAX=12; const MIN_CHEAP=4;
-  const unique=[...new Map(collection.map(c=>[c.id,c])).values()];
+  const MIN=4; const MAX=12; const MAX_COPIES=2; const MAX_FOIL=3;
+  const unique=[...new Map(collection.map(c=>[c.id+(c.foil?"f":""),c])).values()];
   const RARITIES=["All","Common","Uncommon","Rare","Epic","Legendary"];
   const filtered=filter==="All"?unique:unique.filter(c=>c.rarity===filter);
 
   const toggle=(card)=>{
     SFX.play("click");
-    if(selected.find(c=>c.id===card.id)) setSelected(s=>s.filter(c=>c.id!==card.id));
-    else if(selected.length<MAX) setSelected(s=>[...s,card]);
+    const copyCount=selected.filter(c=>c.id===card.id&&!!c.foil===!!card.foil).length;
+    const foilCount=selected.filter(c=>c.foil).length;
+    const inDeck=selected.find(c=>c.id===card.id&&!!c.foil===!!card.foil);
+    if(inDeck){
+      // Remove one copy
+      const idx=selected.findIndex(c=>c.id===card.id&&!!c.foil===!!card.foil);
+      setSelected(s=>s.filter((_,i)=>i!==idx));
+    } else {
+      if(selected.length>=MAX){return;}
+      if(copyCount>=MAX_COPIES){addDeckMsg(`Max ${MAX_COPIES} copies of the same card per deck.`);return;}
+      if(card.foil&&foilCount>=MAX_FOIL){addDeckMsg(`Max ${MAX_FOIL} foil cards per deck.`);return;}
+      setSelected(s=>[...s,card]);
+    }
   };
 
-  const cheapCount=selected.filter(c=>c.rarity==="Common"||c.rarity==="Uncommon").length;
-  const canSave=selected.length>=6&&cheapCount>=MIN_CHEAP;
-  const saveMsg=selected.length<6?"Need at least 6 cards":cheapCount<MIN_CHEAP?`Need ${MIN_CHEAP-cheapCount} more Common/Uncommon`:"Ready!";
+  const [deckMsg,setDeckMsg]=useState("");
+  const addDeckMsg=(msg)=>{setDeckMsg(msg);setTimeout(()=>setDeckMsg(""),2000);};
+
+  const canSave=selected.length>=MIN&&selected.length<=MAX;
+  const saveMsg=selected.length<MIN?`Need at least ${MIN} cards`:selected.length>MAX?`Max ${MAX} cards`:"Ready!";
 
   // Mana cost breakdown
   const COST={Common:1,Uncommon:1,Rare:2,Epic:3,Legendary:4};
   const totalCost=selected.reduce((s,c)=>s+(COST[c.rarity]||1),0);
-  const avgCost=selected.length?( totalCost/selected.length).toFixed(1):0;
+  const avgCost=selected.length?(totalCost/selected.length).toFixed(1):0;
 
   return (
     <Modal onClose={onClose} title="🃏 Deck Builder">
@@ -3044,8 +3266,8 @@ function DeckBuilderModal({ collection, cardLevels, onSave, onClose, editDeck=nu
             <span style={{color:"white",fontWeight:700,fontSize:13}}>Deck ({selected.length}/{MAX})</span>
             <div style={{display:"flex",gap:8}}>
               <span style={{color:"#475569",fontSize:10}}>Avg cost: <span style={{color:"#a855f7",fontWeight:700}}>{avgCost}</span></span>
-              <span style={{color:cheapCount>=MIN_CHEAP?"#22c55e":"#ef4444",fontSize:10,fontWeight:600}}>
-                {cheapCount}/{MIN_CHEAP} cheap ✓
+              <span style={{color:selected.length>=MIN?"#22c55e":"#94a3b8",fontSize:10,fontWeight:600}}>
+                {selected.length}/{MAX} cards
               </span>
             </div>
           </div>
@@ -3072,8 +3294,9 @@ function DeckBuilderModal({ collection, cardLevels, onSave, onClose, editDeck=nu
           style={{background:canSave?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:canSave?"white":"#475569",border:"none",borderRadius:12,padding:"12px",width:"100%",fontWeight:700,fontSize:14,cursor:canSave?"pointer":"not-allowed",marginBottom:4}}>
           💾 {canSave?`Save "${deckName}"`:saveMsg}
         </button>
+        {deckMsg&&<div style={{color:"#ef4444",fontSize:11,textAlign:"center",marginBottom:6,fontWeight:700}}>{deckMsg}</div>}
         <div style={{color:"#334155",fontSize:10,textAlign:"center",marginBottom:14}}>
-          Min 6 cards · Min 4 Common/Uncommon · Max 12 cards
+          Min 4 cards · Max 12 cards · Max 2 copies per card · Max 3 foil per deck
         </div>
 
         {/* Rarity filter */}
@@ -5178,7 +5401,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.79</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.81</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5564,7 +5787,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.79
+            Void Cards · v0.4.81
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
