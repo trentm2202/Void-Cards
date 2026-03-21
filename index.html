@@ -585,10 +585,10 @@ function drawRarity(weights){
   return Object.keys(weights).pop();
 }
 const PACK_ODDS = {
-  starter:   {Common:65,Uncommon:30,Rare:5,Epic:0,Legendary:0},
-  nebula:    {Common:45,Uncommon:30,Rare:20,Epic:5,Legendary:0},
-  void:      {Common:25,Uncommon:30,Rare:25,Epic:17,Legendary:3},
-  legendary: {Common:0,Uncommon:10,Rare:30,Epic:40,Legendary:20},
+  basic:    {Common:60,Uncommon:30,Rare:8,Epic:2,Legendary:0},
+  standard: {Common:45,Uncommon:30,Rare:18,Epic:5,Legendary:2},
+  premium:  {Common:30,Uncommon:30,Rare:25,Epic:11,Legendary:4},
+  deluxe:   {Common:20,Uncommon:25,Rare:30,Epic:17,Legendary:8},
 };
 
 // ── Avatar system ─────────────────────────────────────────────────────────────
@@ -662,10 +662,10 @@ const avatarUnlocked=(av,{playerLevel,collection,completedNodes})=>{
 };
 
 const PACKS = [
-  { id:1, name:"Starter Pack",   price:100,  icon:"🌌", count:3, oddsKey:"starter",   guaranteed:"Chance at Rare",    guaranteedRarity:"Uncommon" },
-  { id:2, name:"Nebula Pack",    price:250,  icon:"🪐", count:5, oddsKey:"nebula",    guaranteed:"Chance at Epic",     guaranteedRarity:"Rare" },
-  { id:3, name:"Void Pack",      price:600,  icon:"⚡", count:5, oddsKey:"void",      guaranteed:"Chance at Legendary",guaranteedRarity:"Epic" },
-  { id:4, name:"Legendary Pack", price:1500, icon:"🌟", count:5, oddsKey:"legendary", guaranteed:"20% Legendary chance",guaranteedRarity:"Rare" },
+  { id:1, name:"Basic Pack",    price:100, icon:"🌌", count:3, oddsKey:"basic",    guaranteed:"≥ Uncommon",     guaranteedRarity:"Uncommon" },
+  { id:2, name:"Standard Pack", price:180, icon:"🪐", count:5, oddsKey:"standard", guaranteed:"≥ Rare",         guaranteedRarity:"Rare" },
+  { id:3, name:"Premium Pack",  price:300, icon:"⚡", count:7, oddsKey:"premium",  guaranteed:"≥ Rare",         guaranteedRarity:"Rare" },
+  { id:4, name:"Deluxe Pack",   price:500, icon:"🌟", count:7, oddsKey:"deluxe",   guaranteed:"≥ Epic",         guaranteedRarity:"Epic" },
 ];
 
 const RC = {
@@ -1325,7 +1325,7 @@ function Modal({ onClose, title, children }) {
 }
 
 // ── Dramatic Pack Opening ─────────────────────────────────────────────────────
-function PackModal({ pack, onClose, onEarn, onLegendary }) {
+function PackModal({ pack, onClose, onEarn, onLegendary, pityCount=0 }) {
   const [phase, setPhase] = useState("sealed");
   const [cards, setCards] = useState([]);
   const [revealed, setRevealed] = useState([]);
@@ -1338,51 +1338,97 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
 
   const open = () => {
     SFX.play("packCrinkle");
-    // Each slot has a small upgrade chance — any slot can pop off
-    // Draw cards using weighted odds, guarantee at least one of guaranteedRarity or higher
     const rarityOrder=["Common","Uncommon","Rare","Epic","Legendary"];
-    const odds=PACK_ODDS[pack.oddsKey]||PACK_ODDS.starter;
+    const odds=PACK_ODDS[pack.oddsKey]||PACK_ODDS.basic;
     const count=pack.count||5;
+
+    // Step 1: Draw all cards — God cards are never in normal packs
     const drawn=[];
     for(let i=0;i<count;i++){
-      const r=drawRarity(odds);
-      const opts=ALL_CARDS.filter(c=>c.rarity===r);
-      if(opts.length) drawn.push(opts[Math.floor(Math.random()*opts.length)]);
+      let r=drawRarity(odds);
+      // Hard reject God rarity — re-roll to Legendary
+      if(r==="God") r="Legendary";
+      const opts=ALL_CARDS.filter(c=>c.rarity===r&&c.rarity!=="God");
+      if(opts.length) drawn.push({...opts[Math.floor(Math.random()*opts.length)]});
     }
-    // Guarantee at least one card of guaranteedRarity or higher
+
+    // Step 2: Minimum guarantee — upgrade lowest rarity card (leftmost on tie)
     const minIdx=rarityOrder.indexOf(pack.guaranteedRarity||"Common");
     const hasMin=drawn.some(c=>rarityOrder.indexOf(c.rarity)>=minIdx);
     if(!hasMin){
-      // Replace the first Common with a guaranteed card
-      const replaceIdx=drawn.findIndex(c=>rarityOrder.indexOf(c.rarity)<minIdx);
-      const guaranteedOpts=ALL_CARDS.filter(c=>rarityOrder.indexOf(c.rarity)>=minIdx);
-      if(replaceIdx>=0&&guaranteedOpts.length){
-        drawn[replaceIdx]=guaranteedOpts[Math.floor(Math.random()*guaranteedOpts.length)];
+      // Find lowest rarity card — leftmost if tie
+      let lowestIdx=0;
+      let lowestRank=rarityOrder.indexOf(drawn[0]?.rarity??"")||0;
+      drawn.forEach((c,i)=>{
+        const rank=rarityOrder.indexOf(c.rarity);
+        if(rank<lowestRank){lowestRank=rank;lowestIdx=i;}
+      });
+      const guaranteedOpts=ALL_CARDS.filter(c=>rarityOrder.indexOf(c.rarity)>=minIdx&&c.rarity!=="God");
+      if(guaranteedOpts.length) drawn[lowestIdx]={...guaranteedOpts[Math.floor(Math.random()*guaranteedOpts.length)]};
+    }
+
+    // Step 3: Pity override — if pity reached 20, guarantee Legendary
+    // Replace lowest rarity card (leftmost tie)
+    const pity=pack.pityCount||0;
+    if(pity>=20){
+      const hasLeg=drawn.some(c=>c.rarity==="Legendary");
+      if(!hasLeg){
+        let lowestIdx=0;
+        let lowestRank=rarityOrder.indexOf(drawn[0]?.rarity??"")||0;
+        drawn.forEach((c,i)=>{
+          const rank=rarityOrder.indexOf(c.rarity);
+          if(rank<lowestRank){lowestRank=rank;lowestIdx=i;}
+        });
+        const legOpts=ALL_CARDS.filter(c=>c.rarity==="Legendary");
+        if(legOpts.length) drawn[lowestIdx]={...legOpts[Math.floor(Math.random()*legOpts.length)]};
       }
     }
+
     setCards(drawn);
     setPhase("tearing");
     setTimeout(()=>{ setPhase("reveal"); revealOne(drawn, 0); }, 1000);
   };
 
-  const revealOne = (cardList, idx) => {
-    if(idx >= cardList.length){ setAllDone(true); return; }
-    const card = cardList[idx];
+  // Player-chosen reveal: clicking a card back reveals it
+  const revealCard = (idx) => {
+    if(revealed.includes(idx)||spotlightIdx===idx) return;
+    const card = cards[idx];
     const delay = RARITY_DELAY[card.rarity]||700;
     setSpotlightIdx(idx);
-    // Play rarity-specific sound
     if(card.rarity==="Legendary") SFX.play("legendaryReveal");
     else if(card.rarity==="Epic") SFX.play("epicFlip");
     else if(card.rarity==="Rare") SFX.play("rareFlip");
     else SFX.play("cardFlip");
     setTimeout(()=>{
-      const sfx={Legendary:"legendaryReveal",Epic:"epicFlip",Rare:"rareFlip",Uncommon:"cardFlip",Common:"cardFlip"}[card.rarity]||"cardFlip";
-      SFX.play(sfx);
       if(card.rarity==="Legendary") onLegendary?.();
-      setRevealed(r=>[...r, idx]);
+      setRevealed(r=>{
+        const next=[...r,idx];
+        if(next.length>=cards.length) setAllDone(true);
+        return next;
+      });
       setSpotlightIdx(-1);
-      setTimeout(()=>revealOne(cardList, idx+1), 300);
     }, delay);
+  };
+
+  // Reveal all remaining at once (skip)
+  const revealAll = () => {
+    if(!cards.length) return;
+    cards.forEach((card,idx)=>{
+      if(!revealed.includes(idx)){
+        if(card.rarity==="Legendary") onLegendary?.();
+      }
+    });
+    SFX.play("achievement");
+    setRevealed(cards.map((_,i)=>i));
+    setSpotlightIdx(-1);
+    setAllDone(true);
+  };
+
+  // Legacy: auto-reveal first card when pack opens (kicks off player flow)
+  const revealOne = (cardList, idx) => {
+    if(idx >= cardList.length){ setAllDone(true); return; }
+    // Just enter reveal phase — player clicks to reveal
+    setSpotlightIdx(-1);
   };
 
   const rc = spotlightIdx>=0 ? RARITY_GLOW[cards[spotlightIdx]?.rarity]||"#a855f7" : "#a855f7";
@@ -1415,16 +1461,26 @@ function PackModal({ pack, onClose, onEarn, onLegendary }) {
             {!allDone ? `CARD ${revealed.length+1} OF ${cards.length}` : "✨ PACK COMPLETE"}
           </div>
 
+          {/* Skip button — reveals all remaining */}
+          {!allDone&&<div style={{textAlign:"right",marginBottom:6}}>
+            <button onClick={revealAll} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"5px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>
+              Skip All ⏭
+            </button>
+          </div>}
+
           <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",marginBottom:20}}>
             {cards.map((card,i)=>{
               const isSpot = spotlightIdx===i;
               const isRev  = revealed.includes(i);
+              const canClick = !isRev&&!isSpot&&!allDone;
               const cg     = RARITY_GLOW[card.rarity];
               return (
-                <div key={i} style={{position:"relative",transition:"transform .3s",transform:isSpot?"scale(1.12)":"scale(1)"}}>
-                  {/* Waiting slot — card back */}
-                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:"1px solid #4c1d95",boxShadow:"0 0 8px #7c3aed44",position:"relative"}}>
+                <div key={i} style={{position:"relative",transition:"transform .3s",transform:isSpot?"scale(1.12)":"scale(1)",cursor:canClick?"pointer":"default"}}
+                  onClick={()=>canClick&&revealCard(i)}>
+                  {/* Waiting slot — clickable card back */}
+                  {!isRev&&!isSpot&&<div style={{width:162,height:248,borderRadius:14,overflow:"hidden",border:`1px solid ${canClick?"#7c3aed":"#4c1d95"}`,boxShadow:canClick?"0 0 14px #7c3aed66":"0 0 8px #7c3aed22",position:"relative",transition:"box-shadow .2s"}}>
                     <img src="https://trentm2202.github.io/Void-Cards/cards/card-back.jpg" style={{width:"100%",height:"100%",objectFit:"cover"}} alt="card back"/>
+                    {canClick&&<div style={{position:"absolute",bottom:8,left:0,right:0,textAlign:"center",color:"#a855f7",fontSize:10,fontWeight:700}}>Tap to reveal</div>}
                   </div>}
                   {/* Spotlight glowing back */}
                   {isSpot&&<div style={{width:162,height:248,borderRadius:14,background:`linear-gradient(135deg,${cg}22,${cg}08)`,border:`2px solid ${cg}`,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 40px ${cg}66, inset 0 0 30px ${cg}22`,animation:"pulse .4s infinite"}}>
@@ -1467,7 +1523,7 @@ function WelcomeScreen({ onClaim }) {
 
   const openPack=()=>{
     SFX.play("packCrinkle");
-    const drawn=[...Array(5)].map(()=>{const r=drawRarity(PACK_ODDS.nebula);const opts=ALL_CARDS.filter(c=>c.rarity===r);return opts[Math.floor(Math.random()*opts.length)];});
+    const drawn=[...Array(5)].map(()=>{let r=drawRarity(PACK_ODDS.standard);if(r==="God")r="Legendary";const opts=ALL_CARDS.filter(c=>c.rarity===r&&c.rarity!=="God");return opts[Math.floor(Math.random()*opts.length)];}).filter(Boolean);
     setCards(drawn); setPhase("opening");
     setTimeout(()=>{
       setPhase("reveal");
@@ -2989,9 +3045,17 @@ function DupesModal({collection,onClose,onSellOne,onSellAll}){
 function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckBuilder,setFusionModal,newCardIds=new Set(),setNewCardIds,showDupesOnly=false,setShowDupesOnly,setShowDupesModal,decks=[],onDeleteDeck}){
   const [search,setSearch]=useState("");
   const [rarityFilter,setRarityFilter]=useState("All");
-  const [binderSection,setBinderSection]=useState("cards"); // cards|decks
+  const [binderSection,setBinderSection]=useState("cards"); // cards|missing|wishlist|decks
   const [typeFilter,setTypeFilter]=useState("All");
   const [sortBy,setSortBy]=useState("rarity");
+  const [wishlist,setWishlist]=useState(()=>{try{return JSON.parse(localStorage.getItem("vc_wishlist")||"[]");}catch{return [];}});
+  const toggleWishlist=(cardId)=>{
+    setWishlist(prev=>{
+      const next=prev.includes(cardId)?prev.filter(id=>id!==cardId):[...prev,cardId];
+      localStorage.setItem("vc_wishlist",JSON.stringify(next));
+      return next;
+    });
+  };
   const countById={};collection.forEach(c=>{countById[c.id]=(countById[c.id]||0)+1;});
   const totalUnique=ALL_CARDS.length;
   const pct=Math.round(unique.length/totalUnique*100);
@@ -3033,15 +3097,101 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
         </div>
       </div>
 
+      {/* Per-rarity completion % */}
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        {["Legendary","Epic","Rare","Uncommon","Common"].map(r=>{
+          const total=ALL_CARDS.filter(c=>c.rarity===r).length;
+          const owned=unique.filter(c=>c.rarity===r).length;
+          const pctR=total>0?Math.round(owned/total*100):0;
+          const rc2=RC[r]||{color:"#94a3b8"};
+          return(
+            <div key={r} style={{flex:1,minWidth:60,background:"#0f172a",border:`1px solid ${rc2.color}33`,borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
+              <div style={{color:rc2.color,fontSize:9,fontWeight:700,letterSpacing:1}}>{r.slice(0,3).toUpperCase()}</div>
+              <div style={{color:"white",fontWeight:800,fontSize:12}}>{pctR}%</div>
+              <div style={{color:"#334155",fontSize:8}}>{owned}/{total}</div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Section tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:14}}>
-        {[{k:"cards",l:"🃏 Cards"},{k:"decks",l:`📋 Decks (${decks.length})`}].map(t=>(
+      <div style={{display:"flex",gap:4,marginBottom:14,flexWrap:"wrap"}}>
+        {[{k:"cards",l:"🃏 Owned"},{k:"missing",l:`❓ Missing`},{k:"wishlist",l:`⭐ Wishlist (${wishlist.length})`},{k:"decks",l:`📋 Decks (${decks.length})`}].map(t=>(
           <button key={t.k} onClick={()=>setBinderSection(t.k)}
-            style={{flex:1,background:binderSection===t.k?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:binderSection===t.k?"white":"#64748b",border:"none",borderRadius:10,padding:"10px",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            style={{flex:1,minWidth:70,background:binderSection===t.k?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:binderSection===t.k?"white":"#64748b",border:"none",borderRadius:10,padding:"8px 4px",fontWeight:700,fontSize:11,cursor:"pointer"}}>
             {t.l}
           </button>
         ))}
       </div>
+
+      {/* Missing Cards section */}
+      {binderSection==="missing"&&(()=>{
+        const ownedIds=new Set(unique.map(c=>c.id));
+        const missing=ALL_CARDS.filter(c=>!ownedIds.has(c.id));
+        const rarityOrder={Legendary:0,Epic:1,Rare:2,Uncommon:3,Common:4};
+        const sorted=[...missing].sort((a,b)=>(rarityOrder[a.rarity]??5)-(rarityOrder[b.rarity]??5));
+        return(
+          <div>
+            <div style={{color:"#475569",fontSize:11,marginBottom:10}}>{missing.length} cards not yet collected</div>
+            {missing.length===0
+              ?<div style={{textAlign:"center",padding:40,color:"#22c55e"}}>
+                <div style={{fontSize:48,marginBottom:10}}>🏆</div>
+                <div style={{fontWeight:700}}>Full collection complete!</div>
+              </div>
+              :<div style={{display:"flex",flexWrap:"wrap",gap:10,padding:"8px 4px"}}>
+                {sorted.map((c,i)=>{
+                  const inWish=wishlist.includes(c.id);
+                  return(
+                    <div key={i} style={{position:"relative",flexShrink:0}}>
+                      <div style={{filter:"grayscale(0.8) brightness(0.5)",pointerEvents:"none"}}>
+                        <Card card={c} mini level={1}/>
+                      </div>
+                      <button onClick={()=>toggleWishlist(c.id)}
+                        style={{position:"absolute",top:2,right:2,background:inWish?"#f59e0b":"#1e293b",border:"none",borderRadius:999,width:18,height:18,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}>
+                        {inWish?"⭐":"☆"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            }
+          </div>
+        );
+      })()}
+
+      {/* Wishlist section */}
+      {binderSection==="wishlist"&&(()=>{
+        const wishCards=ALL_CARDS.filter(c=>wishlist.includes(c.id));
+        const ownedIds=new Set(unique.map(c=>c.id));
+        return(
+          <div>
+            <div style={{color:"#475569",fontSize:11,marginBottom:10}}>{wishlist.length} cards on wishlist</div>
+            {wishlist.length===0
+              ?<div style={{textAlign:"center",padding:40,color:"#334155"}}>
+                <div style={{fontSize:48,marginBottom:10}}>⭐</div>
+                <div>Go to Missing tab and star cards you want!</div>
+              </div>
+              :<div style={{display:"flex",flexWrap:"wrap",gap:10,padding:"8px 4px"}}>
+                {wishCards.map((c,i)=>{
+                  const owned=ownedIds.has(c.id);
+                  return(
+                    <div key={i} style={{position:"relative",flexShrink:0}}>
+                      <div style={{filter:owned?"none":"grayscale(0.6) brightness(0.6)",pointerEvents:"none"}}>
+                        <Card card={c} mini level={1}/>
+                      </div>
+                      {owned&&<div style={{position:"absolute",top:2,left:2,background:"#22c55e",color:"white",borderRadius:4,fontSize:7,fontWeight:800,padding:"1px 4px"}}>✓ Owned</div>}
+                      <button onClick={()=>toggleWishlist(c.id)}
+                        style={{position:"absolute",top:2,right:2,background:"#f59e0b",border:"none",borderRadius:999,width:18,height:18,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800}}>
+                        ★
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            }
+          </div>
+        );
+      })()}
 
       {/* Decks section */}
       {binderSection==="decks"&&<div>
@@ -3429,7 +3579,7 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
         {/* Tab bar */}
         <div style={{display:"flex",gap:6,marginBottom:14}}>
           {tabBtn("packs","🪐 Packs","#a855f7")}
-          {tabBtn("cards","🃏 Daily Cards","#06b6d4")}
+          {tabBtn("cards","🔄 Rotating Cards","#06b6d4")}
           {tabBtn("purchases","💳 Purchases","#f59e0b")}
         </div>
 
@@ -3441,8 +3591,8 @@ function DailyShopModal({collection, coins, onBuy, onClose, packsSinceLeg, onBuy
               <div style={{color:"#64748b",fontSize:11,marginTop:1}}>Every 20 packs</div>
             </div>
             <div style={{textAlign:"center",background:"#1c1008",borderRadius:8,padding:"6px 12px",border:"1px solid #f59e0b33"}}>
-              <div style={{color:"#f59e0b",fontWeight:900,fontSize:24,lineHeight:1}}>{20-packsSinceLeg}</div>
-              <div style={{color:"#475569",fontSize:9}}>packs left</div>
+              <div style={{color:"#f59e0b",fontWeight:900,fontSize:24,lineHeight:1}}>{packsSinceLeg}/20</div>
+              <div style={{color:"#475569",fontSize:9}}>pity counter</div>
             </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -4016,6 +4166,7 @@ function FusionTab({collection,unique,setDetail,setCollection,notify,updateQuest
   const foils=unique.filter(c=>c.foil);
 
   const doFuse=(card)=>{
+    if(card.rarity==="God"){notify("God cards cannot be fused.","err");return;}
     SFX.play("fusion");
     const foilPow=Math.round(card.power*1.2);
     const foilHp=Math.round(card.hp*1.2);
@@ -4137,6 +4288,7 @@ function App() {
   const [streak,setStreak]         = useState(()=>S.get("streak",0));
   const [lastLogin,setLastLogin]   = useState(()=>S.get("lastLogin",""));
   const [dailyGems,setDailyGems]   = useState(()=>S.get("dailyGems",""));  // stores date string, not boolean
+  const [claimedStreakDays,setClaimedStreakDays]=useState(()=>S.get("claimedStreakDays",[])); // [7,14,21,28] days claimed
   const [decks,setDecks]           = useState(()=>S.get("decks",[]));
   const [quests,setQuests]         = useState(()=>S.get("quests",null));
   const [questProg,setQuestProg]   = useState(()=>S.get("questProgress",{}));
@@ -4211,6 +4363,7 @@ function App() {
   const [showDupesOnly,setShowDupesOnly] = useState(false);
   const [showDupesModal,setShowDupesModal] = useState(false);
   const [dailyFreePack,setDailyFreePack]=useState(()=>S.get("dailyFreePack",""));
+  const [storedPacks,setStoredPacks]=useState(()=>S.get("storedPacks",[])); // [{id, name, icon, count, oddsKey, guaranteed, guaranteedRarity, price}]
   const [lastAdWatch,setLastAdWatch]=useState(()=>S.get("lastAdWatch",null));
   const [claimerTick,setClaimerTick]=useState(0); // force re-render after shard claim
   const cardLevels={}; // card leveling removed — kept as empty obj for prop compatibility
@@ -4240,6 +4393,8 @@ function App() {
   useEffect(()=>S.set("campaignAdsLastReset",campaignAdsLastReset),[campaignAdsLastReset]);
   useEffect(()=>S.set("godCardUnlocked",godCardUnlocked),[godCardUnlocked]);
   useEffect(()=>S.set("dailyFreePack",dailyFreePack),[dailyFreePack]);
+  useEffect(()=>S.set("claimedStreakDays",claimedStreakDays),[claimedStreakDays]);
+  useEffect(()=>S.set("storedPacks",storedPacks),[storedPacks]);
   useEffect(()=>S.set("newCardIds",[...newCardIds]),[newCardIds]);
   useEffect(()=>S.set("sfxVol",sfxVol),[sfxVol]);
 
@@ -4389,6 +4544,7 @@ function App() {
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
     campaignMilestones,campaignAdsUsedToday,campaignAdsLastReset,godCardUnlocked,
+    storedPacks,claimedStreakDays,
   });
   useEffect(()=>{
     if(!authed)return;
@@ -4510,24 +4666,13 @@ function App() {
     const newPulls=cards.map(c=>({name:c.name,rarity:c.rarity,type:c.type,color:c.color,date,packName:openingPack?.name||"Pack"}));
     setPullHistory(prev=>[...newPulls,...prev].slice(0,50));
 
-    // Guaranteed Legendary tracker
+    // Pity counter — reset on any Legendary, otherwise increment
+    // The pity override is applied inside PackModal.open() before cards are shown.
     const hasLeg=cards.some(c=>c.rarity==="Legendary");
     if(hasLeg){
       setPacksSinceLeg(0);
     } else {
-      setPacksSinceLeg(prev=>{
-        const next=prev+1;
-        if(next>=20){
-          const legs=ALL_CARDS.filter(c=>c.rarity==="Legendary");
-          const free=legs[Math.floor(Math.random()*legs.length)];
-          setCollection(p=>[...p,free]);
-          notify("🌟 Guaranteed Legendary! "+free.name+" added!","ach");
-          SFX.play("legendaryReveal");
-          setLegFlash(true);setTimeout(()=>setLegFlash(false),1000);
-          return 0;
-        }
-        return next;
-      });
+      setPacksSinceLeg(prev=>prev+1>=20?0:prev+1);
     }
 
     // Collection milestones
@@ -4604,6 +4749,32 @@ function App() {
     SFX.play("daily");
     notify(`💎 Daily: +${bonus} gems! (${streak}🔥 streak)`);
     checkAch({collection,wins,coins:coins+bonus,streak,cardLevels,decks,totalSold});
+    // Streak milestone rewards: day 7/14/21 = free pack, day 28 = free Legendary
+    const STREAK_MILESTONES=[
+      {day:7,  label:"Week 1 Reward!",   type:"pack"},
+      {day:14, label:"2 Week Reward!",   type:"pack"},
+      {day:21, label:"3 Week Reward!",   type:"pack"},
+      {day:28, label:"Monthly Reward!",  type:"legendary"},
+    ];
+    STREAK_MILESTONES.forEach(m=>{
+      if(streak>=m.day&&!claimedStreakDays.includes(m.day)){
+        setClaimedStreakDays(prev=>[...prev,m.day]);
+        if(m.type==="legendary"){
+          const legs=ALL_CARDS.filter(c=>c.rarity==="Legendary");
+          if(legs.length){
+            const free=legs[Math.floor(Math.random()*legs.length)];
+            setCollection(p=>[...p,free]);
+            SFX.play("legendaryReveal");
+            notify(`🌟 ${m.label} ${streak}-day streak — FREE Legendary: ${free.name}!`,"ach");
+          }
+        } else {
+          // Grant a Standard pack to stored inventory
+          setStoredPacks(prev=>[...prev,{...PACKS[1],uid:Date.now()+Math.random()}]);
+          SFX.play("achievement");
+          notify(`🎁 ${m.label} ${streak}-day streak — FREE Standard Pack added!`,"ach");
+        }
+      }
+    });
   };
 
   // Compute reserved gems — sum of player's highest bids on active auctions
@@ -4727,6 +4898,8 @@ function App() {
       if(save.campaignAdsUsedToday!==undefined) apply("campaignAdsUsedToday",setCampaignAdsUsedToday,save.campaignAdsUsedToday);
       if(save.campaignAdsLastReset!==undefined) apply("campaignAdsLastReset",setCampaignAdsLastReset,save.campaignAdsLastReset);
       if(save.godCardUnlocked!==undefined) apply("godCardUnlocked",setGodCardUnlocked,save.godCardUnlocked);
+      if(save.storedPacks!==undefined) apply("storedPacks",setStoredPacks,save.storedPacks);
+      if(save.claimedStreakDays!==undefined) apply("claimedStreakDays",setClaimedStreakDays,save.claimedStreakDays);
     } else {
       // Brand new account — reset all state to defaults
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
@@ -5047,8 +5220,8 @@ function App() {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
             <div style={{background:packsSinceLeg>=15?"linear-gradient(135deg,#2d1a00,#4a2800)":"linear-gradient(135deg,#1c1008,#2d1a00)",border:packsSinceLeg>=15?"1px solid #f59e0b88":"1px solid #f59e0b33",borderRadius:12,padding:12,textAlign:"center",boxShadow:packsSinceLeg>=15?"0 0 20px #f59e0b33":"none",animation:packsSinceLeg>=18?"pulse 1.5s ease-in-out infinite":"none"}}>
               <div style={{color:"#f59e0b",fontSize:9,fontWeight:700,letterSpacing:1,marginBottom:4}}>🌟 GUARANTEED LEGENDARY</div>
-              <div style={{color:"#f59e0b",fontWeight:900,fontSize:packsSinceLeg>=15?34:28,lineHeight:1,marginBottom:2}}>{20-packsSinceLeg}</div>
-              <div style={{color:packsSinceLeg>=15?"#f59e0b":"#475569",fontSize:9}}>{packsSinceLeg>=15?"⚡ ALMOST THERE!":"packs remaining"}</div>
+              <div style={{color:"#f59e0b",fontWeight:900,fontSize:packsSinceLeg>=15?34:28,lineHeight:1,marginBottom:2}}>{packsSinceLeg}/20</div>
+              <div style={{color:packsSinceLeg>=15?"#f59e0b":"#475569",fontSize:9}}>{packsSinceLeg>=15?"⚡ ALMOST THERE!":"pity progress"}</div>
               {packsSinceLeg>=15&&<div style={{color:"#f59e0b",fontSize:8,marginTop:3,fontWeight:700}}>Open a pack now!</div>}
             </div>
             <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #7c3aed33",borderRadius:12,padding:12,textAlign:"center"}}>
@@ -5453,7 +5626,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.82</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.83</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5745,7 +5918,7 @@ function App() {
       </Modal>}
 
       {/* Old BattleScreen removed — using GalaxyBattleModal */}
-      {openingPack&&<PackModal pack={openingPack} onClose={()=>setOpeningPack(null)} onEarn={onCardsEarned} onLegendary={()=>{setLegFlash(true);setTimeout(()=>setLegFlash(false),1000);}}/>}
+      {openingPack&&<PackModal pack={openingPack} pityCount={packsSinceLeg} onClose={()=>setOpeningPack(null)} onEarn={onCardsEarned} onLegendary={()=>{setLegFlash(true);setTimeout(()=>setLegFlash(false),1000);}}/>}
       {showSettings&&<Modal onClose={()=>setShowSettings(false)} title="⚙️ Settings">
         <div style={{maxWidth:420,margin:"0 auto"}}>
           {/* Sound */}
@@ -5839,7 +6012,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.82
+            Void Cards · v0.4.83
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
