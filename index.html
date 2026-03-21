@@ -1848,8 +1848,9 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     const maxHp=100+((plLevel||1)*5);
     setPlayerHp(maxHp);
     setPlayerMaxHp(maxHp);
-    // Enemy HP scales with node difficulty: easy nodes have less HP
-    const eHp=Math.round(3+(node.diff*10));
+    // Enemy HP = 100 + (5 × node level), where enemy level = node id (node number)
+    const enemyLevel=node.id||1;
+    const eHp=100+(5*enemyLevel);
     setEnemyHp(eHp);
     setEnemyMaxHp(eHp);
     // Enemy also starts with hand of 4, 0 on field
@@ -4183,7 +4184,7 @@ function App() {
     const saved=S.get("stamina",5);
     const lastRefill=S.get("lastStaminaRefill",Date.now());
     const playerLvl=S.get("playerLevel",1);
-    const maxStam=5+Math.floor(playerLvl/3);
+    const maxStam=Math.min(5+Math.floor(playerLvl/7),10);
     const elapsed=Date.now()-lastRefill;
     const offlineRefills=Math.floor(elapsed/(30*60*1000));
     return offlineRefills>0?Math.min(maxStam,saved+offlineRefills):saved;
@@ -4202,6 +4203,10 @@ function App() {
   const [pullHistory,setPullHistory] =useState(()=>S.get("pullHistory",[]));
   const [packsSinceLeg,setPacksSinceLeg]=useState(()=>S.get("packsSinceLeg",0));
   const [claimedMilestones,setClaimedMilestones]=useState(()=>S.get("claimedMilestones",[]));
+  const [campaignMilestones,setCampaignMilestones]=useState(()=>S.get("campaignMilestones",[])); // [25,50,75,100] claimed
+  const [campaignAdsUsedToday,setCampaignAdsUsedToday]=useState(()=>S.get("campaignAdsUsedToday",0));
+  const [campaignAdsLastReset,setCampaignAdsLastReset]=useState(()=>S.get("campaignAdsLastReset",""));
+  const [godCardUnlocked,setGodCardUnlocked]=useState(()=>S.get("godCardUnlocked",false));
   const [binderView,setBinderView] = useState("rarity");
   const [showDupesOnly,setShowDupesOnly] = useState(false);
   const [showDupesModal,setShowDupesModal] = useState(false);
@@ -4230,16 +4235,20 @@ function App() {
   useEffect(()=>S.set("pullHistory",pullHistory),[pullHistory]);
   useEffect(()=>S.set("packsSinceLeg",packsSinceLeg),[packsSinceLeg]);
   useEffect(()=>S.set("claimedMilestones",claimedMilestones),[claimedMilestones]);
+  useEffect(()=>S.set("campaignMilestones",campaignMilestones),[campaignMilestones]);
+  useEffect(()=>S.set("campaignAdsUsedToday",campaignAdsUsedToday),[campaignAdsUsedToday]);
+  useEffect(()=>S.set("campaignAdsLastReset",campaignAdsLastReset),[campaignAdsLastReset]);
+  useEffect(()=>S.set("godCardUnlocked",godCardUnlocked),[godCardUnlocked]);
   useEffect(()=>S.set("dailyFreePack",dailyFreePack),[dailyFreePack]);
   useEffect(()=>S.set("newCardIds",[...newCardIds]),[newCardIds]);
   useEffect(()=>S.set("sfxVol",sfxVol),[sfxVol]);
 
-  // ── Stamina regen (1 per 30 min, max = 5 + playerLevel/3) ─────────────────
+  // ── Stamina regen (1 per 30 min, max = min(5+floor(level/7), 10)) ──────────
   const lastRefillRef = useRef(lastStaminaRefill);
   const mapScrollRef = useRef(null);
   useEffect(()=>{ lastRefillRef.current = lastStaminaRefill; },[lastStaminaRefill]);
   useEffect(()=>{
-    const maxStam=5+Math.floor(playerLevel/3);
+    const maxStam=Math.min(5+Math.floor(playerLevel/7),10);
     const t=setInterval(()=>{
       const now=Date.now();
       const elapsed=now-lastRefillRef.current;
@@ -4379,6 +4388,7 @@ function App() {
     streak,lastLogin,dailyGems,decks,quests,questProg,unlockedAch,
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
+    campaignMilestones,campaignAdsUsedToday,campaignAdsLastReset,godCardUnlocked,
   });
   useEffect(()=>{
     if(!authed)return;
@@ -4713,6 +4723,10 @@ function App() {
       apply("nodeClears",setNodeClears,save.nodeClears);
       apply("stamina",setStamina,save.stamina);
       apply("lastStaminaRefill",setLastStaminaRefill,save.lastStaminaRefill);
+      if(save.campaignMilestones!==undefined) apply("campaignMilestones",setCampaignMilestones,save.campaignMilestones);
+      if(save.campaignAdsUsedToday!==undefined) apply("campaignAdsUsedToday",setCampaignAdsUsedToday,save.campaignAdsUsedToday);
+      if(save.campaignAdsLastReset!==undefined) apply("campaignAdsLastReset",setCampaignAdsLastReset,save.campaignAdsLastReset);
+      if(save.godCardUnlocked!==undefined) apply("godCardUnlocked",setGodCardUnlocked,save.godCardUnlocked);
     } else {
       // Brand new account — reset all state to defaults
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
@@ -5110,11 +5124,19 @@ function App() {
 
           {/* Stamina bar */}
           {(()=>{
-            const maxStam=5+Math.floor(playerLevel/3);
+            const maxStam=Math.min(5+Math.floor(playerLevel/7),10);
             const msSince=Date.now()-lastStaminaRefill;
             const msPerStam=30*60*1000;
             const msUntilNext=msPerStam-(msSince%msPerStam);
             const minsLeft=Math.ceil(msUntilNext/60000);
+            const atCap=stamina>=maxStam;
+            // Daily ad reset
+            const todayStr=new Date().toDateString();
+            if(campaignAdsLastReset!==todayStr){
+              setCampaignAdsLastReset(todayStr);
+              setCampaignAdsUsedToday(0);
+            }
+            const adsLeft=Math.max(0,10-campaignAdsUsedToday);
             return(
               <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
@@ -5124,8 +5146,33 @@ function App() {
                 <div style={{background:"#1e293b",borderRadius:999,height:8,marginBottom:4}}>
                   <div style={{width:`${Math.min(100,stamina/maxStam*100)}%`,height:"100%",background:"linear-gradient(90deg,#f59e0b,#fbbf24)",borderRadius:999,transition:"width .4s"}}/>
                 </div>
-                <div style={{color:"#475569",fontSize:10}}>
-                  {stamina<maxStam?`Next regen in ${minsLeft} min · `:"Full · "}Level up every 3 levels for +1 max
+                <div style={{color:"#475569",fontSize:10,marginBottom:8}}>
+                  {!atCap?`Next regen in ${minsLeft} min · `:"Full · "}+1 per 7 levels · max 10 at level 35
+                </div>
+                {/* Ad refill + paid refill */}
+                <div style={{display:"flex",gap:6}}>
+                  <button
+                    onClick={()=>{
+                      if(atCap){notify("Stamina already full!","err");return;}
+                      if(campaignAdsUsedToday>=10){notify("Ad refill limit reached (10/day)","err");return;}
+                      setCampaignAdsUsedToday(n=>n+1);
+                      setStamina(s=>Math.min(maxStam,s+1));
+                      notify("📺 Watched ad! +1 Stamina","ach");
+                    }}
+                    disabled={atCap||campaignAdsUsedToday>=10}
+                    style={{flex:1,background:atCap||campaignAdsUsedToday>=10?"#1e293b":"linear-gradient(135deg,#164e63,#0891b2)",color:atCap||campaignAdsUsedToday>=10?"#334155":"white",border:"none",borderRadius:8,padding:"7px 0",fontSize:10,fontWeight:700,cursor:atCap||campaignAdsUsedToday>=10?"not-allowed":"pointer"}}>
+                    📺 Watch Ad +1 ({adsLeft} left)
+                  </button>
+                  <button
+                    onClick={()=>{
+                      if(atCap){notify("Stamina already full!","err");return;}
+                      setStamina(s=>Math.min(maxStam,s+5));
+                      notify("💎 Purchased +5 Stamina!","ach");
+                    }}
+                    disabled={atCap}
+                    style={{flex:1,background:atCap?"#1e293b":"linear-gradient(135deg,#7c3aed,#a855f7)",color:atCap?"#334155":"white",border:"none",borderRadius:8,padding:"7px 0",fontSize:10,fontWeight:700,cursor:atCap?"not-allowed":"pointer"}}>
+                    +5 Stamina ($0.99)
+                  </button>
                 </div>
               </div>
             );
@@ -5296,10 +5343,15 @@ function App() {
                     </button>
                   </div>
                   <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                    <span style={{color:"#f59e0b",fontSize:11}}>💎 {clears===0?nextNode.gems:clears>=2?`${Math.round(nextNode.gems*0.5)} (3rd clear)`:"XP only"}</span>
+                    {clears<3
+                      ?<span style={{color:"#f59e0b",fontSize:11}}>💎 {clears===0?nextNode.gems:Math.floor(nextNode.gems*0.5)} {clears===0?"(1st)":clears===1?"(2nd · 50%)":"(3rd · 50%)"}</span>
+                      :<span style={{color:"#475569",fontSize:11}}>💎 Max clears reached</span>
+                    }
                     {nextNode.card&&clears===0&&<span style={{color:RC[nextNode.card]?.color||"#94a3b8",fontSize:11}}>🃏 {nextNode.card} card</span>}
+                    {nextNode.boss&&clears===0&&<span style={{color:"#f59e0b",fontSize:11}}>📦 Boss pack</span>}
+                    {nextNode.id===100&&!godCardUnlocked&&completedNodes.length>=99&&<span style={{color:"#f59e0b",fontSize:11,fontWeight:700}}>🌟 GOD CARD</span>}
                     <span style={{color:"#475569",fontSize:11}}>⚡ 1 stamina</span>
-                    {clears>0&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}{clears===2?" → bonus gems!":""}</span>}
+                    {clears>0&&clears<3&&<span style={{color:"#64748b",fontSize:11}}>Clear #{clears+1}</span>}
                   </div>
                 </div>
               </div>
@@ -5401,7 +5453,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.81</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.82</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5787,7 +5839,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.81
+            Void Cards · v0.4.82
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
@@ -5835,27 +5887,56 @@ function App() {
         onSpendStamina={(cost)=>setStamina(s=>Math.max(0,s-cost))}
         onClose={()=>setGalaxyBattle(null)}
         onWin={(gems,card)=>{
+          const nodeId=galaxyBattle.id;
+          // Backend sequential guard: node must be accessible
+          const nodeIdx=GALAXY_NODES.findIndex(n=>n.id===nodeId);
+          const isAccessible=nodeIdx===0||completedNodes.includes(GALAXY_NODES[nodeIdx-1]?.id);
+          if(!isAccessible){notify("Node not yet accessible.","err");return;}
+
           const nw=wins+1;
           setWins(nw);
-          const nodeId=galaxyBattle.id;
           const firstClear=!completedNodes.includes(nodeId);
           const prevClears=nodeClears[nodeId]||0;
+          // Cap at 3 clears — no further reward after 3
+          if(prevClears>=3&&!firstClear){
+            givePlayerXp(20);
+            notify(`⚔️ ${galaxyBattle.name} — max clears reached. +20 XP only.`,"ok");
+            setBattleStreak(b=>b+1);
+            return;
+          }
           const newClears=prevClears+1;
           setNodeClears(prev=>({...prev,[nodeId]:newClears}));
           setCompletedNodes(prev=>[...new Set([...prev,nodeId])]);
-          // Gem reward logic: first clear = full gems, 2nd = XP only, 3rd = bonus gems, 4+ = XP only
+
+          // Reward logic: 1st=100%, 2nd=50%, 3rd=50%, 4+=0% (guarded above)
           let gemReward=0;
           let bonusMsg="";
           if(firstClear){
             gemReward=gems;
             bonusMsg=`+💎${gems}`;
-          } else if(newClears===3){
-            gemReward=Math.round(gems*0.5);
-            bonusMsg=`+💎${gemReward} (3rd clear bonus!)`;
+          } else if(newClears===2||newClears===3){
+            gemReward=Math.floor(gems*0.5);
+            bonusMsg=`+💎${gemReward} (${newClears===2?"2nd":"3rd"} clear)`;
           }
           if(gemReward>0) setCoins(c=>c+gemReward);
           givePlayerXp(firstClear?100+galaxyBattle.gems:40);
+
+          // Card reward — first clear only
           if(card&&firstClear) setCollection(prev=>[...prev,card]);
+
+          // Boss first-clear pack rewards
+          let packMsg="";
+          if(galaxyBattle.boss&&firstClear){
+            // Award a pack based on which boss (planet 1-4 = Nebula, planet 5 = Void)
+            const packName=galaxyBattle.planet===5?"Void Pack":"Nebula Pack";
+            notify(`👑 Boss defeated! You earned a ${packName}!`,"ach");
+            packMsg=` + ${packName}`;
+            // Grant gems equivalent of pack value (actual pack opening is via store)
+            const packGems=galaxyBattle.planet===5?600:250;
+            setCoins(c=>c+packGems);
+            bonusMsg+=` + 💎${packGems} (boss pack)`;
+          }
+
           SFX.play("achievement");
           const cardMsg=card&&firstClear?` + ${card.name}`:"";
           notify(`🏆 ${galaxyBattle.name} defeated! ${bonusMsg}${cardMsg}`,"ach");
@@ -5863,6 +5944,35 @@ function App() {
           updateQuest("battle",1);
           checkAch({collection,wins:nw,coins:coins+gemReward,streak,cardLevels,decks,totalSold,teamWins});
           setBattleStreak(b=>b+1);
+
+          // Campaign milestone check (global first clears only)
+          if(firstClear){
+            const newCompleted=new Set([...completedNodes,nodeId]);
+            const totalFirstClears=newCompleted.size;
+            const CAMPAIGN_MILESTONE_THRESHOLDS=[
+              {pct:25,nodes:25,reward:"Rare Pack",gems:500,id:25},
+              {pct:50,nodes:50,reward:"Epic Pack",gems:1000,id:50},
+              {pct:75,nodes:75,reward:"Legendary Pack",gems:2000,id:75},
+              {pct:100,nodes:100,reward:"Final Milestone",gems:0,id:100},
+            ];
+            CAMPAIGN_MILESTONE_THRESHOLDS.forEach(m=>{
+              if(totalFirstClears>=m.nodes&&!campaignMilestones.includes(m.id)){
+                setCampaignMilestones(prev=>[...prev,m.id]);
+                if(m.id<100){
+                  setCoins(c=>c+m.gems);
+                  notify(`🌟 Campaign Milestone ${m.pct}%! +💎${m.gems} (${m.reward})!`,"ach");
+                } else {
+                  notify("🌌 100% Campaign complete! Final boss awaits...","ach");
+                }
+              }
+            });
+
+            // God card unlock: 100% completion AND final boss (node 100) first cleared
+            if(nodeId===100&&!godCardUnlocked){
+              setGodCardUnlocked(true);
+              notify("🌟 GOD CARD UNLOCKED! The Void Reaper's power is yours!","ach");
+            }
+          }
         }}
         onLose={()=>{
           setLosses(l=>l+1);
