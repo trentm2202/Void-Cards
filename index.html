@@ -1884,6 +1884,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [coinFlip,setCoinFlip]=useState(null); // null|"heads"|"tails"
   const [shieldedCards,setShieldedCards]=useState(new Set()); // uids with active Shield buff (absorbs next hit 60%)
   const [intimidatedCards,setIntimidatedCards]=useState({}); // uid -> 0.75 multiplier (permanent until card leaves)
+  const [activeEffects,setActiveEffects]=useState({}); // uid -> [{type,ticksLeft}] DoT/buff effects
+  const [playedThisTurn,setPlayedThisTurn]=useState(new Set()); // uids played this turn (cannot act same turn)
 
   const addLog=(text,type="info")=>setLog(prev=>[{text,type,id:Date.now()+Math.random()},...prev].slice(0,20));
   const addDmg=(text,color,fieldIdx,isEnemy)=>{
@@ -4368,6 +4370,12 @@ function App() {
   const [claimerTick,setClaimerTick]=useState(0); // force re-render after shard claim
   const cardLevels={}; // card leveling removed — kept as empty obj for prop compatibility
   const [onboardingStep,setOnboardingStep]=useState(()=>S.get("onboardingDone",false)?0:-1);
+  // ── Showcase & Wishlist (Profile v2) ──────────────────────────────────────────
+  const [showcaseCards,setShowcaseCards]=useState(()=>S.get("showcaseCards",[])); // [{id,uid,foil}] max 3
+  const [wishlist,setWishlist]=useState(()=>S.get("wishlist",[])); // [cardId, ...]
+  const [profileView,setProfileView]=useState("owner"); // "owner"|"public"
+  const [showcaseConfirm,setShowcaseConfirm]=useState(null); // {card,action:"fuse"|"sell"|"trade"}
+  const [showShowcaseSelector,setShowShowcaseSelector]=useState(false);
   const [battleResult,setBattleResult]=useState(null); // {won, xp, coins, cardName}
 
   useEffect(()=>S.set("coins",coins),[coins]);
@@ -4397,6 +4405,8 @@ function App() {
   useEffect(()=>S.set("storedPacks",storedPacks),[storedPacks]);
   useEffect(()=>S.set("newCardIds",[...newCardIds]),[newCardIds]);
   useEffect(()=>S.set("sfxVol",sfxVol),[sfxVol]);
+  useEffect(()=>S.set("showcaseCards",showcaseCards),[showcaseCards]);
+  useEffect(()=>S.set("wishlist",wishlist),[wishlist]);
 
   // ── Stamina regen (1 per 30 min, max = min(5+floor(level/7), 10)) ──────────
   const lastRefillRef = useRef(lastStaminaRefill);
@@ -4544,7 +4554,7 @@ function App() {
     teamWins,pullHistory,packsSinceLeg,claimedMilestones,dailyFreePack,newPlayer,
     completedNodes,stamina,lastStaminaRefill,nodeClears,
     campaignMilestones,campaignAdsUsedToday,campaignAdsLastReset,godCardUnlocked,
-    storedPacks,claimedStreakDays,
+    storedPacks,claimedStreakDays,showcaseCards,wishlist,
   });
   useEffect(()=>{
     if(!authed)return;
@@ -4615,6 +4625,39 @@ function App() {
   };
 
   const buyPack=p=>{ if(coins<p.price){notify("Not enough credits!","err");return;} setCoins(c=>c-p.price); updateQuest("spend",p.price); setOpeningPack(p); };
+
+  // ── Showcase helpers ──────────────────────────────────────────────────────────
+  const isShowcased=(card)=>showcaseCards.some(s=>s.id===card.id&&!!s.foil===!!card.foil);
+  // requireShowcaseConfirm: returns true if action should be blocked (confirmed=false) or can proceed
+  // Usage: if(requireShowcaseConfirm(card,"sell",()=>doSell(...))) return;
+  const requireShowcaseConfirm=(card,action,onConfirm)=>{
+    if(!isShowcased(card)) return false; // not showcased, no confirmation needed
+    setShowcaseConfirm({card,action,onConfirm});
+    return true;
+  };
+  const addToShowcase=(card)=>{
+    if(showcaseCards.length>=3) return;
+    if(isShowcased(card)) return;
+    setShowcaseCards(prev=>[...prev,{id:card.id,foil:!!card.foil,name:card.name,rarity:card.rarity,color:card.color,image:card.image||null}]);
+    SFX.play("click");
+    notify(`✨ ${card.name} added to showcase`,"ok");
+  };
+  const removeFromShowcase=(idx)=>{
+    setShowcaseCards(prev=>prev.filter((_,i)=>i!==idx));
+    SFX.play("click");
+  };
+  const moveShowcase=(idx,dir)=>{
+    setShowcaseCards(prev=>{
+      const next=[...prev];
+      const target=idx+dir;
+      if(target<0||target>=next.length) return prev;
+      [next[idx],next[target]]=[next[target],next[idx]];
+      return next;
+    });
+  };
+  const toggleWishlist=(cardId)=>{
+    setWishlist(prev=>prev.includes(cardId)?prev.filter(id=>id!==cardId):[...prev,cardId]);
+  };
 
   const COLLECTION_MILESTONES=[
     {count:10,  reward:200,  label:"First 10!"},
@@ -4900,6 +4943,8 @@ function App() {
       if(save.godCardUnlocked!==undefined) apply("godCardUnlocked",setGodCardUnlocked,save.godCardUnlocked);
       if(save.storedPacks!==undefined) apply("storedPacks",setStoredPacks,save.storedPacks);
       if(save.claimedStreakDays!==undefined) apply("claimedStreakDays",setClaimedStreakDays,save.claimedStreakDays);
+      if(save.showcaseCards!==undefined) apply("showcaseCards",setShowcaseCards,save.showcaseCards);
+      if(save.wishlist!==undefined) apply("wishlist",setWishlist,save.wishlist);
     } else {
       // Brand new account — reset all state to defaults
       if(newUsername){setUsername(newUsername);S.set("username",newUsername);}
@@ -5607,7 +5652,79 @@ function App() {
 
         {/* PROFILE */}
         {tab==="profile"&&<div>
-          {/* Username */}
+          {/* Version */}
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:4,letterSpacing:1}}>v0.5.1</div>
+          {/* Profile view toggle tabs */}
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[{id:"owner",label:"👤 My Profile"},{id:"public",label:"🌌 Public View"}].map(v=>(
+              <button key={v.id} onClick={()=>{setProfileView(v.id);SFX.play("click");}}
+                style={{flex:1,background:profileView===v.id?"linear-gradient(135deg,var(--t3),var(--t1))":"#0f172a",color:profileView===v.id?"white":"#475569",border:`1px solid ${profileView===v.id?"var(--t1)":"#1e293b"}`,borderRadius:10,padding:"10px",fontWeight:profileView===v.id?700:400,fontSize:12,cursor:"pointer",transition:"all .2s"}}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── PUBLIC VIEW ── */}
+          {profileView==="public"&&(()=>{
+            const activeTitleObj=TITLES_LIST.find(t=>t.id===selectedTitle)||TITLES_LIST[0];
+            const avatarObj=AVATARS.find(a=>a.id===avatar)||AVATARS[0];
+            const currentTheme=THEMES.find(t=>t.id===selectedTheme)||THEMES[0];
+            // Resolve showcase cards from live collection
+            const resolvedShowcase=showcaseCards.map(s=>{
+              const live=collection.find(c=>c.id===s.id&&!!c.foil===!!s.foil);
+              if(live) return live;
+              const base=ALL_CARDS.find(c=>c.id===s.id);
+              return base?{...base,foil:!!s.foil}:null;
+            }).filter(Boolean);
+            return(
+              <div>
+                {/* Public hero card */}
+                <div style={{background:`linear-gradient(135deg,${currentTheme.t4},${currentTheme.t5})`,border:`1px solid ${currentTheme.t1}44`,borderRadius:20,padding:24,marginBottom:16,textAlign:"center",position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",inset:0,background:`radial-gradient(ellipse at 50% 0%, ${currentTheme.t1}18, transparent 70%)`,pointerEvents:"none"}}/>
+                  <div style={{width:72,height:72,borderRadius:"50%",background:`linear-gradient(135deg,${currentTheme.t3},${currentTheme.t1})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 12px",boxShadow:`0 0 28px ${currentTheme.t1}55`}}>
+                    {avatarObj.icon}
+                  </div>
+                  <div style={{color:"white",fontWeight:900,fontSize:22,marginBottom:4}}>{username||"Commander"}</div>
+                  <div style={{display:"inline-flex",alignItems:"center",gap:6,background:currentTheme.t1b,border:`1px solid ${currentTheme.t1}44`,borderRadius:8,padding:"3px 12px",marginBottom:12}}>
+                    <span style={{color:currentTheme.t2,fontSize:12,fontWeight:700}}>{activeTitleObj.label}</span>
+                  </div>
+                  <div style={{color:currentTheme.t2,fontWeight:900,fontSize:28}}>Level {playerLevel}</div>
+                  <div style={{color:"#475569",fontSize:11,marginTop:2}}>Commander Rank</div>
+                </div>
+
+                {/* Showcase cards */}
+                <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9533",borderRadius:16,padding:16,marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{color:"#a855f7",fontWeight:700,fontSize:14}}>✨ Showcase</div>
+                    <span style={{color:"#334155",fontSize:10}}>{showcaseCards.length}/3 cards</span>
+                  </div>
+                  {resolvedShowcase.length===0
+                    ?<div style={{textAlign:"center",color:"#334155",padding:"24px 0",fontSize:12}}>
+                      <div style={{fontSize:32,marginBottom:8}}>🃏</div>
+                      No showcase cards set — switch to My Profile to add some
+                    </div>
+                    :<div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
+                      {resolvedShowcase.map((card,i)=>(
+                        <div key={i} style={{position:"relative",flexShrink:0}}>
+                          <Card card={card} mini level={1}/>
+                          {card.foil&&<div style={{position:"absolute",top:-4,right:-4,background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",fontSize:7,fontWeight:900,borderRadius:4,padding:"2px 5px",letterSpacing:.5,boxShadow:"0 0 8px #f59e0b88"}}>✨FOIL</div>}
+                        </div>
+                      ))}
+                    </div>
+                  }
+                </div>
+
+                {/* Public note */}
+                <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:10,padding:"10px 14px",textAlign:"center",color:"#334155",fontSize:11}}>
+                  🔒 XP progress, collection details, and wishlist are private
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── OWNER VIEW ── */}
+          {profileView==="owner"&&<div>
+          {/* Username editor */}
           <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9544",borderRadius:14,padding:14,marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
             <div style={{fontSize:28}}>👤</div>
             <div style={{flex:1}}>
@@ -5625,9 +5742,7 @@ function App() {
               <div style={{color:"#334155",fontSize:10,marginTop:3}}>Max 20 characters</div>
             </div>
           </div>
-          {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.83</div>
-          {/* Player Level Card */}
+          {/* ── Player Level Card (XP — owner view only) ── */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
             let accumulated=0;
@@ -5636,6 +5751,7 @@ function App() {
             const xpNeeded=xpForLv(playerLevel);
             const pct=Math.min(100,Math.round(xpIntoLevel/xpNeeded*100));
             const xpToNext=xpNeeded-xpIntoLevel;
+            const maxStamina=Math.min(5+Math.floor(playerLevel/7),10);
             return <div style={{background:"linear-gradient(135deg,#0f1e3c,#1e3a5f)",border:"1px solid #3b82f655",borderRadius:16,padding:20,marginBottom:16,position:"relative",overflow:"hidden"}}>
               <div style={{position:"absolute",top:-20,right:-20,fontSize:80,opacity:.05,pointerEvents:"none"}}>⭐</div>
               <div style={{color:"#60a5fa",fontSize:9,letterSpacing:4,fontWeight:800,marginBottom:6}}>COMMANDER RANK</div>
@@ -5646,25 +5762,36 @@ function App() {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{color:"white",fontWeight:900,fontSize:18,marginBottom:2}}>Level {playerLevel}</div>
-                  <div style={{color:"#64748b",fontSize:11,marginBottom:4}}>{playerXp.toLocaleString()} XP · {xpToNext} to next level</div>
+                  <div style={{color:"#64748b",fontSize:11,marginBottom:4}}>{playerXp.toLocaleString()} XP total · {xpToNext} to next</div>
                   <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#0f172a",borderRadius:8,padding:"3px 10px",border:"1px solid #3b82f644",cursor:"pointer"}} onClick={()=>setShowTitleSelector(s=>!s)}>
                     <span style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>{(TITLES_LIST.find(t=>t.id===selectedTitle)||TITLES_LIST[0]).label}</span>
                     <span style={{color:"#334155",fontSize:10}}>▼</span>
                   </div>
                 </div>
               </div>
+              {/* XP bar — owner only */}
               <div style={{background:"#0f172a",borderRadius:999,height:8,marginBottom:6}}>
                 <div style={{width:pct+"%",height:"100%",background:"linear-gradient(90deg,#1d4ed8,#60a5fa)",borderRadius:999,transition:"width .5s",boxShadow:"0 0 10px #3b82f644"}}/>
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",color:"#334155",fontSize:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",color:"#334155",fontSize:10,marginBottom:12}}>
                 <span>LV {playerLevel}</span><span>{pct}%</span><span>LV {playerLevel+1}</span>
               </div>
-              <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap"}}>
+              {/* Level perks */}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
                 {[{label:"Win battle",xp:120},{label:"Lose battle",xp:40},{label:"Open pack",xp:50}].map(r=>(
                   <div key={r.label} style={{background:"#0f172a",borderRadius:8,padding:"5px 10px",fontSize:10,color:"#475569"}}>
                     {r.label} <span style={{color:"#60a5fa",fontWeight:700}}>+{r.xp} XP</span>
                   </div>
                 ))}
+              </div>
+              {/* Level unlocks */}
+              <div style={{background:"#0a0f1e",borderRadius:8,padding:"8px 10px",fontSize:10}}>
+                <div style={{color:"#60a5fa",fontWeight:700,marginBottom:4}}>🔓 Level unlocks</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <span style={{color:"#94a3b8"}}>⚡ Max stamina: <b style={{color:"#60a5fa"}}>{maxStamina}</b></span>
+                  <span style={{color:"#94a3b8"}}>🏷️ Titles: <b style={{color:"#60a5fa"}}>{TITLES_LIST.filter(t=>playerLevel>=t.unlockLevel).length}/{TITLES_LIST.length}</b></span>
+                  <span style={{color:"#94a3b8"}}>🎨 Themes: <b style={{color:"#60a5fa"}}>{THEMES.filter(t=>playerLevel>=t.unlockLevel).length}/{THEMES.length}</b></span>
+                </div>
               </div>
               {showTitleSelector&&<div style={{marginTop:14,borderTop:"1px solid #1e293b",paddingTop:14}}>
                 <div style={{color:"#60a5fa",fontSize:11,fontWeight:700,marginBottom:10}}>🏷️ Select Title</div>
@@ -5681,6 +5808,110 @@ function App() {
               </div>}
             </div>;
           })()}
+
+          {/* ── Showcase Card Manager (owner view) ── */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #4c1d9533",borderRadius:16,padding:16,marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div>
+                <div style={{color:"#a855f7",fontWeight:700,fontSize:14}}>✨ Showcase Cards</div>
+                <div style={{color:"#334155",fontSize:10,marginTop:2}}>Up to 3 owned cards · shown on public profile</div>
+              </div>
+              {showcaseCards.length<3&&<button onClick={()=>{setShowShowcaseSelector(true);SFX.play("click");}}
+                style={{background:"linear-gradient(135deg,var(--t3),var(--t1))",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                + Add
+              </button>}
+            </div>
+            {showcaseCards.length===0
+              ?<div style={{textAlign:"center",color:"#334155",padding:"20px 0",fontSize:12}}>
+                <div style={{fontSize:28,marginBottom:6}}>🃏</div>
+                Add up to 3 cards to showcase on your public profile
+              </div>
+              :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {showcaseCards.map((sc,i)=>{
+                  const live=collection.find(c=>c.id===sc.id&&!!c.foil===!!sc.foil);
+                  const base=ALL_CARDS.find(c=>c.id===sc.id);
+                  const card=live||(base?{...base,foil:!!sc.foil}:null);
+                  if(!card) return null;
+                  const rc=RC[card.rarity]||{color:"#94a3b8"};
+                  return(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#0f172a",borderRadius:10,padding:"8px 10px",border:`1px solid ${rc.color}22`}}>
+                      <div style={{fontSize:22,flexShrink:0}}>{(AVATARS.find(a=>a.id==="astronaut")||{icon:"🃏"}).icon}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{color:"white",fontWeight:700,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card.name}</span>
+                          {card.foil&&<span style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",fontSize:7,fontWeight:900,borderRadius:4,padding:"1px 5px"}}>✨FOIL</span>}
+                        </div>
+                        <div style={{color:rc.color,fontSize:10,fontWeight:600}}>{card.rarity}</div>
+                      </div>
+                      <div style={{display:"flex",gap:4,flexShrink:0}}>
+                        <button onClick={()=>moveShowcase(i,-1)} disabled={i===0} style={{background:"#1e293b",color:i===0?"#334155":"#94a3b8",border:"1px solid #2e1065",borderRadius:6,padding:"4px 7px",fontSize:11,cursor:i===0?"default":"pointer"}}>↑</button>
+                        <button onClick={()=>moveShowcase(i,1)} disabled={i===showcaseCards.length-1} style={{background:"#1e293b",color:i===showcaseCards.length-1?"#334155":"#94a3b8",border:"1px solid #2e1065",borderRadius:6,padding:"4px 7px",fontSize:11,cursor:i===showcaseCards.length-1?"default":"pointer"}}>↓</button>
+                        <button onClick={()=>removeFromShowcase(i)} style={{background:"#1a0000",color:"#ef4444",border:"1px solid #7f1d1d",borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>✕</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            }
+          </div>
+
+          {/* Showcase card selector modal (inline) */}
+          {showShowcaseSelector&&<div style={{position:"fixed",inset:0,zIndex:3000,background:"#000000cc",display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}} onClick={()=>setShowShowcaseSelector(false)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"linear-gradient(180deg,#0f0a1e,#020617)",borderRadius:"20px 20px 0 0",padding:"20px 16px",width:"100%",maxWidth:480,maxHeight:"70vh",overflowY:"auto",animation:"fadeIn .2s ease-out"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{color:"#a855f7",fontWeight:700,fontSize:15}}>✨ Select Card for Showcase</div>
+                <button onClick={()=>setShowShowcaseSelector(false)} style={{background:"#1e293b",color:"#64748b",border:"1px solid #334155",borderRadius:8,padding:"5px 10px",fontSize:13,cursor:"pointer"}}>✕</button>
+              </div>
+              <div style={{color:"#475569",fontSize:11,marginBottom:10}}>Only owned cards · {3-showcaseCards.length} slot{3-showcaseCards.length!==1?"s":""} remaining</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                {[...new Map(collection.map(c=>[c.id+"_"+!!c.foil,c])).values()].filter(c=>!isShowcased(c)).map((c,i)=>{
+                  return(
+                    <div key={i} style={{cursor:"pointer",position:"relative"}} onClick={()=>{addToShowcase(c);if(showcaseCards.length+1>=3)setShowShowcaseSelector(false);}}>
+                      <Card card={c} mini level={1}/>
+                      {c.foil&&<div style={{position:"absolute",top:-3,right:-3,background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",fontSize:7,fontWeight:900,borderRadius:4,padding:"1px 4px"}}>✨</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>}
+
+          {/* Showcase confirmation modal */}
+          {showcaseConfirm&&<div style={{position:"fixed",inset:0,zIndex:4500,background:"#000000dd",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div style={{background:"linear-gradient(135deg,#1a0a00,#2d1800)",border:"1px solid #f59e0b66",borderRadius:20,padding:28,maxWidth:300,width:"90%",textAlign:"center",animation:"fadeIn .25s ease-out"}}>
+              <div style={{fontSize:40,marginBottom:10}}>⚠️</div>
+              <div style={{color:"#f59e0b",fontWeight:800,fontSize:16,marginBottom:8}}>Showcased Card</div>
+              <div style={{color:"#94a3b8",fontSize:13,marginBottom:6,lineHeight:1.6}}>
+                <b style={{color:"white"}}>{showcaseConfirm.card.name}</b> is in your showcase.
+              </div>
+              <div style={{color:"#64748b",fontSize:12,marginBottom:20}}>This action will not remove it from your showcase. Continue?</div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setShowcaseConfirm(null)} style={{flex:1,background:"#1e293b",color:"#94a3b8",border:"1px solid #334155",borderRadius:10,padding:"12px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Cancel</button>
+                <button onClick={()=>{showcaseConfirm.onConfirm();setShowcaseConfirm(null);}} style={{flex:1,background:"linear-gradient(135deg,#92400e,#f59e0b)",color:"#000",border:"none",borderRadius:10,padding:"12px",fontWeight:800,fontSize:13,cursor:"pointer"}}>Continue</button>
+              </div>
+            </div>
+          </div>}
+
+          {/* Theme selector */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e0a3c)",border:"1px solid #2e1065",borderRadius:14,padding:16,marginBottom:14}}>
+            <div style={{color:"#a855f7",fontWeight:700,marginBottom:12}}>🎨 UI Theme</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+              {THEMES.map(th=>{
+                const unlocked=playerLevel>=th.unlockLevel;
+                const active=selectedTheme===th.id;
+                return(
+                  <button key={th.id} disabled={!unlocked} onClick={()=>{if(unlocked){setSelectedTheme(th.id);S.set("selectedTheme",th.id);SFX.play("click");}}}
+                    style={{background:active?th.t1+"44":"#0f172a",border:`2px solid ${active?th.t1:"#1e293b"}`,borderRadius:10,padding:"10px 6px",textAlign:"center",cursor:unlocked?"pointer":"not-allowed",opacity:unlocked?1:0.4,transition:"all .2s"}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",background:`linear-gradient(135deg,${th.t1},${th.t2})`,margin:"0 auto 4px"}}/>
+                    <div style={{color:active?th.t2:"#475569",fontSize:9,fontWeight:700}}>{th.name}</div>
+                    {!unlocked&&<div style={{color:"#334155",fontSize:8,marginTop:1}}>LV{th.unlockLevel}</div>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Stats */}
           <div style={{fontSize:16,fontWeight:700,marginBottom:14}}>Stats</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
             {[{l:"Cards Owned",v:unique.length,i:"📦",c:"#a855f7"},{l:"Total Cards",v:collection.length,i:"🃏",c:"#06b6d4"},{l:"Battles Won",v:wins,i:"⚔️",c:"#22c55e"},{l:"Win Rate",v:`${wins+losses>0?Math.round(wins/(wins+losses)*100):0}%`,i:"📊",c:"#3b82f6"},{l:"Login Streak",v:`${streak}d`,i:"🔥",c:"#f59e0b"},{l:"Achievements",v:`${unlockedAch.length}/${ACHIEVEMENTS.length}`,i:"🏆",c:"#f59e0b"},{l:"Packs Opened",v:totalPacks,i:"🪐",c:"#ec4899"},{l:"Cards Sold",v:totalSold,i:"💰",c:"#10b981"}].map((s,i)=>(
@@ -5871,7 +6102,80 @@ function App() {
               </div>
             }
           </div>
-        </div>}
+
+          {/* ── Wishlist (owner only) ── */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#001a1c)",border:"1px solid #0e749044",borderRadius:12,padding:14,marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{color:"#06b6d4",fontWeight:700,fontSize:14}}>💫 Wishlist</div>
+              <span style={{color:"#334155",fontSize:10}}>{wishlist.length} card{wishlist.length!==1?"s":""}</span>
+            </div>
+            <div style={{color:"#475569",fontSize:11,marginBottom:10}}>Cards you want — not visible on public profile</div>
+            {wishlist.length===0
+              ?<div style={{color:"#334155",fontSize:12,textAlign:"center",padding:"12px 0"}}>No wishlist cards yet — browse below to add</div>
+              :<div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+                {wishlist.map(id=>{
+                  const card=ALL_CARDS.find(c=>c.id===id);
+                  if(!card) return null;
+                  const rc=RC[card.rarity]||{color:"#94a3b8"};
+                  const owned=collection.some(c=>c.id===id);
+                  return(
+                    <div key={id} style={{display:"flex",alignItems:"center",gap:6,background:"#0f172a",border:`1px solid ${owned?"#22c55e33":rc.color+"22"}`,borderRadius:8,padding:"5px 8px"}}>
+                      <span style={{color:owned?"#22c55e":rc.color,fontSize:10,fontWeight:700}}>{owned?"✓ ":""}{card.name}</span>
+                      <span style={{color:"#334155",fontSize:9}}>{card.rarity}</span>
+                      <button onClick={()=>toggleWishlist(id)} style={{background:"none",border:"none",color:"#334155",cursor:"pointer",fontSize:12,padding:"0 2px",lineHeight:1}}>×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            }
+            {/* Quick-add from ALL_CARDS not yet wishlisted */}
+            <div style={{borderTop:"1px solid #1e293b",paddingTop:10,marginTop:4}}>
+              <div style={{color:"#334155",fontSize:10,marginBottom:6}}>Add cards not yet in wishlist:</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {ALL_CARDS.filter(c=>!wishlist.includes(c.id)&&!collection.some(x=>x.id===c.id)).slice(0,12).map(c=>{
+                  const rc=RC[c.rarity]||{color:"#94a3b8"};
+                  return(
+                    <button key={c.id} onClick={()=>toggleWishlist(c.id)}
+                      style={{background:rc.color+"11",color:rc.color,border:`1px solid ${rc.color}33`,borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:600,cursor:"pointer"}}>
+                      + {c.name}
+                    </button>
+                  );
+                })}
+                {ALL_CARDS.filter(c=>!wishlist.includes(c.id)&&!collection.some(x=>x.id===c.id)).length>12&&
+                  <span style={{color:"#334155",fontSize:9,alignSelf:"center"}}>+{ALL_CARDS.filter(c=>!wishlist.includes(c.id)&&!collection.some(x=>x.id===c.id)).length-12} more</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* Collection completeness by rarity — owner only */}
+          <div style={{background:"#1c1008",border:"1px solid #f59e0b33",borderRadius:12,padding:14,marginBottom:14}}>
+            <div style={{color:"#f59e0b",fontWeight:700,marginBottom:10}}>🌟 Collection Progress by Rarity</div>
+            {["Legendary","Epic","Rare","Uncommon","Common"].map(r=>{
+              const ownedCards=unique.filter(c=>c.rarity===r);
+              const total=ALL_CARDS.filter(c=>c.rarity===r).length;
+              const rc2=RC[r];
+              const missing=ALL_CARDS.filter(c=>c.rarity===r&&!collection.some(x=>x.id===c.id));
+              return <div key={r} style={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                  <span style={{color:rc2.color,fontSize:12,fontWeight:600}}>{"★".repeat(rc2.stars)} {r}</span>
+                  <span style={{color:"#64748b",fontSize:12}}>{ownedCards.length}/{total}</span>
+                </div>
+                <div style={{background:"#1e293b",borderRadius:999,height:5,marginBottom:4}}>
+                  <div style={{width:`${ownedCards.length/total*100}%`,height:"100%",background:rc2.color,borderRadius:999,transition:"width .4s"}}/>
+                </div>
+                {missing.length>0&&missing.length<=5&&<div style={{color:"#334155",fontSize:9}}>
+                  Missing: {missing.map(c=>c.name).join(", ")}
+                </div>}
+                {missing.length>5&&<div style={{color:"#334155",fontSize:9}}>
+                  Missing {missing.length} cards
+                </div>}
+              </div>;
+            })}
+          </div>
+
+          </div>{/* end owner view */}
+        </div>}{/* end profile tab */}
       </div>
 
       {/* Modals */}
