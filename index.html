@@ -101,6 +101,81 @@ const { useState, useEffect, useRef, useCallback } = React;
 const SUPABASE_URL = "https://ibnhebsiullstslowbhc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_zX69scQZ1mYXAmlDAyr9LA_Edq1Yasj";
 
+// ── Project Guardrails ────────────────────────────────────────────────────────
+// PURPOSE: Records finalized design guardrails for developer reference and
+// implementation alignment only.
+// This block does NOT enforce runtime behavior. It is descriptive and inert.
+// Do NOT expose to players. Do NOT drive game logic from this object.
+// All future implementation sections must be checked against these rules.
+const VOID_CARDS_GUARDRAILS = {
+  // ── Product Identity ────────────────────────────────────────────────────────
+  // The game is collectible-first, casual-first, approachable, quick-session friendly.
+  // Priority order (must not be inverted by any future system):
+  //   1. Card collecting
+  //   2. Campaign battles (support the collecting loop)
+  //   3. Hardcore competition (optional side pillar — not core identity)
+  identity: "collectible-first",
+  priorityOrder: ["collecting", "battles", "competition"],
+
+  // ── Casual-First Gameplay ───────────────────────────────────────────────────
+  // Systems must stay easy to understand, readable, short-session friendly.
+  // No mandatory complexity or friction added without explicit design approval.
+  sessionStyle: "casual-short-sessions",
+
+  // ── Collectible Presentation ────────────────────────────────────────────────
+  // Pack-opening excitement, collection progress visibility, and milestone
+  // feedback are core emotional hooks. Must not be weakened by future systems.
+  collectibleHooks: ["pack opening excitement", "collection progress visibility", "milestone rewards"],
+
+  // ── Progression Philosophy ──────────────────────────────────────────────────
+  // Must support: long-term collection growth, daily/weekly return play,
+  // short rewarding sessions, low-friction reward loops.
+  // Must NOT add: punishment for missed days, forced retention, harsh streak loss.
+  progressionRules: {
+    dailyReturnPlay: true,
+    lowFrictionRewards: true,
+    punishMissedDays: false,        // PROHIBITED
+    harshStreakLoss: false,         // PROHIBITED
+    forcedRetentionMechanics: false // PROHIBITED
+  },
+
+  // ── Balance Philosophy ──────────────────────────────────────────────────────
+  // Early balance = good enough for healthy play.
+  // Collection excitement prioritized over esports-grade tuning.
+  // Balance approach should become stricter if deeper PvP competition or
+  // rewarded tournaments are introduced — no specific timeline defined.
+  balanceApproach: "casual-healthy",
+  stricterBalanceIfNeeded: "when deeper PvP competition or rewarded tournaments are introduced",
+
+  // ── Monetization Rules ──────────────────────────────────────────────────────
+  // Free players MUST have a real path to cards, packs, and progression.
+  // Spending may accelerate or add convenience — not exclusive core access.
+  monetization: {
+    freePathRequired: true,             // Free players can earn gems via play
+    spendingAcceleratesOnly: true,      // Money = speed/convenience, not exclusion
+    paywallOnCoreCards: false,          // PROHIBITED
+    paywallOnCoreProgression: false,    // PROHIBITED
+    exclusiveGameplayAdvantage: false   // PROHIBITED
+  },
+
+  // ── Content Priority ────────────────────────────────────────────────────────
+  // Future content should prioritize: new cards, new series, events, collection goals.
+  // System reworks require explicit future section authorization.
+  contentPriority: ["new cards", "new series", "events", "collection goals"],
+
+  // ── PvP Positioning ─────────────────────────────────────────────────────────
+  // PvP is optional and a side pillar. It is not required for core enjoyment
+  // and should not define the overall identity of the game.
+  // Current PvP tab is a placeholder. Do not expand without an explicit PvP section.
+  pvp: {
+    optional: true,
+    sidePillar: true,
+    notRequiredForCoreEnjoyment: true,
+    currentState: "placeholder"
+  },
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Minimal Supabase client — no SDK needed
 const sb = {
   _url: SUPABASE_URL,
@@ -5103,7 +5178,7 @@ function App() {
             </div>
           </div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.77</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:8,letterSpacing:1}}>v0.4.79</div>
           {/* Player Level Card */}
           {(()=>{
             const xpForLv=(lv)=>Math.round(300*Math.pow(lv,1.2));
@@ -5489,7 +5564,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.77
+            Void Cards · v0.4.79
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
