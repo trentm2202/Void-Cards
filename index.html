@@ -1968,11 +1968,40 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
     if(turn===1){addLog("Turn 1: you may only play cards.","err");return;}
     const card=playerField[idx];
     if(card&&playedThisTurn.has(card.uid)){addLog(`${card.name} cannot act the turn it was played.`,"err");return;}
-    if(enemyField.length===0){addLog("No enemy cards to attack!","err");return;}
+    // If enemy has NO cards on field: attack/special go directly to enemy player HP
+    if(enemyField.length===0){
+      doDirectAttack(idx,isSpecial);
+      return;
+    }
     setSelectedField(idx);
     setPendingSpecial(isSpecial);
     setPhase2("targeting");
     addLog(`Select an enemy card to ${isSpecial?"use special on":"attack with"} ${playerField[idx].name}...`,"info");
+  };
+
+  // Direct attack on enemy player HP when enemy field is empty
+  const doDirectAttack=(attackerIdx,isSpecial=false)=>{
+    if(animating)return;
+    const cost=isSpecial?3:1;
+    if(battleStamina<cost){addLog(`Not enough stamina! ${isSpecial?"Special":"Attack"} costs ${cost}.`,"err");return;}
+    const atk=playerField[attackerIdx];
+    if(!atk)return;
+    // Damage: Attack = card.power; Special = card.power * specialMult (no type advantage, no abilities)
+    const dmg=isSpecial?Math.floor(atk.power*(atk.specialMult||1.5)):atk.power;
+    setAnimating(true);
+    setBattleStamina(s=>s-cost);
+    setActedCards(prev=>{const next=new Set(prev);next.add(atk.uid);return next;});
+    if(isSpecial) setSpecialUsed(prev=>{const next=new Set(prev);next.add(atk.uid);return next;});
+    setAttackingCard(attackerIdx);
+    setTimeout(()=>setAttackingCard(null),500);
+    addLog(`${isSpecial?"✨":"⚔️"} ${atk.name} hits ${node.name} directly for ${dmg}${isSpecial?" (special)":""}!`,"player");
+    setEnemyHp(hp=>{
+      const newHp=Math.max(0,hp-dmg);
+      addDmg(`-${dmg}`,"#ef4444",0,true);
+      SFX.play(isSpecial?"specialHit":"hit");
+      return newHp;
+    });
+    setTimeout(()=>setAnimating(false),400);
   };
 
   // Ability trigger chance by rarity + foil bonus, hard cap 50%
@@ -2867,7 +2896,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
           </div>
 
           {/* ── END TURN + CANCEL ── */}
-          <div style={{display:"flex",gap:8,marginBottom:10,position:"sticky",bottom:0,zIndex:50,background:"linear-gradient(0deg,#020617 80%,transparent)",paddingTop:8,paddingBottom:4}}>
+          <div style={{display:"flex",gap:8,marginBottom:10,paddingBottom:2}}>
             <button onClick={endTurn} disabled={!canEndTurn}
               style={{flex:1,background:canEndTurn?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#1e293b",color:canEndTurn?"white":"#475569",border:"none",borderRadius:10,padding:"11px",fontWeight:800,fontSize:13,cursor:canEndTurn?"pointer":"not-allowed",boxShadow:canEndTurn?"0 0 16px #3b82f644":"none",transition:"all .2s"}}>
               {canEndTurn?"End Turn ▶":"Waiting..."}
@@ -5655,7 +5684,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:4,letterSpacing:1}}>v0.5.5</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:4,letterSpacing:1}}>v0.5.6</div>
           {/* Profile view toggle tabs */}
           <div style={{display:"flex",gap:6,marginBottom:14}}>
             {[{id:"owner",label:"👤 My Profile"},{id:"public",label:"🌌 Public View"}].map(v=>(
@@ -6318,7 +6347,7 @@ function App() {
           <FeedbackForm username={username} getSaveData={getSaveData}/>
           {/* Version */}
           <div style={{textAlign:"center",color:"#1e293b",fontSize:10,marginTop:8}}>
-            Void Cards · v0.4.83
+            Void Cards · v0.5.6
           </div>
           {authed&&<button onClick={async()=>{await sb.signOut();Object.keys(localStorage).filter(k=>k.startsWith("vc_")).forEach(k=>localStorage.removeItem(k));setAuthed(false);setShowSettings(false);}} style={{width:"100%",background:"#0f172a",color:"#475569",border:"1px solid #1e293b",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:"pointer",marginTop:10}}>
             🚪 Sign Out
