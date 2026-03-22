@@ -1886,6 +1886,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const [intimidatedCards,setIntimidatedCards]=useState({}); // uid -> 0.75 multiplier (permanent until card leaves)
   const [activeEffects,setActiveEffects]=useState({}); // uid -> [{type,ticksLeft}] DoT/buff effects
   const [playedThisTurn,setPlayedThisTurn]=useState(new Set()); // uids played this turn (cannot act same turn)
+  const [replacingSlot,setReplacingSlot]=useState(null); // field slot index being replaced, or null
 
   const addLog=(text,type="info")=>setLog(prev=>[{text,type,id:Date.now()+Math.random()},...prev].slice(0,20));
   const addDmg=(text,color,fieldIdx,isEnemy)=>{
@@ -1897,7 +1898,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
   const MANA_COST={Common:1,Uncommon:1,Rare:2,Epic:3,Legendary:4};
 
   // Start battle after deck is chosen
-  const startBattle=(deck, plLevel)=>{
+  const startBattle=(deck, plLevel, spendStamina)=>{
     // Shuffle deck — no forced opening hand guarantee (deck rules allow any composition)
     const shuffled=[...deck].sort(()=>Math.random()-.5);
     const startHand=shuffled.slice(0,4);
@@ -1935,6 +1936,8 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
       {text:`⚔️ ${node.name}: "${node.dialogue}"`,type:"system",id:0},
       {text:`🪙 ${flip==="heads"?"You go first!":"Enemy goes first!"}`,type:"system",id:1}
     ]);
+    // Spend stamina only after all battle state is initialised successfully
+    if(spendStamina) spendStamina();
     setPhase("battle");
     // If enemy goes first, trigger their turn after short delay
     if(!playerFirst){
@@ -2650,7 +2653,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
               {savedDecks.map((d,i)=>{
                 const cards=d.cards.slice(0,12).map(dc=>collection.find(c=>c.id===dc.id)||dc).filter(Boolean);
                 const padded=[...cards,...Array(Math.max(0,12-cards.length)).fill(null)].map((c,j)=>c||allUnique[j%allUnique.length]||allUnique[0]).slice(0,12);
-                return <button key={i} onClick={()=>{if(stamina<staminaCost){alert("Not enough stamina!");return;}onSpendStamina(staminaCost);startBattle(padded, playerLevel);}}
+                return <button key={i} onClick={()=>{if(stamina<staminaCost){alert("Not enough stamina!");return;}startBattle(padded, playerLevel, ()=>onSpendStamina(staminaCost));}}
                   style={{background:"linear-gradient(135deg,#1e0a3c,#0f172a)",border:"1px solid #4c1d9544",borderRadius:10,padding:"10px 14px",color:"white",cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontWeight:700}}>{d.name} <span style={{color:"#475569",fontSize:11}}>({d.cards.length} cards)</span></span>
                   <span style={{color:"#a855f7",fontSize:12}}>Use →</span>
@@ -2682,8 +2685,7 @@ function GalaxyBattleModal({collection, savedDecks, onClose, onWin, onLose, node
             if(customDeck.length<4){alert("Pick at least 4 cards!");return;}
             const deck=customDeck.length<12?[...customDeck,...customDeck].slice(0,12):customDeck;
             if(stamina<staminaCost){alert("Not enough stamina!");return;}
-            onSpendStamina(staminaCost);
-            startBattle(deck, playerLevel);
+            startBattle(deck, playerLevel, ()=>onSpendStamina(staminaCost));
           }} disabled={customDeck.length<4}
             style={{width:"100%",background:customDeck.length>=4?"linear-gradient(135deg,var(--t1),var(--t2))":"#1e293b",color:customDeck.length>=4?"white":"#475569",border:"none",borderRadius:12,padding:"14px",fontWeight:800,fontSize:15,cursor:customDeck.length>=4?"pointer":"not-allowed"}}>
             ⚔️ Battle! ({customDeck.length}/12 cards)
@@ -5653,7 +5655,7 @@ function App() {
         {/* PROFILE */}
         {tab==="profile"&&<div>
           {/* Version */}
-          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:4,letterSpacing:1}}>v0.5.4</div>
+          <div style={{textAlign:"right",color:"#1e293b",fontSize:10,marginBottom:4,letterSpacing:1}}>v0.5.5</div>
           {/* Profile view toggle tabs */}
           <div style={{display:"flex",gap:6,marginBottom:14}}>
             {[{id:"owner",label:"👤 My Profile"},{id:"public",label:"🌌 Public View"}].map(v=>(
