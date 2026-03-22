@@ -4703,19 +4703,17 @@ function App() {
   const xpForLevel=(lv)=>Math.round(300*Math.pow(lv,1.2));
   const xpTotalForLevel=(lv)=>{ let t=0; for(let i=1;i<Math.min(lv,200);i++) t+=xpForLevel(i); return t; };
   const givePlayerXp=(amount)=>{
-    setPlayerXp(prev=>{
-      const newXp=prev+amount;
-      const curLv=playerLevel;
-      let newLv=curLv;
-      let xpIntoLevel=newXp-xpTotalForLevel(curLv);
-      while(newLv<200 && xpIntoLevel>=xpForLevel(newLv)){ xpIntoLevel-=xpForLevel(newLv); newLv++; }
-      if(newLv>curLv){
-        setPlayerLevel(newLv);
-        SFX.play("levelUp");
-        notify("⬆️ Level "+newLv+"! "+(newLv%3===0?"Max stamina increased!":"You're growing stronger, Commander!"),"ach");
-      }
-      return newXp;
-    });
+    const newXp=playerXp+amount;
+    const curLv=playerLevel;
+    let newLv=curLv;
+    let xpIntoLevel=newXp-xpTotalForLevel(curLv);
+    while(newLv<200&&xpIntoLevel>=xpForLevel(newLv)){xpIntoLevel-=xpForLevel(newLv);newLv++;}
+    setPlayerXp(newXp);
+    if(newLv>curLv){
+      setPlayerLevel(newLv);
+      SFX.play("levelUp");
+      notify("⬆️ Level "+newLv+"! "+(newLv%3===0?"Max stamina increased!":"You're growing stronger, Commander!"),"ach");
+    }
   };
 
   const onCardsEarned=cards=>{
