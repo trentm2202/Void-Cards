@@ -4707,8 +4707,8 @@ function App() {
       const newXp=prev+amount;
       const curLv=playerLevel;
       let newLv=curLv;
-      let acc=xpTotalForLevel(curLv);
-      while(newLv<200 && newXp>=acc+xpForLevel(newLv)){ acc+=xpForLevel(newLv); newLv++; }
+      let xpIntoLevel=newXp-xpTotalForLevel(curLv);
+      while(newLv<200 && xpIntoLevel>=xpForLevel(newLv)){ xpIntoLevel-=xpForLevel(newLv); newLv++; }
       if(newLv>curLv){
         setPlayerLevel(newLv);
         SFX.play("levelUp");
@@ -4800,9 +4800,8 @@ function App() {
   const todayStr=()=>new Date().toISOString().slice(0,10);
   const canClaimFreePack=dailyFreePack!==todayStr();
   const today=new Date().toISOString().slice(0,10);
-  // Handle old boolean format (true) AND new date string format ("2026-03-08")
-  const todayDateStr=new Date().toDateString();
-  const canClaimDailyGems=dailyGems!==todayDateStr && dailyGems!==today && dailyGems!==true;
+  const todayDateStr=new Date().toISOString().slice(0,10);
+  const canClaimDailyGems=dailyGems!==todayDateStr;
   const freePackCountdown=()=>{
     const now=new Date();
     const tomorrow=new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
@@ -4819,7 +4818,7 @@ function App() {
 
   const claimDaily=()=>{
     const bonus=streak>=7?300:streak>=3?200:150;
-    setCoins(c=>c+bonus);setDailyGems(today);S.set("dailyGems",today);
+    setCoins(c=>c+bonus);setDailyGems(todayDateStr);S.set("dailyGems",todayDateStr);
     SFX.play("daily");
     notify(`💎 Daily: +${bonus} gems! (${streak}🔥 streak)`);
     checkAch({collection,wins,coins:coins+bonus,streak,cardLevels,decks,totalSold});
@@ -4963,7 +4962,8 @@ function App() {
       apply("dailyFreePack",setDailyFreePack,save.dailyFreePack);
       apply("newPlayer",setNewPlayer,save.newPlayer);
       apply("lastLogin",setLastLogin,save.lastLogin);
-      apply("dailyGems",setDailyGems,save.dailyGems);
+      const _dg=save.dailyGems===true?"":save.dailyGems;
+      apply("dailyGems",setDailyGems,_dg);
       apply("completedNodes",setCompletedNodes,save.completedNodes);
       apply("nodeClears",setNodeClears,save.nodeClears);
       apply("stamina",setStamina,save.stamina);
@@ -5702,7 +5702,7 @@ function App() {
             const currentTheme=THEMES.find(t=>t.id===selectedTheme)||THEMES[0];
             // Resolve showcase cards from live collection
             const resolvedShowcase=showcaseCards.map(s=>{
-              const live=collection.find(c=>c.id===s.id&&!!c.foil===!!s.foil);
+              const live=collection.find(c=>c.id===s.id&&(!!c.foil===!!(s.foil??false)));
               if(live) return live;
               const base=ALL_CARDS.find(c=>c.id===s.id);
               return base?{...base,foil:!!s.foil}:null;
