@@ -3139,7 +3139,7 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
           const rc2=RC[r]||{color:"#94a3b8"};
           return(
             <div key={r} style={{flex:1,minWidth:60,background:"#0f172a",border:`1px solid ${rc2.color}33`,borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
-              <div style={{color:rc2.color,fontSize:9,fontWeight:700,letterSpacing:1}}>{r.slice(0,3).toUpperCase()}</div>
+              <div style={{color:rc2.color,fontSize:9,fontWeight:700,letterSpacing:1}}>{r.toUpperCase()}</div>
               <div style={{color:"white",fontWeight:800,fontSize:12}}>{pctR}%</div>
               <div style={{color:"#334155",fontSize:8}}>{owned}/{total}</div>
             </div>
@@ -3267,12 +3267,11 @@ function BinderTab({unique,collection,cardLevels,setDetail,convertDupes,setDeckB
       {binderSection==="cards"&&<div>
       {/* Quick actions */}
       <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-        <button onClick={()=>{SFX.play("click");setShowDupesModal?.(true);}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>♻️ Manage Dupes</button>
+        <button onClick={()=>{SFX.play("click");setShowDupesModal?.(true);}} style={{background:"linear-gradient(135deg,#1d4ed8,#3b82f6)",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1,position:"relative"}}>
+          ♻️ Dupes{dupeCount>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"white",fontSize:8,fontWeight:800,borderRadius:999,width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{dupeCount}</span>}
+        </button>
         <button onClick={()=>{SFX.play("click");setDeckBuilder(true);}} style={{background:"linear-gradient(135deg,var(--t3),var(--t2))",color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flex:1}}>🃏 Decks</button>
         <button onClick={()=>{SFX.play("click");setFusionModal(true);}} style={{background:"linear-gradient(135deg,#b45309,#f59e0b)",color:"#000",border:"none",borderRadius:8,padding:"8px 12px",fontSize:11,fontWeight:700,cursor:"pointer",flex:1}}>✨ Fuse</button>
-        <button onClick={()=>{SFX.play("click");setShowDupesOnly?.(!showDupesOnly);}} style={{background:showDupesOnly?"linear-gradient(135deg,#0e7490,#06b6d4)":"#1e293b",color:showDupesOnly?"white":"#64748b",border:`1px solid ${showDupesOnly?"#06b6d4":"#334155"}`,borderRadius:8,padding:"8px 10px",fontSize:11,fontWeight:600,cursor:"pointer",position:"relative"}}>
-          🎴 Dupes{dupeCount>0&&<span style={{position:"absolute",top:-5,right:-5,background:"#ef4444",color:"white",fontSize:8,fontWeight:800,borderRadius:999,width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{dupeCount}</span>}
-        </button>
       </div>
 
       {/* Search */}
@@ -4703,17 +4702,21 @@ function App() {
   const xpForLevel=(lv)=>Math.round(300*Math.pow(lv,1.2));
   const xpTotalForLevel=(lv)=>{ let t=0; for(let i=1;i<Math.min(lv,200);i++) t+=xpForLevel(i); return t; };
   const givePlayerXp=(amount)=>{
-    const newXp=playerXp+amount;
-    const curLv=playerLevel;
-    let newLv=curLv;
-    let xpIntoLevel=newXp-xpTotalForLevel(curLv);
-    while(newLv<200&&xpIntoLevel>=xpForLevel(newLv)){xpIntoLevel-=xpForLevel(newLv);newLv++;}
-    setPlayerXp(newXp);
-    if(newLv>curLv){
-      setPlayerLevel(newLv);
-      SFX.play("levelUp");
-      notify("⬆️ Level "+newLv+"! "+(newLv%3===0?"Max stamina increased!":"You're growing stronger, Commander!"),"ach");
-    }
+    setPlayerXp(prev=>{
+      const newXp=prev+amount;
+      S.set("playerXp",newXp);
+      const curLv=playerLevel;
+      let newLv=curLv;
+      let xpIntoLevel=newXp-xpTotalForLevel(curLv);
+      while(newLv<200&&xpIntoLevel>=xpForLevel(newLv)){xpIntoLevel-=xpForLevel(newLv);newLv++;}
+      if(newLv>curLv){
+        setPlayerLevel(newLv);
+        S.set("playerLevel",newLv);
+        SFX.play("levelUp");
+        notify("⬆️ Level "+newLv+"! "+(newLv%3===0?"Max stamina increased!":"You're growing stronger, Commander!"),"ach");
+      }
+      return newXp;
+    });
   };
 
   const onCardsEarned=cards=>{
